@@ -388,7 +388,9 @@ function supply_receive_preparing_locked(PDO $pdo, string $groupKey, array $data
     $totalCost=$costRaw===''?null:inventory_money_value($costRaw);
     $supplier=text_substr(trim((string)($data['supplier']??'')),0,160);
     $note=text_substr(trim((string)($data['note']??'')),0,500);
-    $occurredAt=inventory_optional_occurred_at((string)($data['occurred_date_j']??''),(string)($data['occurred_time']??''),'دریافت خرید');
+    $occurredAt=trim((string)($data['occurred_at']??''))!==''
+        ? inventory_normalize_occurred_at((string)$data['occurred_at'],'دریافت خرید')
+        : inventory_optional_occurred_at((string)($data['occurred_date_j']??''),(string)($data['occurred_time']??''),'دریافت خرید');
     $departments=array_values(array_unique(array_map(static fn(array $r): string => (string)$r['department'],$rows)));
     $movementDepartment=count($departments)===1?$departments[0]:'shared';
 
