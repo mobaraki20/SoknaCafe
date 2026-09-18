@@ -202,9 +202,12 @@ jobs:
       - name: Install MariaDB client
         shell: bash
         run: sudo apt-get update -qq && sudo apt-get install -y -qq mariadb-client
-      - name: Load Public schema
+      - name: Load Public and Local schemas
         shell: bash
-        run: mariadb -h127.0.0.1 -P3306 -uroot -proot sokna_public < public_edge/database/schema.sql
+        run: |
+          mariadb -h127.0.0.1 -P3306 -uroot -proot sokna_public < public_edge/database/schema.sql
+          mariadb -h127.0.0.1 -P3306 -uroot -proot -e "CREATE DATABASE IF NOT EXISTS sokna_local CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+          mariadb -h127.0.0.1 -P3306 -uroot -proot sokna_local < database/schema.sql
       - name: Configure Public test instance
         shell: bash
         run: |
@@ -222,6 +225,26 @@ jobs:
               ],
               'installation_secrets'=>[
                   'test-installation'=>'test-relay-secret-01234567890123456789',
+              ],
+          ];
+          PHP
+          cat > config.php <<'PHP'
+          <?php
+          return [
+              'db'=>[
+                  'host'=>'127.0.0.1','port'=>'3306','name'=>'sokna_local','user'=>'root','pass'=>'root','charset'=>'utf8mb4',
+              ],
+              'relay'=>[
+                  'enabled'=>false,'public_base_url'=>'','installation_id'=>'','shared_secret'=>'','timeout_seconds'=>8,
+              ],
+              'app'=>[
+                  'url'=>'http://127.0.0.1:18081',
+                  'key'=>'ci-local-app-key-012345678901234567890123456789',
+                  'timezone'=>'Asia/Tehran',
+                  'debug'=>true,
+                  'trust_proxy_headers'=>false,
+                  'data_dir'=>'',
+                  'local_hostname'=>'sokna.local',
               ],
           ];
           PHP
@@ -247,6 +270,7 @@ jobs:
         run: |
           php tests/phase2-public-http.php
           php tests/phase3-guest-publish-http.php
+          php tests/phase3-guest-realtime-http.php
       - name: Public edge log on failure
         if: failure()
         shell: bash
