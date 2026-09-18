@@ -276,6 +276,7 @@ jobs:
           php tests/phase2-public-http.php
           php tests/phase3-guest-publish-http.php
           php tests/phase3-guest-realtime-http.php
+          php tests/phase4-remote-read-http.php
       - name: Public edge log on failure
         if: failure()
         shell: bash
