@@ -1,0 +1,46 @@
+# Local/environment configuration
+config.php
+.env
+.env.*
+!.env.example
+
+# Runtime/generated state
+storage/
+artifacts/
+var/
+tmp/
+temp/
+cache/
+backups/
+*.log
+*.pid
+*.lock
+
+# Local databases / dumps
+*.sqlite
+*.sqlite3
+*.db
+*.sql.gz
+*.sql.zip
+
+# TLS/private material
+*.key
+*.key.pem
+*.p12
+*.pfx
+*.jks
+
+# Dependency/build caches
+vendor/
+node_modules/
+.phpunit.result.cache
+.pytest_cache/
+__pycache__/
+*.py[cod]
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
