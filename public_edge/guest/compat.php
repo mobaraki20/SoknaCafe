@@ -22,6 +22,8 @@ function public_guest_context():array
 
 function public_guest_installation_id():string
 {
+    $query=trim((string)($_GET['installation_id']??''));
+    if($query!=='')return $query;
     $ctx=public_guest_context();
     $id=trim((string)($ctx['installation_id']??''));
     if($id!=='')return $id;
@@ -193,19 +195,31 @@ function asset(string $path):string{
     $clean=ltrim($path,'/');$ctx=public_guest_context();$manifest=is_array($ctx['media_manifest']??null)?$ctx['media_manifest']:[];
     if(isset($manifest[$clean])&&is_array($manifest[$clean]))return public_guest_media_url(public_guest_installation_id(),$manifest,$clean);
     if(str_starts_with($clean,'assets/'))return public_guest_static_url($clean);
-    return match($clean){
+    $installation=public_guest_installation_id();
+    $api=match($clean){
         'api/create_order.php'=>'/api/v1/guest/compat/create_order.php',
         'api/order_status.php'=>'/api/v1/guest/compat/order_status.php',
         'api/guest_orders.php'=>'/api/v1/guest/compat/guest_orders.php',
         'api/table_context.php'=>'/api/v1/guest/compat/table_context.php',
         'api/waiter_call.php'=>'/api/v1/guest/compat/waiter_call.php',
         'api/metric.php'=>'/api/v1/guest/compat/metric.php',
-        'about.php'=>'/guest/about.php',
-        'menu/'=>'/guest/',
-        default=>'/'.ltrim($clean,'/'),
+        default=>'',
     };
+    if($api!=='')return $api.'?installation_id='.rawurlencode($installation);
+    if($clean==='about.php')return '/guest/about.php?installation_id='.rawurlencode($installation);
+    if($clean==='menu/')return '/guest/';
+    return '/'.ltrim($clean,'/');
 }
-function canonical_asset(string $path):string{return asset($path);}
+function guest_page_url(string $path,array $params=[]):string{
+    $clean=ltrim($path,'/');
+    if(in_array($clean,['menu/','about.php'],true))$params=['installation_id'=>public_guest_installation_id()]+$params;
+    $base=$clean==='menu/'?'/guest/':($clean==='about.php'?'/guest/about.php':asset($path));
+    return $params?$base.(str_contains($base,'?')?'&':'?').http_build_query($params):$base;
+}
+function canonical_asset(string $path):string{
+    $clean=ltrim($path,'/');
+    return $clean==='menu/'?guest_page_url('menu/'):asset($path);
+}
 function csrf_token():string{
     if(empty($_SESSION['csrf_token']))$_SESSION['csrf_token']=bin2hex(random_bytes(32));
     return (string)$_SESSION['csrf_token'];
