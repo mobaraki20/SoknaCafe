@@ -83,7 +83,7 @@ route_roots = ['menu','admin','api','operator','staff','waiter']
 discovered_routes: set[str] = set()
 for root_name in route_roots:
     for path in (ROOT / root_name).rglob('*.php'):
-        discovered_routes.add(str(path.relative_to(ROOT)))
+        discovered_routes.add(path.relative_to(ROOT).as_posix())
 for entry in ['index.php','about.php','install.php','login.php','logout.php','help.php','favicon.php','manifest.php','robots.php','sitemap.php','notification_preferences.php','center_return.php']:
     if (ROOT / entry).exists():
         discovered_routes.add(entry)
