@@ -90,7 +90,7 @@ $img=$mediaUrl((string)($item['image_path']??''));
 </main>
 
 <?php if($table): ?><div class="cart-bar hidden" id="cartBar"><span><b id="cartCount">۰</b> آیتم</span><button id="openCart" type="button">دیدن سبد</button></div>
-<div class="cart-panel hidden" id="cartPanel"><section class="cart-box"><div class="cart-head"><h2>سبد سفارش</h2><button id="closeCart" type="button">×</button></div><div id="cartList"></div><div class="total"><span>جمع</span><span id="cartTotal">۰ تومان</span></div><button class="submit" id="submitOrder" type="button" <?= !$canOrder?'disabled':'' ?>>ثبت سفارش</button></section></div><?php endif; ?>
+<div class="cart-panel hidden" id="cartPanel"><section class="cart-box"><div class="cart-head"><h2>سبد سفارش</h2><button id="closeCart" type="button" aria-label="بستن سبد">بستن</button></div><div id="cartList"></div><div class="total"><span>جمع</span><span id="cartTotal">۰ تومان</span></div><button class="submit" id="submitOrder" type="button" <?= !$canOrder?'disabled':'' ?>>ثبت سفارش</button></section></div><?php endif; ?>
 <script>
 window.SOKNA_GUEST=<?= json_encode([
 'installationId'=>$installationId,
