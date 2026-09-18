@@ -44,13 +44,24 @@ Checkpoint: failed publish revision فعال قبلی را خراب نکند؛ s
 - Preparation monitor/assigned-area matrix بدون اعطای mutation جدید
 Checkpoint: static boundary contract + HTTP/MariaDB permission/area/stale tests + full regression باید قبل از Merge سبز باشند.
 
-## Phase 5 — Deferred-safe + Financial Reconciliation
-- queue/store جدا
-- purchase/receipt/waste/count draft/pending payment/expense ingress
-- conflict/review/idempotency
+## Phase 5 — Deferred-safe + Financial Reconciliation — IMPLEMENTED in 1.36.4-dev.31
+- Public queue/store مستقل از Realtime
+- purchase need/status/receipt، waste، count draft، subscriber payment، general expense
+- Local durable receipts + lost-ACK idempotency
+- expected-state/version + current permission revalidation
+- one-candidate conflict/late review
 - financial close pending/unknown-Public gate
-- audited override + late correction review
-Checkpoint: هیچ late event closed period را silent mutate نکند.
+- audited Admin override with reason
+- cached `deferred_context` + capability-aware 4G forms/status
+- Expenses canonical owner + seeded categories
+- Local count-draft route consolidated onto Inventory owner
+
+Checkpoint gates:
+- static Deferred boundary contract
+- Public HTTP/MariaDB lifecycle test
+- Local MariaDB domain/idempotency/late-period test
+- Windows runtime/lint
+- Linux full regression/browser
 
 ## Phase 6 — Domain Additions/Refactors
 ترتیب داخلی برای کاهش ریسک:
