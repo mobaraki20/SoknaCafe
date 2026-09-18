@@ -10,6 +10,7 @@ auth = read('includes/auth.php')
 functions = read('includes/functions.php')
 message_owner = read('includes/function_domains/messages.php')
 create_order = read('api/create_order.php')
+guest_order_service = read('includes/guest_order_service.php')
 menu = read('assets/js/menu.js')
 schema = read('database/schema.sql')
 table_session = read('operator/api_table_session.php')
@@ -17,8 +18,9 @@ maintenance = read('includes/maintenance.php')
 sw = read('service-worker.js')
 assert 'function is_logged_in()' in auth and 'function login(string $username, string $password)' in auth
 assert 'function fa_datetime(' not in functions
+assert 'guest_order_commit(db(),$data)' in create_order
 for needle in ['normalize_order_request_payload','WHERE client_token=? LIMIT 1 FOR UPDATE','order_status_history',"'items_unavailable'", "'prices_changed'", 'FOR UPDATE']:
-    assert needle in create_order
+    assert needle in guest_order_service
 assert 'data.client_token || submittedTarget?.client_token || pendingToken' in menu
 assert 'live_table_guard INT UNSIGNED NULL' in schema and 'uq_table_sessions_one_live_table' in schema
 assert "status IN('active','pending')" in table_session and 'sort($lockIds, SORT_NUMERIC)' in table_session
