@@ -32,7 +32,7 @@ assert "if ($action === 'append')" not in guest and "client_refresh_required" no
 assert "expected_signature" in guest and "order_changed" in guest
 assert 'function guest_order_payload_matches_current' in guest and 'این تغییرات قبلاً ذخیره شده‌اند.' in guest
 assert "close_table_session((int)$session['id'],null,'guest_cancelled')" in guest.replace(' ','')
-assert "if (!$increase && $old)" in guest
+assert "if(!$increase&&$old)" in guest.replace(' ','')
 assert "order_acceptance_blocked_scope_for_station" in guest
 assert "action: 'update'" in menu and "action: 'append'" not in menu
 assert 'mergeDraftIntoMutableOrder' in menu and 'fullEditableOrderPayload' not in menu
