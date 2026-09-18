@@ -11,7 +11,7 @@ for rel,digest in expected.items():
     assert got==digest,(rel,got)
 # Guest menu was intentionally extended for line-level dine-in/takeaway; protect semantics instead of obsolete byte hashes.
 guest_js=(ROOT/'assets/js/menu.js').read_text(encoding='utf-8')
-guest_page=((ROOT/'menu/index.php').read_text(encoding='utf-8') + '\n' + (ROOT/'includes/guest_menu_view.php').read_text(encoding='utf-8'))
+guest_page=(((ROOT/'menu/index.php').read_text(encoding='utf-8') + '\n' + (ROOT/'includes/guest_menu_view.php').read_text(encoding='utf-8')) + '\n' + (ROOT/'includes/guest_menu_view.php').read_text(encoding='utf-8'))
 assert 'id="guestTakeawaySheet"' in guest_page and 'id="guestTakeawayAll"' in guest_page
 assert 'orderPayloadLines' in guest_js and "fulfillment_mode:'takeaway'" in guest_js and 'takeaway_quantity' in guest_js
 css=(ROOT/'assets/css/guest-menu.css').read_text(encoding='utf-8')
