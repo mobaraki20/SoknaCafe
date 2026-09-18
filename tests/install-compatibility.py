@@ -6,6 +6,7 @@ schema=(root/'database/schema.sql').read_text(encoding='utf-8')
 installer=(root/'install.php').read_text(encoding='utf-8')
 functions=(root/'includes/functions.php').read_text(encoding='utf-8')
 waiter=(root/'api/waiter_call.php').read_text(encoding='utf-8')
+waiter_service=(root/'includes/waiter_call_service.php').read_text(encoding='utf-8')
 table_api=(root/'operator/api_table_session.php').read_text(encoding='utf-8')
 
 assert 'GENERATED ALWAYS' not in schema
@@ -26,7 +27,7 @@ assert 'install_drop_created_tables' in installer
 assert "MySQL 5.7.8 یا MariaDB 10.2" in installer
 assert "live_table_guard,continued_from_session_id" in functions
 assert "status='closed',live_table_guard=NULL" in functions
-assert "active_table_guard,business_date,business_shift_key,business_shift_label,business_cutoff_snapshot) VALUES" in waiter
+assert "active_table_guard,business_date,business_shift_key,business_shift_label,business_cutoff_snapshot) VALUES" in waiter_service
 assert "status='cancelled',active_table_guard=NULL" in waiter
 assert "SET table_id=?,active_table_guard=?,session_id=?" in table_api
 assert "favicon_32_path" in installer and "1.30.1-rc2-baseline" in installer
