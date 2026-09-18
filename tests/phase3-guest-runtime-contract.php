@@ -47,7 +47,7 @@ p3need(str_contains($result,"state='queued'"),'result lookup expires only never-
 p3need(!str_contains($result,"state IN ('queued','claimed')"),'result lookup cannot erase claimed ambiguity');
 
 p3need(str_contains($publicGuest,'public_guest_action_state'),'Public renderer computes degraded action state');
-p3need(str_contains($publicGuest,"$availability['order_acceptance']=['cafe'=>false"),'degraded Public renderer disables mutation while retaining snapshot view');
+p3need(str_contains($publicGuest,'$availability[\'order_acceptance\']=[\'cafe\'=>false'),'degraded Public renderer disables mutation while retaining snapshot view');
 p3need(str_contains($publicGuest,'require dirname(__DIR__,2).\'/includes/guest_menu_view.php\''),'degraded mode still reaches shared view');
 p3need(str_contains($functions,'function public_guest_base_url()'),'QR owner has Public guest route');
 p3need(str_contains($functions,'if($public!==\'\') return $public'),'QR uses Public when pairing is configured');
