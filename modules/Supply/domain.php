@@ -198,6 +198,59 @@ function supply_request_upsert_locked(PDO $pdo, array $data, int $actorUserId): 
     return $id;
 }
 
+/**
+ * Deferred-safe additive need event. Unlike the interactive upsert, this never
+ * replaces an already-changed uncommitted quantity; exactly-once is owned by the
+ * deferred receipt ledger.
+ */
+function supply_request_add_locked(PDO $pdo,array $data,int $actorUserId): int
+{
+    supply_module_require_runtime_ready_locked($pdo);
+    $itemId=max(0,(int)($data['inventory_item_id']??0));
+    $department=inventory_normalize_department((string)($data['department']??'shared'))??'shared';
+    $note=text_substr(trim((string)($data['note']??'')),0,500);
+    if($itemId>0){
+        $item=inventory_item($pdo,$itemId,true);
+        if(!$item||(int)$item['active']!==1)throw new RuntimeException('کالای انتخاب‌شده دیگر فعال نیست.');
+        $baseUnit=(string)$item['base_unit'];
+        $delta=inventory_major_to_base($data['quantity_major']??'',$baseUnit);
+        if($delta<1)throw new RuntimeException('مقدار موردنیاز را وارد کن.');
+        $existing=supply_need_open_for_item($pdo,$itemId,$department,true);
+        if($existing){
+            $newRequested=(int)$existing['requested_quantity_base']+$delta;
+            $pdo->prepare("UPDATE inventory_supply_needs SET requested_quantity_base=?,note=COALESCE(?,note),updated_by_user_id=?,last_outcome=NULL WHERE id=?")
+                ->execute([$newRequested,$note!==''?$note:null,$actorUserId,(int)$existing['id']]);
+            audit_log_write_strict($pdo,'supply.need_deferred_added','inventory_supply_need',(int)$existing['id'],['added_quantity_base'=>$delta,'requested_quantity_base'=>$newRequested],$actorUserId);
+            return (int)$existing['id'];
+        }
+        $guard=supply_need_guard($department,$itemId,(string)$item['name'],$baseUnit);
+        $stmt=$pdo->prepare("INSERT INTO inventory_supply_needs(inventory_item_id,item_name_snapshot,base_unit,requested_quantity_base,fulfilled_quantity_base,preparing_quantity_base,department,source,status,note,created_by_user_id,updated_by_user_id,open_item_guard) VALUES(?,?,?,?,0,0,?,'staff','open',?,?,?,?)");
+        $stmt->execute([$itemId,(string)$item['name'],$baseUnit,$delta,$department,$note?:null,$actorUserId,$actorUserId,$guard]);
+    }else{
+        $name=text_substr(trim((string)($data['free_name']??'')),0,160);
+        $baseUnit=inventory_normalize_base_unit((string)($data['base_unit']??'count'));
+        if($name==='')throw new RuntimeException('نام مورد خارج از فهرست را وارد کن.');
+        $delta=inventory_major_to_base($data['quantity_major']??'',$baseUnit);
+        if($delta<1)throw new RuntimeException('مقدار موردنیاز را وارد کن.');
+        $find=$pdo->prepare("SELECT * FROM inventory_supply_needs WHERE inventory_item_id IS NULL AND department=? AND status='open' AND item_name_snapshot=? ORDER BY id DESC LIMIT 1 FOR UPDATE");
+        $find->execute([$department,$name]);$existing=$find->fetch();
+        if($existing){
+            if((string)$existing['base_unit']!==$baseUnit)throw new RuntimeException('این مورد یک نیاز باز با واحد دیگری دارد.');
+            $newRequested=(int)$existing['requested_quantity_base']+$delta;
+            $pdo->prepare("UPDATE inventory_supply_needs SET requested_quantity_base=?,note=COALESCE(?,note),updated_by_user_id=?,last_outcome=NULL WHERE id=?")
+                ->execute([$newRequested,$note!==''?$note:null,$actorUserId,(int)$existing['id']]);
+            audit_log_write_strict($pdo,'supply.need_deferred_added','inventory_supply_need',(int)$existing['id'],['added_quantity_base'=>$delta,'requested_quantity_base'=>$newRequested],$actorUserId);
+            return (int)$existing['id'];
+        }
+        $guard=supply_need_guard($department,0,$name,$baseUnit);
+        $stmt=$pdo->prepare("INSERT INTO inventory_supply_needs(inventory_item_id,item_name_snapshot,base_unit,requested_quantity_base,fulfilled_quantity_base,preparing_quantity_base,department,source,status,note,created_by_user_id,updated_by_user_id,open_item_guard) VALUES(NULL,?,?,?,0,0,?,'staff','open',?,?,?,?)");
+        $stmt->execute([$name,$baseUnit,$delta,$department,$note?:null,$actorUserId,$actorUserId,$guard]);
+    }
+    $id=(int)$pdo->lastInsertId();
+    audit_log_write_strict($pdo,'supply.need_deferred_created','inventory_supply_need',$id,['added_quantity_base'=>$delta,'department'=>$department],$actorUserId);
+    return $id;
+}
+
 function supply_merge_open_need_into_target_locked(PDO $pdo, array $need, int $targetItemId, int $actorUserId): array
 {
     $needId=(int)$need['id'];
