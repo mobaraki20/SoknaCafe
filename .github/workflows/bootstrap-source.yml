@@ -1,0 +1,46 @@
+name: Import SOKNA dev.27 source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Sokna-1.36.4-dev.27-PHASE1.zip'
+
+permissions:
+  contents: write
+
+jobs:
+  import-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f Sokna-1.36.4-dev.27-PHASE1.zip
+          echo "d03b1bc9900cfaf25b3f5cece780764957fb57e2a4e8a465bd5c58c793630ea7  Sokna-1.36.4-dev.27-PHASE1.zip" | sha256sum -c -
+      - name: Extract canonical source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/sokna-import
+          mkdir -p /tmp/sokna-import
+          unzip -q Sokna-1.36.4-dev.27-PHASE1.zip -d /tmp/sokna-import
+          SOURCE=/tmp/sokna-import/Sokna-1.36.4-dev.27
+          test -f "$SOURCE/VERSION.txt"
+          test "$(tr -d '[:space:]' < "$SOURCE/VERSION.txt")" = "1.36.4-dev.27"
+          rsync -a --exclude='.git' "$SOURCE/" ./
+          rm -f Sokna-1.36.4-dev.27-PHASE1.zip
+          rm -rf .bootstrap
+      - name: Commit imported source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "SOKNA CI"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git diff --cached --stat
+          git commit -m "import: SOKNA 1.36.4-dev.27 Phase 1 source"
+          git push origin HEAD:main
