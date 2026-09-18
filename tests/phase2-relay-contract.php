@@ -16,6 +16,9 @@ $r1=sokna_relay_process_claim($pdo,['envelope'=>$env],$registry,$now);$r2=sokna_
 check($r1['state']==='committed' && empty($r1['deduplicated']),'first request commits');
 check($r2['state']==='committed' && !empty($r2['deduplicated']),'duplicate request reuses canonical result');
 check((int)$pdo->query('SELECT COUNT(*) FROM synthetic_commits')->fetchColumn()===1,'duplicate does not create second business commit');
+$rAfterExpiry=sokna_relay_process_claim($pdo,['envelope'=>$env],$registry,$now+120);
+check($rAfterExpiry['state']==='committed' && !empty($rAfterExpiry['deduplicated']),'committed result survives retry after request expiry');
+check((int)$pdo->query('SELECT COUNT(*) FROM synthetic_commits')->fetchColumn()===1,'post-expiry reconciliation does not create second business commit');
 $expired=$env;$expired['request_id']='req-expired';$expired['created_at']=gmdate('c',$now-120);$expired['expires_at']=gmdate('c',$now-1);
 $re=sokna_relay_process_claim($pdo,['envelope'=>$expired],$registry,$now);
 check($re['state']==='expired','expired request is rejected before dispatch');

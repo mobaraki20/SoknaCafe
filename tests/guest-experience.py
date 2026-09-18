@@ -4,7 +4,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 read = lambda p: (ROOT / p).read_text(encoding='utf-8')
-index = read('menu/index.php')
+index = (read('menu/index.php') + '\n' + read('includes/guest_menu_view.php'))
 menu = read('assets/js/menu.js')
 css = read('assets/css/guest-menu.css')
 foundation = read('assets/css/app.css')

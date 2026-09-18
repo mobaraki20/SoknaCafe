@@ -58,6 +58,8 @@ assert 'مدیر به‌طور پیش‌فرض اعلان‌های زنده سا
 # Operational mutations still only enqueue inside their transactions; no provider call is coupled to business success.
 for rel in ['api/create_order.php','api/waiter_call.php','staff/api_quick_order.php','operator/api_status.php','operator/api_bill.php']:
     text=read(rel)
+    if rel=='api/create_order.php': text += '\n' + read('includes/guest_order_service.php')
+    if rel=='api/waiter_call.php': text += '\n' + read('includes/waiter_call_service.php')
     assert ('push_enqueue_event_tx' in text or 'push_enqueue_confirmed_order_tx' in text), rel
     assert 'push_send_subscription' not in text, rel
     assert 'push_process_queue' not in text, rel

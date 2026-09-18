@@ -8,5 +8,5 @@ assert "customer_message('staff_pending_order_title'" in push and "customer_mess
 assert "'default'=>'سفارش جدید · {table}'" in fun and "'default'=>'{order} منتظر تأیید است.'" in fun
 assert 'dashboard-recent-row' in dash and '$isException' in dash
 assert "'سفارش ' . fa_digits((string)order_display_number($order))" in prep
-assert "msg('fulfillment_takeaway','بیرون‌بر')" in menu and 'بیرون‌بر هم دارید؟' in read('menu/index.php')
+assert "msg('fulfillment_takeaway','بیرون‌بر')" in menu and 'بیرون‌بر هم دارید؟' in (read('menu/index.php') + '\n' + read('includes/guest_menu_view.php'))
 print('1.32.20 human order reference and exception-first UI contract PASS')

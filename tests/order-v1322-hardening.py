@@ -4,8 +4,8 @@ ROOT=Path(__file__).resolve().parents[1]
 read=lambda p:(ROOT/p).read_text(encoding='utf-8')
 
 func=read('includes/functions.php')
-guest=read('api/guest_orders.php')
-create=read('api/create_order.php')
+guest=(read('api/guest_orders.php') + '\n' + read('includes/guest_order_manage_service.php'))
+create=(read('api/create_order.php') + '\n' + read('includes/guest_order_service.php'))
 menu=read('assets/js/menu.js')
 bill=read('operator/api_bill.php')
 op=read('assets/js/operator.js')
@@ -17,7 +17,7 @@ inv=read('includes/inventory.php')
 invhome=read('admin/inventory.php')
 waitfeed=read('waiter/api_feed.php')
 waitaction=read('waiter/api_action.php')
-publicstatus=read('api/order_status.php')
+publicstatus=read('api/order_status.php') + '\n' + read('includes/guest_order_status_service.php')
 schema=read('database/schema.sql')
 helptext=read('includes/help_topics.php')
 
@@ -31,8 +31,8 @@ assert "status IN('pending_approval','new')" in create
 assert "if ($action === 'append')" not in guest and "client_refresh_required" not in guest
 assert "expected_signature" in guest and "order_changed" in guest
 assert 'function guest_order_payload_matches_current' in guest and 'این تغییرات قبلاً ذخیره شده‌اند.' in guest
-assert "close_table_session((int)$session['id'], null, 'guest_cancelled')" in guest
-assert "if (!$increase && $old)" in guest
+assert "close_table_session((int)$session['id'],null,'guest_cancelled')" in guest.replace(' ','')
+assert "if(!$increase&&$old)" in guest.replace(' ','')
 assert "order_acceptance_blocked_scope_for_station" in guest
 assert "action: 'update'" in menu and "action: 'append'" not in menu
 assert 'mergeDraftIntoMutableOrder' in menu and 'fullEditableOrderPayload' not in menu
@@ -89,7 +89,7 @@ assert 'Worker انبار' not in invhome and 'صف همگام‌سازی' not i
 assert 'stale_pending' in inv and 'INTERVAL 2 MINUTE' in inv
 
 # Public status must not call an unconfirmed `new` order accepted.
-assert "in_array((string)$order['status'], ['accounted','completed'], true)" in publicstatus
+assert "in_array((string)$order['status'],['accounted','completed'],true)" in publicstatus.replace(' ','')
 
 # Required preparation print intent is part of the order transaction; only secondary delivery/push remains best-effort.
 assert 'function order_side_effect_best_effort_tx' in func

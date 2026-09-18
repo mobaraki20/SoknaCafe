@@ -21,7 +21,7 @@ need(pcss.count('.invoice-receipt-meta{border-top:1px')==0,'invoice receipt non-
 acc=t('admin/accommodation.php')
 need('data-auto-submit' in acc and '>اعمال<' not in acc,'accommodation auto-apply/no big Apply')
 need("if($display['needs_action']||(string)$row['status']!=='posted')" in acc and "'posted'=>['label'=>'منتقل‌شده','tone'=>'success','needs_action'=>false]" in t('includes/accommodation.php'),'accommodation hides normal posted success badge while preserving exception state')
-push=t('includes/push.php'); call=t('api/waiter_call.php'); action=t('api/push_action.php')
+push=t('includes/push.php'); call=(t('api/waiter_call.php') + '\n' + t('includes/waiter_call_service.php')); action=t('api/push_action.php')
 need('attention_filter=calls' in call and 'operator/index.php' in call,'waiter call target')
 need('push.admin_live_operations' in push and 'user_preparation_areas' in push,'notification responsibility routing')
 need('accept_call' in action and 'FOR UPDATE' in action,'notification one-tap atomic claim')

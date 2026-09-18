@@ -119,7 +119,12 @@ jobs:
           }
           node --check service-worker.js
           if ($LASTEXITCODE -ne 0) { throw 'service-worker.js syntax failed' }
-          Write-Host "JS syntax PASS: $($files.Count + 1) files"
+          $publicFiles = Get-ChildItem public_edge -Recurse -File -Filter *.js
+          foreach ($file in $publicFiles) {
+            node --check $file.FullName
+            if ($LASTEXITCODE -ne 0) { throw "Public JS syntax failed: $($file.FullName)" }
+          }
+          Write-Host "JS syntax PASS: $($files.Count + $publicFiles.Count + 1) files"
 
       - name: Core unit and Phase 1 contracts
         shell: pwsh
@@ -202,9 +207,12 @@ jobs:
       - name: Install MariaDB client
         shell: bash
         run: sudo apt-get update -qq && sudo apt-get install -y -qq mariadb-client
-      - name: Load Public schema
+      - name: Load Public and Local schemas
         shell: bash
-        run: mariadb -h127.0.0.1 -P3306 -uroot -proot sokna_public < public_edge/database/schema.sql
+        run: |
+          mariadb -h127.0.0.1 -P3306 -uroot -proot sokna_public < public_edge/database/schema.sql
+          mariadb -h127.0.0.1 -P3306 -uroot -proot -e "CREATE DATABASE IF NOT EXISTS sokna_local CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+          mariadb -h127.0.0.1 -P3306 -uroot -proot sokna_local < database/schema.sql
       - name: Configure Public test instance
         shell: bash
         run: |
@@ -222,6 +230,26 @@ jobs:
               ],
               'installation_secrets'=>[
                   'test-installation'=>'test-relay-secret-01234567890123456789',
+              ],
+          ];
+          PHP
+          cat > config.php <<'PHP'
+          <?php
+          return [
+              'db'=>[
+                  'host'=>'127.0.0.1','port'=>'3306','name'=>'sokna_local','user'=>'root','pass'=>'root','charset'=>'utf8mb4',
+              ],
+              'relay'=>[
+                  'enabled'=>false,'public_base_url'=>'','installation_id'=>'','shared_secret'=>'','timeout_seconds'=>8,
+              ],
+              'app'=>[
+                  'url'=>'http://127.0.0.1:18081',
+                  'key'=>'ci-local-app-key-012345678901234567890123456789',
+                  'timezone'=>'Asia/Tehran',
+                  'debug'=>true,
+                  'trust_proxy_headers'=>false,
+                  'data_dir'=>'',
+                  'local_hostname'=>'sokna.local',
               ],
           ];
           PHP
@@ -244,7 +272,10 @@ jobs:
           SOKNA_PUBLIC_TEST_DSN: mysql:host=127.0.0.1;port=3306;dbname=sokna_public;charset=utf8mb4
           SOKNA_PUBLIC_TEST_DB_USER: root
           SOKNA_PUBLIC_TEST_DB_PASS: root
-        run: php tests/phase2-public-http.php
+        run: |
+          php tests/phase2-public-http.php
+          php tests/phase3-guest-publish-http.php
+          php tests/phase3-guest-realtime-http.php
       - name: Public edge log on failure
         if: failure()
         shell: bash

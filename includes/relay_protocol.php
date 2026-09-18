@@ -5,7 +5,12 @@ const SOKNA_RELAY_PROTOCOL_VERSION = 'sokna-relay-v1';
 const SOKNA_RELAY_TERMINAL_STATES = ['committed','rejected','expired','cancelled','unknown_review'];
 const SOKNA_RELAY_REALTIME_KINDS = [
     'guest_order.submit',
+    'guest_order.list',
+    'guest_order.status',
+    'guest_table.context',
     'waiter_call.create',
+    'waiter_call.status',
+    'waiter_call.cancel',
     'order.edit',
     'order.cancel',
     'settlement.commit',

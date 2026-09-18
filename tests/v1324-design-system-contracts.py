@@ -19,7 +19,7 @@ schema=read('database/schema.sql')
 ops=read('admin/operations_report.php')
 analytics=read('admin/analytics.php')
 funcs=read('includes/functions.php')
-index=read('menu/index.php')
+index=read('menu/index.php') + '\n' + read('includes/guest_menu_view.php')
 
 # Context menus: shared panel owner; desktop stays anchored while mobile uses the standard task sheet.
 assert '.row-action-popover' not in app, 'legacy app.css still owns panel contextual menu'

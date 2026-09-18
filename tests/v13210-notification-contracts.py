@@ -5,7 +5,7 @@ R=Path(__file__).resolve().parents[1]
 def t(p): return (R/p).read_text()
 def need(v,m):
     if not v: print('1.32.14 notification FAILED:',m); sys.exit(1)
-p=t('includes/push.php'); sw=t('service-worker.js'); endpoint=t('api/push_action.php'); call=t('api/waiter_call.php'); shell=t('includes/panel_layout.php')
+p=t('includes/push.php'); sw=t('service-worker.js'); endpoint=t('api/push_action.php'); call=(t('api/waiter_call.php') + '\n' + t('includes/waiter_call_service.php')); shell=t('includes/panel_layout.php')
 need("WHEN 'waiter_call' THEN 30" in p and "WHEN 'pending_order' THEN 20" in p and "WHEN 'order' THEN 10" in p,'queue priority matrix')
 need("$eventType === 'waiter_call' || $eventType === 'pending_order' ? 'high' : 'normal'" in p,'urgency matrix')
 need("if((string)$row['role']==='admin' && !$adminLive) return false" in p,'admin default silence')

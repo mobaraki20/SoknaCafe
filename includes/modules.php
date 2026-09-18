@@ -54,10 +54,10 @@ function sokna_module_registry(): array
             'reads_from' => [],
             'owner' => 'includes/menu_catalog.php + admin/items.php + assets/js/menu.js',
             'owns_tables' => ['menus','menu_categories','menu_items','categories','items','tags','item_tags'],
-            'entrypoints' => ['menu/index.php','about.php','admin/menu_form.php','admin/categories.php','admin/category_form.php','admin/items.php','admin/item_form.php','admin/tags.php','admin/tag_form.php','admin/menu_transfer.php'],
+            'entrypoints' => ['menu/index.php','about.php','admin/menu_form.php','admin/categories.php','admin/category_form.php','admin/items.php','admin/item_form.php','admin/tags.php','admin/tag_form.php','admin/menu_transfer.php','admin/guest_publish.php'],
             'capabilities' => [],
-            'background_jobs' => [],
-            'public_contracts' => ['menu_catalog_snapshot()','menu_catalog_visible_menus()','menu item/category/tag read models'],
+            'background_jobs' => ['tools/guest-availability-worker.php'],
+            'public_contracts' => ['menu_catalog_snapshot()','menu_catalog_visible_menus()','guest_publish_* immutable snapshot contracts','menu item/category/tag read models'],
         ],
         'orders' => [
             'label' => 'سفارش و سرویس',

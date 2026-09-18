@@ -1168,7 +1168,7 @@ function maintenance_health_check(?PDO $pdo = null): array
     $pdo ??= db();
     $checks = [];
     $required = [
-        'settings', 'schema_migrations', 'users', 'user_capabilities',
+        'settings', 'schema_migrations', 'users', 'user_capabilities', 'relay_processed_requests',
         'menus', 'menu_categories', 'menu_items', 'categories', 'items', 'cafe_tables', 'table_sessions',
         'table_session_clients', 'orders', 'order_items', 'order_item_adjustments', 'preparation_adjustments', 'push_subscriptions', 'push_delivery_log',
         'order_preparation_claims', 'order_status_history', 'waiter_calls', 'events', 'tags',
@@ -1188,9 +1188,12 @@ function maintenance_health_check(?PDO $pdo = null): array
         && str_contains($authSource, 'function is_logged_in')
         && str_contains($authSource, 'function login(');
     $orderSource = @file_get_contents(maintenance_root() . '/api/create_order.php');
+    $orderServiceSource = @file_get_contents(maintenance_root() . '/includes/guest_order_service.php');
     $checks['order_contract'] = is_string($orderSource)
-        && str_contains($orderSource, 'normalize_order_request_payload')
-        && str_contains($orderSource, 'order_status_history');
+        && is_string($orderServiceSource)
+        && str_contains($orderSource, 'guest_order_commit(db(),$data)')
+        && str_contains($orderServiceSource, 'normalize_order_request_payload')
+        && str_contains($orderServiceSource, 'order_status_history');
     $uploadDir = maintenance_root() . '/uploads';
     $checks['uploads_writable'] = is_dir($uploadDir) ? is_writable($uploadDir) : is_writable(dirname($uploadDir));
     $checks['storage_writable'] = is_dir(maintenance_storage_dir()) && is_writable(maintenance_storage_dir());

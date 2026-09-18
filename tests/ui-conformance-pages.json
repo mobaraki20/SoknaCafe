@@ -367,5 +367,11 @@
     "tests": [
       "updater-current-browser.py"
     ]
+  },
+  "admin/guest_publish.php": {
+    "family": "menu",
+    "tests": [
+      "v1360-ui-conformance-browser.py"
+    ]
   }
 }

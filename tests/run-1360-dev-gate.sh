@@ -19,6 +19,10 @@ while IFS= read -r -d '' file; do
 done < <(find assets -type f -name '*.js' -print0)
 node --check service-worker.js >/dev/null
 js_count=$((js_count+1))
+while IFS= read -r -d '' file; do
+  node --check "$file" >/dev/null
+  js_count=$((js_count+1))
+done < <(find public_edge -type f -name '*.js' -print0)
 echo "JS syntax PASS: ${js_count} files"
 
 echo '== Unit =='
@@ -26,6 +30,8 @@ php tests/unit.php
 php tests/phase2-relay-contract.php
 php tests/phase2-projection-contract.php
 php tests/phase2-public-boundary-contract.php
+php tests/phase3-guest-publish-contract.php
+php tests/phase3-guest-runtime-contract.php
 
 echo '== Supply / modular contracts =='
 python tests/v1360-supply-module-contract.py

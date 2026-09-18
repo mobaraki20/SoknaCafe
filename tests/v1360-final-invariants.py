@@ -10,6 +10,7 @@ auth = read('includes/auth.php')
 functions = read('includes/functions.php')
 message_owner = read('includes/function_domains/messages.php')
 create_order = read('api/create_order.php')
+guest_order_service = read('includes/guest_order_service.php')
 menu = read('assets/js/menu.js')
 schema = read('database/schema.sql')
 table_session = read('operator/api_table_session.php')
@@ -17,8 +18,9 @@ maintenance = read('includes/maintenance.php')
 sw = read('service-worker.js')
 assert 'function is_logged_in()' in auth and 'function login(string $username, string $password)' in auth
 assert 'function fa_datetime(' not in functions
+assert 'guest_order_commit(db(),$data)' in create_order
 for needle in ['normalize_order_request_payload','WHERE client_token=? LIMIT 1 FOR UPDATE','order_status_history',"'items_unavailable'", "'prices_changed'", 'FOR UPDATE']:
-    assert needle in create_order
+    assert needle in guest_order_service
 assert 'data.client_token || submittedTarget?.client_token || pendingToken' in menu
 assert 'live_table_guard INT UNSIGNED NULL' in schema and 'uq_table_sessions_one_live_table' in schema
 assert "status IN('active','pending')" in table_session and 'sort($lockIds, SORT_NUMERIC)' in table_session
@@ -36,7 +38,9 @@ for required in ['assets/css/app.css','assets/css/guest-menu.css','assets/css/pa
     assert (ROOT / required).is_file()
 retired_css = list((ROOT / 'assets/css').glob('v*.css')) + [ROOT/'assets/css/guest-order-refinement.css']
 assert not [p for p in retired_css if p.exists()], 'historical CSS layers remain: ' + ', '.join(p.name for p in retired_css if p.exists())
-index = read('menu/index.php')
+index_route = read('menu/index.php')
+index_view = read('includes/guest_menu_view.php')
+index = index_route + '\n' + index_view
 panel_layout = read('includes/panel_layout.php')
 assert 'assets/css/guest-menu.css' in index and not re.search(r'assets/css/v\d+\.css', index)
 assert 'assets/css/panel.css' in panel_layout and not re.search(r'assets/css/v\d+\.css', panel_layout)
@@ -71,7 +75,7 @@ assert 'cart-currency-note' in menu and 'guest-orders-currency' in menu
 assert "customer_message('search_placeholder')" in index and "'default'=>'چی دوست داری بخوری؟'" in message_owner
 assert 'input::-webkit-search-cancel-button' in guest_css
 assert 'operational_note' not in index and 'item-operational-note' not in guest_css and 'item-operational-note' not in menu
-assert "guest_order_status_is_mutable((string)$order['status'])" in read('api/guest_orders.php')
+assert "guest_order_status_is_mutable((string)$order['status'])" in read('includes/guest_order_manage_service.php')
 assert "['pending_approval', 'new']" in read('includes/functions.php')
 assert 'Canonical Sokna 1.29.1 guest interface' in guest_css
 
