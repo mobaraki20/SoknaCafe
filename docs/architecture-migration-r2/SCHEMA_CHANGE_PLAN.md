@@ -56,22 +56,32 @@ Local:
 - Business schema جدیدی برای Phase 4 ندارد؛ `tools/remote-read-worker.php` از ownerهای Local فقط read می‌کند و snapshot projection می‌سازد.
 - sync توسط Runtime به‌صورت outbound انجام می‌شود؛ inbound اینترنتی به Local اضافه نمی‌شود.
 
-## Phase 5 — Deferred-safe
+## Phase 5 — Deferred-safe + Financial Reconciliation — IMPLEMENTED
+
 Public:
-- `deferred_work` با unique request id، kind، occurred_at، expected_version/state، payload، state (`pending_sync`,`committed`,`needs_review`,`rejected`), result metadata.
+- `deferred_work`: unique `(installation_id,request_id)`, request hash, kind, actor projection, envelope, state، occurred_at، lease، attempt، result/error.
+- migration: `public_edge/database/migrations/005_phase5_deferred_work.sql`.
+- Realtime schema unchanged; no shared queue/table/state.
 
 Local:
-- durable deferred receipt/reconciliation ledger
-- conflict/review records
-- late-correction/review linkage به financial period
-- close override audit table (actor/reason/connectivity snapshot/timestamp)
-- period reconciliation summary/checkpoint fields اگر برای gate لازم شود.
+- `deferred_work_receipts`: durable idempotency/result ledger; terminal result survives lost ACK.
+- `deferred_review_items`: one review candidate per receipt; conflict/late-correction resolution.
+- `financial_period_close_overrides`: actor/reason/Public status snapshot/timestamp audit.
+- `expense_categories` + `expenses`: simple general cafe expense owner.
+- current Local migration input: `docs/architecture-migration-r2/PHASE5_LOCAL_MIGRATION.sql`.
 
-Business adapters:
-- Purchase/Receipt/Waste از canonical ownerهای فعلی استفاده می‌کنند.
-- Inventory Count فقط draft remotely editable؛ finalize Local.
-- Pending customer payment و reversal طبق owner finance Local.
-- Expenses در همین phase می‌تواند schema اولیه بگیرد اما owner نهایی در Phase 6 ثبت می‌شود.
+Canonical owners:
+- Supply: additive need + existing preparing/return/physical receipt.
+- Inventory: waste movement + extracted `inventory_count_update_line_locked()`; finalize remains Local-only.
+- Subscribers: pending payment commits through `subscriber_insert_ledger_locked()`; reversal Local-only.
+- Expenses: `expense_create_locked()`; inventory purchase is not duplicated as general expense.
+- Finance: financial close gate + audited override.
+
+Period behavior:
+- financial-sensitive Deferred kinds are mapped by `occurred_at`.
+- closed-period event → Local needs-review receipt; no implicit reopen/back-post.
+- resolved late event preserves original occurred_at/source request/period relationship and leaves historical close summary unchanged.
+- normal close requires known Public status and zero pending/review blockers unless explicit audited override.
 
 ## Phase 6 — Domain additions/refactors
 ### Table Draft
