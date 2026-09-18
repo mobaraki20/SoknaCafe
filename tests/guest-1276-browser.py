@@ -5,6 +5,8 @@ import os
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
+SCREENSHOT_DIR = Path(os.environ.get('SOKNA_SCREENSHOT_DIR', '/tmp'))
+SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
 CSS = '\n'.join((ROOT / p).read_text(encoding='utf-8') for p in (
     'assets/css/tokens.css','assets/css/app.css','assets/css/responsive.css','assets/css/guest-menu.css'
 ))
@@ -248,7 +250,7 @@ with sync_playwright() as p:
             page.locator('#guestConfirmCancel').click();page.wait_for_timeout(30)
         # Waiter modal has no duplicate raw close button in the final DOM.
         assert page.locator('#waiterModalClose').count()==0
-        page.screenshot(path=f'/mnt/data/sokna-1276-ui-{width}.png',full_page=False)
+        page.screenshot(path=str(SCREENSHOT_DIR / f'sokna-1276-ui-{width}.png'),full_page=False)
         page.close()
     browser.close()
 print('Guest review/takeaway acceptance PASS at ' + ', '.join(str(width) for width,_ in SIZES) + ' widths.')
