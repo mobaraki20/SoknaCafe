@@ -11,6 +11,7 @@ function guest_publish_public_item(array $item, array $tags = []): array
         'id'=>(int)$item['id'],
         'item_code'=>(string)($item['item_code'] ?? ''),
         'category_id'=>(int)$item['category_id'],
+        'category_name'=>(string)($item['category_name'] ?? ''),
         'name'=>(string)$item['name'],
         'description'=>(string)($item['description'] ?? ''),
         'price'=>(int)$item['price'],
@@ -18,6 +19,7 @@ function guest_publish_public_item(array $item, array $tags = []): array
         'available'=>(int)$item['available'] === 1,
         'featured'=>(int)($item['featured'] ?? 0) === 1,
         'takeaway_allowed'=>(int)($item['takeaway_allowed'] ?? 1) === 1,
+        'preparation_station'=>(string)($item['preparation_station'] ?? 'cold_bar'),
         'suggested_item_id'=>$item['suggested_item_id'] !== null ? (int)$item['suggested_item_id'] : null,
         'sort_order'=>(int)($item['item_sort'] ?? 0),
         'tags'=>array_map(static fn(array $tag): array => [
@@ -46,9 +48,22 @@ function guest_publish_media_candidate(string $path): ?array
     if (!isset($allowed[$mime])) return null;
     $hash = hash_file('sha256', $absolute);
     if (!is_string($hash) || strlen($hash) !== 64) return null;
+    $width=1;$height=1;
+    $dimensions=@getimagesize($absolute);
+    if(is_array($dimensions)){
+        $width=max(1,(int)($dimensions[0]??1));
+        $height=max(1,(int)($dimensions[1]??1));
+    }elseif($mime==='image/svg+xml'){
+        $svg=(string)@file_get_contents($absolute);
+        if(preg_match('/<svg[^>]*\bwidth=["\']?([0-9.]+)/i',$svg,$m))$width=max(1,(int)round((float)$m[1]));
+        if(preg_match('/<svg[^>]*\bheight=["\']?([0-9.]+)/i',$svg,$m))$height=max(1,(int)round((float)$m[1]));
+        if(($width===1||$height===1)&&preg_match('/<svg[^>]*\bviewBox=["\'][^"\']*?([0-9.]+)\s+([0-9.]+)["\']/i',$svg,$m)){
+            $width=max($width,(int)round((float)$m[1]));$height=max($height,(int)round((float)$m[2]));
+        }
+    }
     return [
         'source_path'=>$relative,'sha256'=>$hash,'mime'=>$mime,'extension'=>$allowed[$mime],
-        'size'=>(int)$size,'absolute_path'=>$absolute,
+        'size'=>(int)$size,'width'=>$width,'height'=>$height,'absolute_path'=>$absolute,
     ];
 }
 
@@ -60,6 +75,7 @@ function guest_publish_collect_media(array $paths): array
         if (!$media) continue;
         $manifest[$media['source_path']] = [
             'sha256'=>$media['sha256'],'mime'=>$media['mime'],'extension'=>$media['extension'],'size'=>$media['size'],
+            'width'=>$media['width'],'height'=>$media['height'],
         ];
     }
     ksort($manifest, SORT_STRING);
@@ -94,10 +110,10 @@ function guest_publish_build_snapshot(PDO $pdo): array
         ];
     }
 
-    $tables = $pdo->query("SELECT name,code,access_token,table_number,sort_order,zone_label
+    $tables = $pdo->query("SELECT id,name,code,access_token,table_number,sort_order,zone_label
         FROM cafe_tables WHERE active=1 ORDER BY table_number,sort_order,id")->fetchAll(PDO::FETCH_ASSOC);
     $tables = array_map(static fn(array $row): array => [
-        'name'=>(string)$row['name'],'code'=>(string)$row['code'],'token'=>(string)$row['access_token'],
+        'id'=>(int)$row['id'],'name'=>(string)$row['name'],'code'=>(string)$row['code'],'token'=>(string)$row['access_token'],
         'public_ref'=>substr(hash('sha256',(string)$row['access_token']),0,32),
         'table_number'=>(int)$row['table_number'],'sort_order'=>(int)($row['sort_order'] ?? 0),
         'zone_label'=>(string)($row['zone_label'] ?? ''),
@@ -109,8 +125,9 @@ function guest_publish_build_snapshot(PDO $pdo): array
     $marketing = ['campaign'=>null,'events'=>[]];
     if (function_exists('sokna_module_enabled') && sokna_module_enabled('marketing')) {
         $marketing['campaign'] = function_exists('active_campaign') ? active_campaign() : null;
+        if(is_array($marketing['campaign'])&&!empty($marketing['campaign']['image_path']))$mediaPaths[]=(string)$marketing['campaign']['image_path'];
         if (setting_bool('events_enabled', true)) {
-            $rows = $pdo->query("SELECT id,title,short_description,description,image_path,starts_at,ends_at,venue,capacity,registration_type,registration_value,featured,sort_order
+            $rows = $pdo->query("SELECT id,title,short_description,description,image_path,starts_at,ends_at,venue,capacity,registration_type,registration_value,fee_amount,admission_text,featured,sort_order
                 FROM events WHERE active=1 ORDER BY featured DESC,starts_at,sort_order,id LIMIT 100")->fetchAll(PDO::FETCH_ASSOC);
             foreach ($rows as $row) {
                 if (function_exists('event_lifecycle_status') && !in_array(event_lifecycle_status($row), ['upcoming','live'], true)) continue;
@@ -131,6 +148,14 @@ function guest_publish_build_snapshot(PDO $pdo): array
         'seo_description'=>setting('seo_description','منوی کافه و رویدادهای سکنا'),
         'social_footer_enabled'=>setting_bool('social_footer_enabled',true),
         'social_links'=>setting_bool('social_footer_enabled',true) ? social_links() : [],
+        'accommodation_enabled'=>setting_bool('accommodation_enabled',true),
+        'accommodation_site_url'=>setting('accommodation_site_url',''),
+        'accommodation_card_title'=>setting('accommodation_card_title','خانه سکنا رو هم می‌شناسی؟'),
+        'accommodation_card_text'=>setting('accommodation_card_text','اقامت، گشت‌وگذار و تجربه غرب هرمزگان'),
+        'instagram_cafe_url'=>setting('instagram_cafe_url',''),
+        'post_order_instagram_enabled'=>setting_bool('post_order_instagram_enabled',true),
+        'public_about_enabled'=>setting_bool('public_about_enabled',true),
+        'analytics_enabled'=>false,
     ];
 
     return [
@@ -144,6 +169,8 @@ function guest_publish_build_snapshot(PDO $pdo): array
             'public_waiter_call_enabled'=>setting_bool('public_waiter_call_enabled',false),
             'events_enabled'=>setting_bool('events_enabled',true),
             'campaigns_enabled'=>setting_bool('campaigns_enabled',true),
+            'marketing_module'=>function_exists('sokna_module_enabled') ? sokna_module_enabled('marketing') : false,
+            'reporting_module'=>function_exists('sokna_module_enabled') ? sokna_module_enabled('reporting') : false,
         ],
         '_media_paths'=>$mediaPaths,
     ];
@@ -212,7 +239,15 @@ function guest_availability_payload(PDO $pdo): array
     $payload = [
         'generated_at'=>gmdate('c'),'order_acceptance'=>$acceptance,
         'waiter_enabled_table'=>setting_bool('waiter_call_enabled',true),
-        'waiter_enabled_public'=>setting_bool('public_waiter_call_enabled',false),'items'=>$items,
+        'waiter_enabled_public'=>setting_bool('public_waiter_call_enabled',false),
+        'station_states'=>station_busy_states(),
+        'station_state_hash'=>station_state_hash(),
+        'order_acceptance_messages'=>[
+            'cafe'=>order_acceptance_message('cafe'),
+            'kitchen'=>order_acceptance_message('kitchen'),
+            'bar'=>order_acceptance_message('bar'),
+        ],
+        'items'=>$items,
     ];
     $payload['version']=hash('sha256', sokna_relay_canonical_json($payload));
     return $payload;
