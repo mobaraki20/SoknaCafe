@@ -89,7 +89,7 @@ assert 'Worker انبار' not in invhome and 'صف همگام‌سازی' not i
 assert 'stale_pending' in inv and 'INTERVAL 2 MINUTE' in inv
 
 # Public status must not call an unconfirmed `new` order accepted.
-assert "in_array((string)$order['status'], ['accounted','completed'], true)" in publicstatus
+assert "in_array((string)$order['status'],['accounted','completed'],true)" in publicstatus.replace(' ','')
 
 # Required preparation print intent is part of the order transaction; only secondary delivery/push remains best-effort.
 assert 'function order_side_effect_best_effort_tx' in func
