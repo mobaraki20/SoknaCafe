@@ -133,6 +133,25 @@ function public_capability_for_kind(string $kind): string
     };
 }
 
+function public_deferred_capability_for_kind(string $kind): string
+{
+    return match($kind){
+        'supply.need.create'=>'supply.need.defer',
+        'supply.status.prepare','supply.status.return','supply.receipt'=>'supply.manage.defer',
+        'inventory.waste'=>'inventory.waste.defer',
+        'inventory.count_draft'=>'inventory.count_draft.defer',
+        'subscriber.payment'=>'subscriber.payment.defer',
+        'expense.create'=>'expense.create.defer',
+        default=>'deferred.denied',
+    };
+}
+
+function public_deferred_actor_can_access(array $session,string $actorProjectionId): bool
+{
+    return in_array('*',$session['capabilities']??[],true) || hash_equals((string)$session['projection_id'],$actorProjectionId);
+}
+
+
 
 function public_guest_bundle(string $installationId): array
 {
