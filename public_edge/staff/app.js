@@ -151,7 +151,7 @@ async function load(){
 }
 $('#loginBtn').addEventListener('click',async()=>{
   err.textContent='';try{
-    const data=await api('/api/v1/auth/login.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({installation_id:String(cfg.installationId||''),username:$('#username').value,password:$('#password').value)});
+    const data=await api('/api/v1/auth/login.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({installation_id:String(cfg.installationId||''),username:$('#username').value,password:$('#password').value})});
     token=data.token;sessionStorage.setItem(tokenKey,token);await load();
   }catch(_){err.textContent='نام کاربری یا رمز عبور معتبر نیست.'}
 });
