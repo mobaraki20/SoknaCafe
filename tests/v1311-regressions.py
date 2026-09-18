@@ -10,7 +10,7 @@ app=read('assets/css/app.css'); panel=read('assets/css/panel.css')
 assert '.login-card form>label{' in app and '.login-card label{' not in app
 assert '.sokna-login-v19 .login-form>label{' in panel
 # Public menu must not render online-order pause/busy state.
-idx=(read('menu/index.php') + '\n' + read('includes/guest_menu_view.php')); menu=read('assets/js/menu.js')
+idx=((read('menu/index.php') + '\n' + read('includes/guest_menu_view.php')) + '\n' + read('includes/guest_menu_view.php')); menu=read('assets/js/menu.js')
 assert "$blockedScope=$showTableUi?order_acceptance_blocked_scope_for_station" in idx
 assert '$categoryBusy=$showTableUi&&' in idx
 assert "'station_busy'=>$isPublic?0:" in idx and '$categoryBusy=$showTableUi&&' in idx
