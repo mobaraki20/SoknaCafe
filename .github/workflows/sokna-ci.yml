@@ -171,3 +171,81 @@ jobs:
           $hosts = Get-Content "$env:SystemRoot\System32\drivers\etc\hosts" -Raw
           if ($hosts -notmatch '(?m)^127\.0\.0\.1\s+sokna\.local(?:\s|$)') { throw 'sokna.local hosts mapping missing' }
           Write-Host 'Windows TLS/trust/hosts provisioning PASS'
+
+
+  phase2-public-integration:
+    name: Phase 2 Public Relay HTTP + MariaDB
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: sokna_public
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_mysql, openssl
+          coverage: none
+      - name: Install MariaDB client
+        shell: bash
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq mariadb-client
+      - name: Load Public schema
+        shell: bash
+        run: mariadb -h127.0.0.1 -P3306 -uroot -proot sokna_public < public_edge/database/schema.sql
+      - name: Configure Public test instance
+        shell: bash
+        run: |
+          cat > public_edge/config.php <<'PHP'
+          <?php
+          return [
+              'db'=>[
+                  'host'=>'127.0.0.1','port'=>'3306','name'=>'sokna_public','user'=>'root','pass'=>'root','charset'=>'utf8mb4',
+              ],
+              'app'=>[
+                  'debug'=>true,
+                  'session_ttl_seconds'=>3600,
+                  'relay_clock_skew_seconds'=>300,
+                  'emergency_key'=>'test-emergency-secret',
+              ],
+              'installation_secrets'=>[
+                  'test-installation'=>'test-relay-secret-01234567890123456789',
+              ],
+          ];
+          PHP
+      - name: Start Public HTTP edge
+        shell: bash
+        run: |
+          php -S 127.0.0.1:18080 -t public_edge > "${RUNNER_TEMP}/sokna-public.log" 2>&1 &
+          echo $! > "${RUNNER_TEMP}/sokna-public.pid"
+          for i in {1..20}; do
+            if curl -sS -o /dev/null http://127.0.0.1:18080/api/v1/auth/login.php; then break; fi
+            sleep 1
+          done
+      - name: Run Public Relay integration
+        shell: bash
+        env:
+          SOKNA_PUBLIC_TEST_URL: http://127.0.0.1:18080
+          SOKNA_PUBLIC_TEST_INSTALLATION: test-installation
+          SOKNA_PUBLIC_TEST_SECRET: test-relay-secret-01234567890123456789
+          SOKNA_PUBLIC_TEST_EMERGENCY: test-emergency-secret
+          SOKNA_PUBLIC_TEST_DSN: mysql:host=127.0.0.1;port=3306;dbname=sokna_public;charset=utf8mb4
+          SOKNA_PUBLIC_TEST_DB_USER: root
+          SOKNA_PUBLIC_TEST_DB_PASS: root
+        run: php tests/phase2-public-http.php
+      - name: Public edge log on failure
+        if: failure()
+        shell: bash
+        run: cat "${RUNNER_TEMP}/sokna-public.log" || true
