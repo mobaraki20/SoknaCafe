@@ -28,7 +28,7 @@ assert "MySQL 5.7.8 یا MariaDB 10.2" in installer
 assert "live_table_guard,continued_from_session_id" in functions
 assert "status='closed',live_table_guard=NULL" in functions
 assert "active_table_guard,business_date,business_shift_key,business_shift_label,business_cutoff_snapshot) VALUES" in waiter_service
-assert "status='cancelled',active_table_guard=NULL" in waiter
+assert "status='cancelled',active_table_guard=NULL" in waiter_service
 assert "SET table_id=?,active_table_guard=?,session_id=?" in table_api
 assert "favicon_32_path" in installer and "1.30.1-rc2-baseline" in installer
 assert "operator_user" not in installer and "operator_pass" not in installer
