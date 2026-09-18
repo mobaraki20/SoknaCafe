@@ -15,6 +15,7 @@ function sokna_relay_dispatch_registry(): array
     require_once __DIR__ . '/guest_order_service.php';
     require_once __DIR__ . '/guest_order_manage_service.php';
     require_once __DIR__ . '/guest_order_status_service.php';
+    require_once __DIR__ . '/guest_table_context_service.php';
     require_once __DIR__ . '/waiter_call_service.php';
     return [
         'guest_order.submit' => static function(PDO $pdo, array $envelope): array {
@@ -38,6 +39,13 @@ function sokna_relay_dispatch_registry(): array
             try {
                 return guest_order_status_lookup($pdo, is_array($envelope['payload'] ?? null) ? $envelope['payload'] : []);
             } catch (GuestOrderStatusException $e) {
+                throw new SoknaRelayBusinessRejection($e->errorCode,['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()]);
+            }
+        },
+        'guest_table.context' => static function(PDO $pdo, array $envelope): array {
+            try {
+                return guest_table_context($pdo,is_array($envelope['payload'] ?? null)?$envelope['payload']:[]);
+            } catch (GuestTableContextException $e) {
                 throw new SoknaRelayBusinessRejection($e->errorCode,['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()]);
             }
         },
