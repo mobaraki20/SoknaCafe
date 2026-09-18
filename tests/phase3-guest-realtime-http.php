@@ -113,9 +113,9 @@ if($result['status']!==200||($result['json']['state']??'')!=='committed'||empty(
 rt_pass('guest success becomes visible only after terminal Local commit ACK');
 
 // Local business rejection remains terminal and does not mutate.
-$badClient='client-token-bad-123456';$badReq='guest-order:ci-bad-price';
+$badClient='client-token-bad-123456';$badDevice='device-token-bad-123456';$badReq='guest-order:ci-bad-price';
 $badPayload=['session_token'=>'','customer_note'=>'','items'=>[['id'=>$itemId,'quantity'=>1,'unit_price'=>999,'note'=>'','fulfillment_mode'=>'dine_in']]];
-$badEnq=rt_guest_enqueue($badReq,'guest_order.submit',$badClient,$device,$tableToken,$badPayload);if($badEnq['status']!==202)rt_fail('bad-price enqueue',$badEnq);
+$badEnq=rt_guest_enqueue($badReq,'guest_order.submit',$badClient,$badDevice,$tableToken,$badPayload);if($badEnq['status']!==202)rt_fail('bad-price enqueue',$badEnq);
 $badClaim=rt_signed('/api/v1/local/claim.php',['lease_seconds'=>5]);if($badClaim['status']!==200)rt_fail('bad-price claim',$badClaim);
 $badLocal=sokna_relay_process_claim($local,['envelope'=>$badClaim['json']['request']]);
 if(($badLocal['state']??'')!=='rejected'||($badLocal['error_code']??'')!=='prices_changed')rt_fail('bad-price terminal rejection',$badLocal);
