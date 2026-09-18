@@ -10,6 +10,8 @@ $cfg = sokna_relay_config();
 if (empty($cfg['enabled'])) { fwrite(STDOUT, "Relay disabled.\n"); exit(0); }
 
 try {
+    $bind = sokna_relay_http('POST', '/api/v1/local/bind.php', ['display_name'=>(string)(config()['app']['name'] ?? 'SOKNA Cafe')]);
+    if (empty($bind['ok'])) throw new RuntimeException('Relay bind failed: ' . (string)($bind['error'] ?? 'unknown'));
     $health = function_exists('sokna_runtime_health_snapshot') ? sokna_runtime_health_snapshot() : [];
     sokna_relay_http('POST', '/api/v1/local/heartbeat.php', [
         'local_version'=>trim((string)@file_get_contents(dirname(__DIR__) . '/VERSION.txt')),
