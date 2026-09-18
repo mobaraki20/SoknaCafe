@@ -2,7 +2,7 @@
 from pathlib import Path
 R=Path(__file__).resolve().parents[1]
 read=lambda p:(R/p).read_text(encoding='utf-8')
-menu=(read('menu/index.php') + '\n' + read('includes/guest_menu_view.php')); js=read('assets/js/menu.js'); waiter=(read('api/waiter_call.php') + '\n' + read('includes/waiter_call_service.php')); funcs=read('includes/functions.php'); panel=read('includes/panel_layout.php'); about=read('about.php'); index=read('index.php')
+menu=((read('menu/index.php') + '\n' + read('includes/guest_menu_view.php')) + '\n' + read('includes/guest_menu_view.php')); js=read('assets/js/menu.js'); waiter=((read('api/waiter_call.php') + '\n' + read('includes/waiter_call_service.php')) + '\n' + read('includes/waiter_call_service.php')); funcs=read('includes/functions.php'); panel=read('includes/panel_layout.php'); about=read('about.php'); index=read('index.php')
 assert "function waiter_call_allowed(bool $publicContext = false): bool" in funcs
 assert "waiter_call_allowed(true)" in menu and "waiter_call_allowed(false)" in menu
 assert "!$isPublicRequest && !waiter_call_allowed(false)" in waiter
