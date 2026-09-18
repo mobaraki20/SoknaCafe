@@ -63,7 +63,6 @@ function sokna_relay_process_claim(PDO $pdo, array $claim, ?array $registry = nu
     $validation = sokna_relay_validate_realtime_envelope($envelope, $allowSynthetic);
     if (!$validation['ok']) return ['state'=>'rejected','error_code'=>'invalid_envelope','result'=>['fields'=>$validation['errors']]];
     $now ??= time();
-    if ((int)$validation['expires_ts'] <= $now) return ['state'=>'expired','error_code'=>'request_expired','result'=>[]];
 
     $requestId = (string)$envelope['request_id'];
     $requestHash = sokna_relay_request_hash($envelope);
@@ -89,6 +88,14 @@ function sokna_relay_process_claim(PDO $pdo, array $claim, ?array $registry = nu
                 ];
             }
             throw new RuntimeException('Relay request is already processing.');
+        }
+
+        // Expiry prevents a NEW business mutation, but must not hide a business
+        // result already committed before an ACK/network break. Existing dedupe
+        // state is therefore resolved above before this fence is evaluated.
+        if ((int)$validation['expires_ts'] <= $now) {
+            $pdo->commit();
+            return ['state'=>'expired','error_code'=>'request_expired','result'=>[],'deduplicated'=>false];
         }
 
         $insert = $pdo->prepare('INSERT INTO relay_processed_requests(request_id,request_hash,kind,status,created_at,updated_at) VALUES(?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)');
