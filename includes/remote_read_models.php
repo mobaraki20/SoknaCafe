@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__.'/relay_protocol.php';
+require_once __DIR__.'/reporting.php';
 
 const SOKNA_REMOTE_READ_FORMAT='sokna-remote-read-v1';
 
@@ -19,7 +20,7 @@ function sokna_remote_read_wrap(string $key,array $payload):array
 
 function sokna_remote_operations_model(PDO $pdo):array
 {
-    $orders=$pdo->query("SELECT o.id,o.status,o.total_amount,o.created_at,o.updated_at,t.id table_id,t.name table_name,t.zone_label
+    $orders=$pdo->query("SELECT o.id,o.business_order_number,o.business_date,o.status,o.total_amount,o.created_at,o.updated_at,t.id table_id,t.name table_name,t.zone_label
         FROM orders o JOIN cafe_tables t ON t.id=o.table_id
         WHERE t.active=1 AND o.status IN('pending_approval','new','accounted')
         ORDER BY o.created_at ASC,o.id ASC LIMIT 120")->fetchAll(PDO::FETCH_ASSOC);
@@ -134,7 +135,7 @@ function sokna_remote_reports_model(PDO $pdo):array
     if(!sokna_module_enabled('reporting'))return ['enabled'=>false];
     $today=business_current_date();
     $from30=(new DateTimeImmutable($today))->modify('-29 days')->format('Y-m-d');
-    $valid="sr.status='completed' AND NOT EXISTS(SELECT 1 FROM settlement_records rv WHERE rv.reverses_settlement_id=sr.id AND rv.status='reversal')";
+    $valid=report_valid_settlement_sql('sr');
     $sum=function(string $from,string $to)use($pdo,$valid):array{
         $st=$pdo->prepare("SELECT COUNT(*) receipts,COALESCE(SUM(sr.total),0) revenue,COALESCE(SUM(sr.discount),0) discount
             FROM settlement_records sr WHERE $valid AND sr.business_date BETWEEN ? AND ?");
@@ -144,9 +145,10 @@ function sokna_remote_reports_model(PDO $pdo):array
     $todaySummary=$sum($today,$today);$summary30=$sum($from30,$today);
     $orders=$pdo->prepare("SELECT COUNT(*) c,COALESCE(SUM(total_amount),0) total FROM orders WHERE status<>'cancelled' AND business_date BETWEEN ? AND ?");
     $orders->execute([$from30,$today]);$or=$orders->fetch(PDO::FETCH_ASSOC)?:[];
-    $top=$pdo->prepare("SELECT sl.item_name_snapshot name,SUM(sl.quantity) quantity,SUM(sl.net_amount) net
-        FROM settlement_record_lines sl JOIN settlement_records sr ON sr.id=sl.settlement_id
-        WHERE $valid AND sr.business_date BETWEEN ? AND ? GROUP BY sl.item_name_snapshot ORDER BY net DESC LIMIT 10");
+    $lineSource=report_settlement_line_source_sql('sale_line');
+    $top=$pdo->prepare("SELECT sale_line.item_name name,SUM(sale_line.quantity) quantity,SUM(sale_line.net_amount) net
+        FROM settlement_records sr JOIN $lineSource ON sale_line.settlement_id=sr.id
+        WHERE $valid AND sr.business_date BETWEEN ? AND ? GROUP BY sale_line.item_name ORDER BY net DESC LIMIT 10");
     $top->execute([$from30,$today]);$topRows=$top->fetchAll(PDO::FETCH_ASSOC);
     foreach($topRows as &$r){$r['quantity']=(int)$r['quantity'];$r['net']=(int)$r['net'];}unset($r);
     return [
