@@ -30,9 +30,9 @@ p3need(str_contains($menuJs,'pendingToken'),'canonical browser runtime keeps ord
 p3need(str_contains($menuJs,'pendingSignature'),'canonical browser runtime reuses token for identical draft');
 p3need(str_contains($menuJs,'saveState()')&&str_contains($menuJs,'restoreState()'),'canonical browser runtime persists pending order identity');
 p3need(str_contains($createCompat,"public_guest_request_id('guest_order.submit'"),'Public create adapter derives stable Relay request id');
-p3need(str_contains($createCompat,"'client_token'=>$client"),'Public create adapter binds stable request id to client token');
+p3need(str_contains($createCompat,'\'client_token\'=>$client'),'Public create adapter binds stable request id to client token');
 p3need(str_contains($publicCompat,'sokna_relay_is_terminal($state)'),'Public compatibility waits for terminal Relay result');
-p3need(str_contains($publicCompat,"if($state==='committed')"),'Public compatibility reports success only after committed ACK');
+p3need(str_contains($publicCompat,'if($state===\'committed\')'),'Public compatibility reports success only after committed ACK');
 p3need(str_contains($ordersCompat,"'order.edit'")&&str_contains($ordersCompat,"'order.cancel'"),'Public edit/cancel route through Relay');
 p3need(str_contains($waiterCompat,"'waiter_call.create'")&&str_contains($waiterCompat,"'waiter_call.status'")&&str_contains($waiterCompat,"'waiter_call.cancel'"),'Public waiter runtime routes through canonical Local owner');
 
