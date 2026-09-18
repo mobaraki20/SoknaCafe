@@ -12,16 +12,22 @@ function sokna_relay_projection_capabilities(PDO $pdo, array $user): array
         array_push($public,'orders.mutate','orders.table_draft','orders.read','operations.read');
     }
     if(in_array('cashier_accounts',$local,true)){
-        array_push($public,'finance.settle','finance.read','orders.read','operations.read');
+        array_push($public,'finance.settle','finance.read','orders.read','operations.read','subscriber.payment.defer');
     }
     if(in_array('preparation',$local,true)){
         array_push($public,'preparation.mutate','preparation.read');
     }
     if(in_array('shift_supervision',$local,true)){
-        array_push($public,'operations.read','preparation.monitor');
+        array_push($public,'operations.read','preparation.monitor','supply.need.defer');
     }
     if(array_intersect(['inventory_view','inventory_operations','inventory_finalize','inventory_manage'],$local)){
         $public[]='inventory.read';
+    }
+    if(array_intersect(['inventory_operations','inventory_finalize','inventory_manage'],$local)){
+        array_push($public,'supply.need.defer','supply.manage.defer','inventory.waste.defer','inventory.count_draft.defer');
+    }
+    if(in_array('preparation',$local,true)){
+        $public[]='supply.need.defer';
     }
     if(in_array('inventory_cost_view',$local,true)){
         array_push($public,'inventory.read','inventory.cost.read');
