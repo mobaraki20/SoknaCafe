@@ -683,12 +683,70 @@ function maintenance_create_backup(?int $actorUserId = null): array
     });
 }
 
-function maintenance_open_archive(string $path): PharData
+/**
+ * Return a Phar-readable archive path.
+ *
+ * Some supported PHP 8.x Phar builds can open a .tar.gz but return empty entry
+ * contents from the compressed stream. Keep gzip as the portable on-disk
+ * format, but read it through a private request-scoped uncompressed tar.
+ * The temp tar intentionally survives until request shutdown because callers
+ * may retain phar:// entry paths returned by maintenance_validate_archive().
+ */
+function maintenance_archive_read_path(string $path): string
 {
     if (!is_file($path)) throw new RuntimeException('فایل پشتیبان پیدا نشد.');
+    if (!preg_match('/\\.(?:tar\\.)?gz$/i', $path)) return $path;
+
+    static $expanded = [];
+    $stat = @stat($path);
+    $cacheKey = $path . '|' . (string)($stat['size'] ?? -1) . '|' . (string)($stat['mtime'] ?? -1);
+    if (isset($expanded[$cacheKey]) && is_file($expanded[$cacheKey])) return $expanded[$cacheKey];
+
+    maintenance_ensure_storage();
+    $tarPath = maintenance_tmp_dir() . '/archive-read-' . bin2hex(random_bytes(12)) . '.tar';
+    $input = @gzopen($path, 'rb');
+    if (!$input) throw new RuntimeException('فایل پشتیبان فشرده قابل خواندن نیست.');
+    $output = @fopen($tarPath, 'xb');
+    if (!$output) {
+        gzclose($input);
+        throw new RuntimeException('فضای موقت امن برای خواندن پشتیبان در دسترس نیست.');
+    }
+    @chmod($tarPath, 0600);
+
     try {
-        return new PharData($path);
+        while (!gzeof($input)) {
+            $chunk = gzread($input, 1024 * 1024);
+            if ($chunk === false) throw new RuntimeException('خواندن فایل پشتیبان فشرده کامل نشد.');
+            if ($chunk === '' && !gzeof($input)) throw new RuntimeException('خواندن فایل پشتیبان فشرده متوقف شد.');
+            if ($chunk !== '' && fwrite($output, $chunk) !== strlen($chunk)) {
+                throw new RuntimeException('نوشتن نسخه موقت پشتیبان کامل نشد.');
+            }
+        }
     } catch (Throwable $e) {
+        gzclose($input);
+        fclose($output);
+        @unlink($tarPath);
+        throw $e;
+    }
+    gzclose($input);
+    if (!fclose($output) || !is_file($tarPath) || filesize($tarPath) === 0) {
+        @unlink($tarPath);
+        throw new RuntimeException('نسخه موقت پشتیبان کامل نشد.');
+    }
+
+    $expanded[$cacheKey] = $tarPath;
+    register_shutdown_function(static function () use ($tarPath): void {
+        @unlink($tarPath);
+    });
+    return $tarPath;
+}
+
+function maintenance_open_archive(string $path): PharData
+{
+    try {
+        return new PharData(maintenance_archive_read_path($path));
+    } catch (Throwable $e) {
+        if ($e instanceof RuntimeException) throw $e;
         throw new RuntimeException('فایل پشتیبان قابل خواندن نیست.', 0, $e);
     }
 }
