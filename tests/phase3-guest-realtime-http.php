@@ -97,11 +97,15 @@ if((int)$local->query('SELECT COUNT(*) FROM orders')->fetchColumn()!==1)rt_fail(
 rt_pass('Public request commits through canonical Local order service');
 
 // Simulate network loss after Local COMMIT but before Public ACK.
-$expireLease=$public->prepare("UPDATE realtime_requests SET lease_expires_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 SECOND) WHERE installation_id=? AND request_id=?");
+$expireLease=$public->prepare("UPDATE realtime_requests SET lease_expires_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 SECOND),expires_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 SECOND) WHERE installation_id=? AND request_id=?");
 $expireLease->execute([$installation,$requestId]);
+$ambiguous=rt_guest_result($requestId,$client);
+if($ambiguous['status']!==200||($ambiguous['json']['state']??'')!=='claimed'||!empty($ambiguous['json']['terminal']))rt_fail('claimed ambiguity must not be falsely expired',$ambiguous);
+rt_pass('claimed request remains ambiguous after Public TTL until Local reconciliation');
 $claim2=rt_signed('/api/v1/local/claim.php',['lease_seconds'=>5]);
 if($claim2['status']!==200||($claim2['json']['request']['request_id']??'')!==$requestId)rt_fail('reclaim after lost ACK',$claim2);
-$localResult2=sokna_relay_process_claim($local,['envelope'=>$claim2['json']['request']]);
+$reconcileNow=(strtotime((string)$claim2['json']['request']['expires_at'])?:time())+5;
+$localResult2=sokna_relay_process_claim($local,['envelope'=>$claim2['json']['request']],null,$reconcileNow);
 if(($localResult2['state']??'')!=='committed'||empty($localResult2['deduplicated']))rt_fail('Local dedupe after reclaim',$localResult2);
 if((int)$local->query('SELECT COUNT(*) FROM orders')->fetchColumn()!==1)rt_fail('ambiguous retry created duplicate order');
 rt_pass('lost ACK re-claim returns canonical Local result without second Order');
