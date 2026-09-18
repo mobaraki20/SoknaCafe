@@ -1,0 +1,110 @@
+/* Sokna public information page — current canonical styles. */
+.public-page{
+  min-height:100%;
+  margin:0;
+  background:var(--app-bg,#f7f3ec);
+  color:var(--ink,#2c2723);
+  font-family:var(--font-ui,"Vazirmatn",Tahoma,Arial,sans-serif);
+}
+.public-shell{
+  width:min(920px,calc(100% - 28px));
+  margin:0 auto;
+  padding:22px 0 calc(34px + env(safe-area-inset-bottom));
+}
+.public-shell .alert{margin-bottom:16px}
+.public-hero{
+  min-height:250px;
+  padding:clamp(22px,5vw,46px);
+  border:1px solid color-mix(in srgb,var(--primary) 14%,transparent);
+  border-radius:32px;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--primary) 92%,#102018),var(--primary));
+  color:var(--on-primary,#fff);
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  align-items:start;
+  gap:clamp(18px,4vw,34px);
+  box-shadow:0 22px 56px color-mix(in srgb,var(--primary) 22%,transparent);
+}
+.public-brand{
+  min-width:108px;
+  color:inherit;
+  text-decoration:none;
+  display:grid;
+  justify-items:center;
+  gap:9px;
+}
+.public-brand img,.public-brand>span{
+  width:76px;
+  height:76px;
+  border-radius:24px;
+  object-fit:cover;
+  display:grid;
+  place-items:center;
+  background:color-mix(in srgb,var(--on-primary) 14%,transparent);
+}
+.public-brand .ui-icon{width:38px;height:38px}
+.public-brand strong{font-size:1.05rem}
+.public-hero>div>span,.public-accommodation>div>span,.public-social>span{
+  display:block;
+  margin-bottom:6px;
+  color:color-mix(in srgb,var(--on-primary,#fff) 72%,transparent);
+  font-size:.78rem;
+  font-weight:850;
+}
+.public-hero h1{margin:0 0 10px;font-size:clamp(1.8rem,5vw,3.2rem);line-height:1.25}
+.public-hero p{max-width:640px;margin:0;color:color-mix(in srgb,var(--on-primary,#fff) 82%,transparent);line-height:2}
+.public-info-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin:16px 0;
+}
+.public-info-grid article,.public-accommodation,.public-social{
+  border:1px solid color-mix(in srgb,var(--primary) 12%,#ddd);
+  border-radius:22px;
+  background:#fff;
+  box-shadow:0 10px 28px rgba(34,45,39,.05);
+}
+.public-info-grid article{min-height:118px;padding:18px;display:flex;flex-direction:column;gap:8px}
+.public-info-grid article>span{color:var(--muted,#6d655e);font-size:.72rem;font-weight:850}
+.public-info-grid p{margin:0;line-height:1.9}
+.public-info-grid a,.public-shell footer a{color:var(--primary);font-weight:850;text-decoration:none}
+.public-accommodation{
+  margin:16px 0;
+  padding:clamp(20px,4vw,32px);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:22px;
+}
+.public-accommodation>div>span,.public-social>span{color:var(--accent)}
+.public-accommodation h2{margin:0 0 7px;font-size:clamp(1.25rem,3vw,1.75rem)}
+.public-accommodation p{margin:0;color:var(--muted);line-height:1.8}
+.public-accommodation .actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+.public-social{padding:22px}
+.social-link-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}
+.social-link-grid a{
+  min-height:58px;
+  padding:10px 12px;
+  border:1px solid color-mix(in srgb,var(--primary) 12%,#ddd);
+  border-radius:15px;
+  background:color-mix(in srgb,var(--primary) 4%,#fff);
+  color:var(--ink);
+  text-decoration:none;
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+.social-link-grid a>span{width:34px;height:34px;border-radius:11px;background:#fff;color:var(--primary);display:grid;place-items:center}
+.social-link-grid .ui-icon{width:19px;height:19px}
+.public-shell footer{padding:18px 6px 0;display:flex;justify-content:center;align-items:center;gap:8px;color:var(--muted);font-size:.82rem}
+@media(max-width:720px){
+  .public-shell{width:min(100% - 20px,920px);padding-top:10px}
+  .public-hero{min-height:0;padding:22px 18px;border-radius:25px;grid-template-columns:1fr}
+  .public-brand{grid-auto-flow:column;justify-content:start;justify-items:start;align-items:center;min-width:0}
+  .public-brand img,.public-brand>span{width:56px;height:56px;border-radius:18px}
+  .public-info-grid{grid-template-columns:1fr}
+  .public-info-grid article{min-height:0}
+  .public-accommodation{align-items:flex-start;flex-direction:column}
+  .public-accommodation .actions{width:100%;justify-content:flex-start}
+}

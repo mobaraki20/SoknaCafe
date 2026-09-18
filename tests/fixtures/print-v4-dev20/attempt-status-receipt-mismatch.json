@@ -1,0 +1,1 @@
+{"success":true,"attempt_id":101,"job_id":51,"attempt_state":"claimed","job_state":"processing","receipt_matches":false,"next_action":"reconcile","terminal":false,"requires_human_resolution":true,"lease_expires_at":"2026-09-11T10:00:00Z","server_time":"2026-09-11T09:59:00Z"}

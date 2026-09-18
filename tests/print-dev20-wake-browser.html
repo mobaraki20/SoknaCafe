@@ -1,0 +1,34 @@
+<!doctype html><meta charset="utf-8"><title>print wake browser acceptance</title><pre id="result">RUNNING</pre>
+<script>
+window.SOKNA_PRINT_BRIDGE_CAPABILITY_URL='https://sokna.test/cap';
+const wakeCalls=[]; let firstWake=true;
+window.fetch=(url,options={})=>{
+  if(String(url).startsWith('https://sokna.test/cap')) return Promise.resolve({ok:true,json:async()=>({success:true,bridges:[
+    {agent_id:7,destination_key:'customer_receipt',port:17777,pairing_id:'PAIRING_0123456789_ABCDEFGH'},
+    {agent_id:7,destination_key:'prep_shared',port:17777,pairing_id:'PAIRING_0123456789_ABCDEFGH'}
+  ]})});
+  if(String(url).includes('/v1/wake')){
+    wakeCalls.push(JSON.parse(options.body));
+    if(firstWake){firstWake=false;return new Promise(resolve=>setTimeout(()=>resolve({ok:true,json:async()=>({success:true})}),300));}
+    return Promise.resolve({ok:true,json:async()=>({success:true})});
+  }
+  return Promise.resolve({ok:true,json:async()=>({})});
+};
+</script>
+<script src="../assets/js/push-runtime.js"></script>
+<script>
+(async()=>{
+ const exp=new Date(Date.now()+60000).toISOString();
+ const first={protocol_version:1,request_id:'wake-browser-0001',expires_at:exp,jobs:[
+  {job_id:1,destination_key:'customer_receipt',status:'pending'},
+  {job_id:2,destination_key:'prep_shared',status:'pending'}]};
+ const second={protocol_version:1,request_id:'wake-browser-0002',expires_at:exp,jobs:[{job_id:3,destination_key:'customer_receipt',status:'pending'}]};
+ void window.SoknaPushRuntime.printWake(first);
+ setTimeout(()=>void window.SoknaPushRuntime.printWake(second),40);
+ setTimeout(()=>{
+  const a=wakeCalls[0]?.job_ids||[], b=wakeCalls[1]?.job_ids||[];
+  const pass=wakeCalls.length===2 && a.join(',')==='1,2' && b.join(',')==='3';
+  document.getElementById('result').textContent=pass?'PASS B33 wake coalescing/in-flight preservation':'FAIL '+JSON.stringify(wakeCalls);
+ },900);
+})();
+</script>

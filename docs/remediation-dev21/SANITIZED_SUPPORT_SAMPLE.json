@@ -1,0 +1,16 @@
+{
+  "kind": "sanitized-support-shape-sample-not-runtime-agent-output",
+  "web_version": "1.36.4-dev.21",
+  "agent_target": "6.2.3-candidate-unverified",
+  "transport": {"state": "unknown", "last_success_at": null, "last_error_code": null},
+  "coordinator": {"state": "unknown", "claim_reconciliation_required": null, "conflict_count": null},
+  "printer_inventory": {"last_discovery_at": null, "fresh": null, "generation": null},
+  "redaction_assertions": {
+    "contains_queue_db": false,
+    "contains_token": false,
+    "contains_lease_token": false,
+    "contains_payload": false,
+    "contains_pairing_secret": false
+  },
+  "note": "Static shape sample only; G10 requires a real target Agent support-package test."
+}

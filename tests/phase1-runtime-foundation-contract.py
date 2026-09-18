@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import re
+R=Path(__file__).resolve().parents[1]
+read=lambda p:(R/p).read_text(encoding='utf-8')
+def need(x,msg):
+    if not x: raise AssertionError(msg)
+obs=read('includes/observability.php')
+runtime=read('includes/runtime.php')
+cli=read('runtime/sokna-runtime.php')
+bootstrap=read('bootstrap.php')
+config=read('config.example.php')
+tls=read('runtime/windows/provision-local-https.ps1')
+apache=read('runtime/windows/apache/sokna-local-https.conf.template')
+need('X-Sokna-Correlation-ID' in obs, 'correlation response header missing')
+need('sokna_redact_context' in obs and '[REDACTED]' in obs, 'log redaction owner missing')
+need("'password'" in obs and "'authorization'" in obs and "'private_key'" in obs, 'sensitive log keys incomplete')
+need("'push'" in runtime and "'inventory'" in runtime and "'backup'" in runtime, 'runtime worker registry incomplete')
+need('print-agent' not in runtime.lower() and "'printing'" not in runtime, 'printing must not be internalized before Phase 7')
+need('proc_open' in runtime and 'bypass_shell' in runtime, 'runtime process execution owner missing')
+need('flock' in runtime and 'LOCK_NB' in runtime, 'single runtime lock missing')
+need('sokna_runtime_maintenance_state' in runtime and "'maintenance_paused'" in cli, 'runtime must pause workers during update/recovery maintenance')
+need('sokna_runtime_health_snapshot' in runtime, 'runtime health snapshot missing')
+need('function config(): array' in read('includes/functions.php'), 'canonical config accessor missing for CLI workers')
+need('--self-check' in cli and '--health-json' in cli and '--once' in cli, 'runtime diagnostics contract missing')
+need('sokna_runtime_write_state' in cli and 'runtime.worker_failed' in cli, 'runtime health/log state missing')
+need("require_once __DIR__ . '/includes/observability.php'" in bootstrap, 'bootstrap observability owner missing')
+need('sokna_observability_boot_http()' in bootstrap, 'HTTP correlation boot missing')
+need("'local_hostname' => 'sokna.local'" in config, 'local hostname config missing')
+need("'data_dir' => ''" in config, 'data root config missing')
+need('sokna.local' in tls and 'Import-Certificate' in tls and 'LocalMachine\\Root' in tls, 'local TLS trust provisioning missing')
+need('127.0.0.1' in tls and 'SOKNA managed' in tls, 'stable local hosts mapping missing')
+need('SSLEngine on' in apache and 'SSLCertificateKeyFile' in apache and 'Require all denied' in apache, 'Apache local HTTPS template incomplete')
+for bad in ['INSERT INTO ','UPDATE ','DELETE FROM ','CREATE TABLE']:
+    need(bad not in runtime.upper(), 'runtime foundation must not own business SQL')
+print('Phase 1 runtime foundation structural contract PASS.')

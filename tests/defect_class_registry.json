@@ -1,0 +1,522 @@
+{
+  "version": "1.36.4-dev.27",
+  "rule": "Every escaped production defect must add or strengthen a defect-class gate.",
+  "classes": [
+    {
+      "id": "surface_spacing",
+      "severity": "blocker",
+      "owner": "panel-surface-stack",
+      "evidence": "Independent surfaces use parent-owned gap; no global sibling-card margin patch."
+    },
+    {
+      "id": "money_input",
+      "severity": "blocker",
+      "owner": "CafeUI.money/data-money-input",
+      "evidence": "Persian grouped display, ASCII submit, no duplicate money preview."
+    },
+    {
+      "id": "numeric_ssr",
+      "severity": "blocker",
+      "owner": "numeric_input_display_value",
+      "evidence": "User numeric values render Persian before JS."
+    },
+    {
+      "id": "real_render",
+      "severity": "blocker",
+      "owner": "shared PHP renderers",
+      "evidence": "Real renderer smoke prevents mid-response fatal."
+    },
+    {
+      "id": "icon_registry",
+      "severity": "blocker",
+      "owner": "ui-sprite.svg",
+      "evidence": "Every ui_icon reference has a symbol."
+    },
+    {
+      "id": "raw_error_leakage",
+      "severity": "blocker",
+      "owner": "safe business error/CafeUI.requestErrorMessage",
+      "evidence": "No raw error.message in normal UI."
+    },
+    {
+      "id": "blind_toggle",
+      "severity": "blocker",
+      "owner": "desired-state mutations",
+      "evidence": "Sensitive mutations state target explicitly."
+    },
+    {
+      "id": "jalali_geometry_swipe",
+      "severity": "blocker",
+      "owner": "panel-jalali",
+      "evidence": "42 cells, 6 rows, arrows plus horizontal swipe."
+    },
+    {
+      "id": "list_detail_continuity",
+      "severity": "high",
+      "owner": "financial presenters",
+      "evidence": "Human reference and receipt presenter shared across archive/detail/history."
+    },
+    {
+      "id": "reversal_ledger_integrity",
+      "severity": "blocker",
+      "owner": "subscriber ledger/settlement relation",
+      "evidence": "Original/reversal settlements cannot duplicate ledger rows."
+    },
+    {
+      "id": "js_initial_state_overwrite",
+      "severity": "high",
+      "owner": "server initial state + JS live edit",
+      "evidence": "JS does not erase valid server-rendered state on load."
+    },
+    {
+      "id": "hidden_limit",
+      "severity": "high",
+      "owner": "query/UI scope contracts",
+      "evidence": "Limits are explicit or exports/full views are complete."
+    },
+    {
+      "id": "route_db_runtime",
+      "severity": "blocker",
+      "owner": "critical route + real DB promotion gate",
+      "evidence": "SQL-sensitive routes execute the production-shaped query on MariaDB/MySQL and authenticated staging before promotion."
+    },
+    {
+      "id": "sheet_dismiss_contract",
+      "severity": "high",
+      "owner": "CafeUI.bindSwipeDismiss + overlay classification",
+      "evidence": "Every dismissible bottom sheet, including global tools, supports swipe-down through the shared owner without bypassing dirty-state protection; centered/protected modals do not inherit it."
+    },
+    {
+      "id": "time_semantic_step",
+      "severity": "blocker",
+      "owner": "panel-time-picker + each time-field consumer",
+      "evidence": "Every panel time input declares a semantic minute step; schedule=15, event/exact-time=5 unless explicitly justified."
+    },
+    {
+      "id": "time_12h_canonical_storage",
+      "severity": "blocker",
+      "owner": "panel-time-picker",
+      "evidence": "Human time picker displays 1..12 with AM (before noon) on the right and PM (after noon) on the left; numeric grids run LTR; canonical input/API/database value remains 24-hour with explicit 12 AM/PM edge tests."
+    },
+    {
+      "id": "composite_control_geometry",
+      "severity": "blocker",
+      "owner": "jalali-date-control",
+      "evidence": "Calendar action is contained by the composite field at 320/360/390/412 with one focus owner and no overflow."
+    },
+    {
+      "id": "selection_tile_alignment",
+      "severity": "high",
+      "owner": "tag/day selection tiles",
+      "evidence": "Tile labels and checkboxes are vertically centered, entire tile is clickable and touch target >=44px."
+    },
+    {
+      "id": "schedule_boundary_overnight",
+      "severity": "blocker",
+      "owner": "item schedule domain",
+      "evidence": "Date range is day-boundary based; overnight daily windows after midnight use previous scheduled weekday."
+    },
+    {
+      "id": "notification_routing_integrity",
+      "severity": "blocker",
+      "owner": "push routing/outbox/service worker",
+      "evidence": "Recipients match operational responsibility and URL permissions; event idempotency differs from display tag; one-tap waiter completion and order approval are signed, atomic, audited, and release their active domain guards."
+    },
+    {
+      "id": "real_markup_geometry",
+      "severity": "blocker",
+      "owner": "browser regression fixtures",
+      "evidence": "Sensitive browser tests reproduce production component markup/geometry rather than simplified elements-only fixtures."
+    },
+    {
+      "id": "css_owner_consolidation",
+      "severity": "high",
+      "owner": "shared component CSS",
+      "evidence": "Reviewed component refinements retire superseded base rules; responsive overrides are intentional and bounded."
+    },
+    {
+      "id": "secondary_enrichment_failsoft",
+      "severity": "blocker",
+      "owner": "subscriber ledger base route + optional enrichment",
+      "evidence": "Secondary invoice/settlement metadata cannot make the primary subscriber profile route fail."
+    },
+    {
+      "id": "shared_ui_api_signature",
+      "severity": "high",
+      "owner": "CafeUI shared primitives",
+      "evidence": "Consumers call shared confirm/sheet APIs using the documented signature; object-style drift is rejected."
+    },
+    {
+      "id": "promotion_environment_integrity",
+      "severity": "blocker",
+      "owner": "release gate promotion mode",
+      "evidence": "Final promotion cannot PASS when mandatory MariaDB/MySQL or authenticated HTTP probes are unavailable."
+    },
+    {
+      "id": "notification_pipeline_parity",
+      "severity": "blocker",
+      "owner": "waiter/api_push.php + push outbox/worker",
+      "evidence": "User-visible notification test must traverse the same outbox, worker and delivery path as real operational events; direct-send-only tests are insufficient."
+    },
+    {
+      "id": "visual_rhythm",
+      "severity": "blocker",
+      "owner": "semantic spacing tokens + panel-page/card/copy flow",
+      "evidence": "Page/section/copy gaps are computed from shared tokens and Browser geometry asserts minimum separation; text blocks may not collapse into one another."
+    },
+    {
+      "id": "page_composition_owner",
+      "severity": "high",
+      "owner": "panel-page-flow / panel-surface-stack / explicit layout owner",
+      "evidence": "Multi-surface admin pages must declare a shared composition owner or appear in the explicit legacy visual-debt baseline."
+    },
+    {
+      "id": "visual_baseline_promotion",
+      "severity": "blocker",
+      "owner": "visual_quality_pages.json + human UAT baseline",
+      "evidence": "Changed critical visual states cannot be promoted Final while their human-reviewed baseline is pending."
+    },
+    {
+      "id": "navigation_entitlement_parity",
+      "severity": "blocker",
+      "owner": "panel navigation + protected destination entitlement",
+      "evidence": "A user may see a navigation entry only when the same effective entitlement permits the destination; unknown/stale/failed external entitlement is fail-closed for staff, while explicitly defined admin management access remains separate."
+    },
+    {
+      "id": "financial_ui_family_consistency",
+      "severity": "high",
+      "owner": "financial-workspace / archive-record-history patterns",
+      "evidence": "Invoices, subscribers, accommodation and financial periods share one responsive financial vocabulary: compact filters, continuous rows, exception-only status and List→Detail continuity; legacy mobile table/card duplication is rejected."
+    },
+    {
+      "id": "financial_visual_hierarchy",
+      "severity": "high",
+      "owner": "financial-workspace local tokens / invoice-related-document / financial human-reference",
+      "evidence": "Financial visual polish derives from active panel tokens; key values and context use semantic hierarchy, related documents have a dedicated owner, human references lead canonical IDs, and the current financial period is not duplicated in history."
+    },
+    {
+      "id": "virtual_keyboard_semantics",
+      "severity": "high",
+      "owner": "panel-core keyboard contract + semantic input markup",
+      "evidence": "Search/Next/Done Enter semantics are shared, touch Search dismisses after valid action, numeric/decimal/tel keyboards match data purpose, and IME composition Enter is never consumed."
+    },
+    {
+      "id": "operational_fast_path",
+      "severity": "blocker",
+      "owner": "order mutation + inventory outbox + operator/waiter reconciliation",
+      "evidence": "Committed order/call mutations respond before inventory materialization or full-feed reconciliation; durable outboxes remain recovery truth."
+    },
+    {
+      "id": "notification_delivery_latency",
+      "severity": "blocker",
+      "owner": "push bounded delivery owner",
+      "evidence": "Push fan-out uses bounded concurrency when curl_multi is available, isolates slow devices, and keeps short retryable fast-path timeouts."
+    },
+    {
+      "id": "notification_self_draining_outbox",
+      "severity": "blocker",
+      "owner": "push/inventory after-response + browser kick",
+      "evidence": "Operational outboxes can accelerate after response or through same-origin browser kicks without requiring a worker."
+    },
+    {
+      "id": "push_stale_event_guard",
+      "severity": "blocker",
+      "owner": "push queue actionability",
+      "evidence": "Every queued operational event re-checks domain state and age before provider delivery."
+    },
+    {
+      "id": "financial_row_interaction_parity",
+      "severity": "high",
+      "owner": "financial-row navigation + financial human-reference presenters",
+      "evidence": "Financial rows with one unambiguous destination are whole-row mouse/keyboard targets while nested utilities remain independent; accommodation/invoice hierarchy leads with human references."
+    },
+    {
+      "id": "app_shell_mode",
+      "severity": "high",
+      "owner": "panel_layout + panel-shell + panel-layout.css",
+      "evidence": "Installed mobile PWA gains one role-aware bottom app navigation and safe-area shell while normal browser/desktop keep the canonical panel navigation."
+    },
+    {
+      "id": "pwa_update_safety",
+      "severity": "blocker",
+      "owner": "pwa.js + service-worker lifecycle",
+      "evidence": "A newly installed worker never reloads an active operational form automatically; activation is explicit and blocked while dialog/dirty/busy state exists, with one offline fallback owner."
+    },
+    {
+      "id": "updater_audit_integrity",
+      "severity": "blocker",
+      "owner": "versioned updater history writer",
+      "evidence": "Updater history has one writer, records event code and actor snapshot when available, and write failure is never silently suppressed."
+    },
+    {
+      "id": "updater_state_hierarchy",
+      "severity": "high",
+      "owner": "versioned updater console",
+      "evidence": "Healthy/running/completed/recovery states have distinct hierarchy; completed progress and repeated success noise are removed, rollback confirmation appears only at decision time."
+    },
+    {
+      "id": "payment_secondary_independence",
+      "severity": "blocker",
+      "owner": "settlement core transaction + print secondary side-effect",
+      "evidence": "Financial settlement cannot be rejected solely because the printer destination is disabled or print enqueue fails; print is savepoint-isolated and reported as a secondary warning."
+    },
+    {
+      "id": "payroll_reminder_count_boundary",
+      "severity": "high",
+      "owner": "Cafe Center S2S read + Personnel launcher badge",
+      "evidence": "Cafe receives only Core-authorized count-only payroll attention; failures are fail-silent, no HR detail/persistence is duplicated, and the existing Handoff destination remains unchanged."
+    },
+    {
+      "id": "shared_reorder_contract",
+      "severity": "high",
+      "owner": "assets/js/reorder-list.js + transactional reorder routes",
+      "evidence": "Items and categories use one drag/button/keyboard reorder owner; server accepts only the exact current ID set and rewrites order transactionally."
+    },
+    {
+      "id": "message_editor_scalability",
+      "severity": "high",
+      "owner": "message definitions + admin/messages.php + messages-admin.js",
+      "evidence": "Editable guest copy is searchable/grouped, changed/optional filterable, individually resettable, token-guarded and previewable while system/security copy remains noneditable."
+    },
+    {
+      "id": "print_template_contract",
+      "severity": "blocker",
+      "owner": "includes/printing.php + admin/print_templates.php",
+      "evidence": "Print Template v2 is declarative/versioned, accepts only the four safe package files, preserves the stable renderer payload contract for Agent 6, and keeps preparation prices forbidden."
+    },
+    {
+      "id": "print_preview_parity",
+      "severity": "high",
+      "owner": "print-template-designer.js + print template sample scenarios",
+      "evidence": "58/80 customer receipt and preparation scenarios render through the declared template metadata before activation; physical Agent/driver output remains a separate UAT gate."
+    },
+    {
+      "id": "order_review_density",
+      "severity": "high",
+      "owner": "staff quick-order cart review + quick-order.css",
+      "evidence": "Staff order review uses compact continuous rows, direct Trash→Undo in one header slot, silent dine-in default, and exception-only takeaway controls without duplicate badge/editor presentation."
+    },
+    {
+      "id": "current_bill_operational_exception_parity",
+      "severity": "high",
+      "owner": "operator/api_orders.php + operator.js current bill presenter",
+      "evidence": "Current bill preserves takeaway quantity as operational exception metadata, hides one-batch disclosure and duplicate subtotal in normal state, and presents printer unavailability as status rather than a dead action."
+    },
+    {
+      "id": "mixed_preparation_quantity_adjustment",
+      "severity": "blocker",
+      "owner": "operator/api_bill.php + inventory quantity adjustment",
+      "evidence": "Multi-unit reductions capture exact prepared removed quantity; only unprepared removed quantity generates preparation reduction and inventory restoration; service items skip preparation."
+    },
+    {
+      "id": "audit_timeline_investigability",
+      "severity": "high",
+      "owner": "audit_log + audit_presentation + activity_report",
+      "evidence": "Audit rows lead with rich action/context, preserve actor snapshots, group dates, support family/search/keyset paging, and no-op mutations do not create fake history."
+    },
+    {
+      "id": "print_admin_refresh_idempotency",
+      "severity": "blocker",
+      "owner": "admin/printing.php PRG",
+      "evidence": "Every mutating printing admin POST ends in a 303 redirect so browser refresh cannot repeat test/reprint or other mutations."
+    },
+    {
+      "id": "print_reservation_retry_bound",
+      "severity": "blocker",
+      "owner": "print-agent/v4/api.php reservation/attempt state machine",
+      "evidence": "Print API v4 reservation expiry retries are bounded; exhausted jobs become explicit failed exceptions and manual retry resets the bound deliberately."
+    },
+    {
+      "id": "human_order_reference",
+      "severity": "high",
+      "owner": "order_display_label + canonical order_display_code",
+      "evidence": "Daily UI, notifications, dashboard and preparation print use human order number while canonical O-* reference remains available for audit/search metadata."
+    },
+    {
+      "id": "print_columnar_preview_contract",
+      "severity": "high",
+      "owner": "Print Template v2 browser preview",
+      "evidence": "Customer preview supports full 80mm columnar and 58mm compact/two-line layouts, prefers Vazirmatn with explicit fallback, while preparation stays quantity-first."
+    },
+    {
+      "id": "required_print_intent",
+      "severity": "blocker",
+      "owner": "printing transaction/outbox",
+      "evidence": "Every mandatory preparation print persists in the same order DB transaction; offline/mapping failure becomes blocked, never missing."
+    },
+    {
+      "id": "print_submission_fence",
+      "severity": "blocker",
+      "owner": "Agent local queue + worker boundary",
+      "evidence": "After a durable submission fence/worker launch ambiguity is never automatically reprinted."
+    },
+    {
+      "id": "print_attempt_idempotency",
+      "severity": "blocker",
+      "owner": "Print API v4",
+      "evidence": "Claim/accept/start/renew/report are request-idempotent and attempts have unique durable identity."
+    },
+    {
+      "id": "print_agent_recovery",
+      "severity": "blocker",
+      "owner": "Agent 6 SQLite recovery",
+      "evidence": "Claimed/local jobs survive service restart and ambiguous ownership enters recovery_hold/unknown."
+    },
+    {
+      "id": "print_fifo_integrity",
+      "severity": "blocker",
+      "owner": "Print API v4 queue owner",
+      "evidence": "An unresolved older job blocks newer jobs for the same destination/order scope unless human override is audited."
+    },
+    {
+      "id": "cart_component_owner",
+      "severity": "high",
+      "owner": "guest-menu.css + quick-order.css",
+      "evidence": "Guest cart styling does not leak back into app.css and Staff cart has one consolidated layout owner; obsolete stacked overrides/state owners are rejected by v1332-cart-owner-contract.py."
+    },
+    {
+      "id": "fulfillment_default_inheritance",
+      "severity": "blocker",
+      "owner": "menu.js + staff-quick-order.js",
+      "evidence": "Takeaway inheritance is derived from the actual cart: only a truly all-takeaway cart makes a newly added item takeaway; mixed carts return new items to silent dine-in default."
+    },
+    {
+      "id": "guest_fulfillment_exception_parity",
+      "severity": "high",
+      "owner": "guest order review fulfillment presenter",
+      "evidence": "Dine-in stays silent; global fulfillment controls are actions rather than selected-state segments, duplicate badges disappear while an editor is open, and footer exception count appears only when takeaway exists."
+    },
+    {
+      "id": "quick_order_cart_density",
+      "severity": "high",
+      "owner": "staff-quick-order.js + quick-order.css",
+      "evidence": "Normal mobile staff rows remain compact continuous records with divider ownership and expose fulfillment/note rows only when they carry operational information."
+    },
+    {
+      "id": "quick_order_navigation_state",
+      "severity": "blocker",
+      "owner": "staff-quick-order.js + shared panel confirm + quick-order table picker",
+      "evidence": "Back is context-aware, draft exit presents visible confirmation, change-table owns vertical scroll and returns without losing draft, and picker open resets scroll."
+    },
+    {
+      "id": "nested_task_overlay",
+      "severity": "blocker",
+      "owner": "panel-choice + panel-jalali + financial filter sheet",
+      "evidence": "Choices and Jalali dates inside a task sheet render embedded in that sheet; no second modal/overlay may open behind or above the owning task surface."
+    },
+    {
+      "id": "financial_filter_mobile_density",
+      "severity": "high",
+      "owner": "financial filter sheet",
+      "evidence": "390/412 use compact two-column destination/status and date controls while 320/360 remain one-column; primary apply action remains full-width and reachable."
+    },
+    {
+      "id": "audit_detail_snapshot",
+      "severity": "high",
+      "owner": "audit_log writers + audit_presentation + activity_report",
+      "evidence": "Important actions snapshot stable human context at write time and expose compact expandable details without reconstructing historical facts from mutable live data."
+    },
+    {
+      "id": "guest_order_edit_state_integrity",
+      "severity": "blocker",
+      "owner": "menu.js + api/guest_orders.php guest order workflow",
+      "evidence": "Explicit edit, append/new-draft and conflict-locked states are distinct; stale/terminal edit can never fall through into a new order or append previous items."
+    },
+    {
+      "id": "purchase_decision_stock_separation",
+      "severity": "blocker",
+      "owner": "purchase assistant + inventory receive",
+      "evidence": "Low-stock/deferred/planned/bought never mutate inventory; only inventory receive creates stock movement."
+    },
+    {
+      "id": "small_team_responsibility_ui",
+      "severity": "high",
+      "owner": "team_responsibility_definitions",
+      "evidence": "Normal admin UI exposes five work responsibilities, not technical inventory capability grid."
+    },
+    {
+      "id": "updater_close_session_integrity",
+      "severity": "blocker",
+      "owner": "updater engine 1.5.3 console",
+      "evidence": "Header close is safe maintenance navigation; disguised logout is not exposed."
+    },
+    {
+      "id": "quick_order_success_destination",
+      "severity": "high",
+      "owner": "staff quick order successUrl",
+      "evidence": "Successful normal Quick Order returns to the operational tables workspace with the submitted table opened, refreshed, and the new order identified."
+    },
+    {
+      "id": "guest_takeaway_boundary_collapse",
+      "severity": "high",
+      "owner": "guest cart fulfillment editor",
+      "evidence": "Secondary stepper stays open only for partial takeaway quantities and collapses at zero/all."
+    },
+    {
+      "id": "supply_need_receipt_integrity",
+      "severity": "blocker",
+      "owner": "modules/Supply/domain.php + inventory movement ledger",
+      "evidence": "Requested, preparing and physically received quantities remain distinct; only physical receipt writes the canonical inventory movement exactly once, with partial receipt allocation preserving true preparing/new remainder."
+    },
+    {
+      "id": "supply_need_duplicate_guard",
+      "severity": "blocker",
+      "owner": "inventory_supply_needs.open_item_guard + supply domain",
+      "evidence": "One open need identity per department/item or provisional name+unit; retries edit the existing need and provisional-to-known conflicts merge instead of duplicating demand."
+    },
+    {
+      "id": "fulfillment_eligibility_parity",
+      "severity": "blocker",
+      "owner": "SoknaFulfillment + order endpoints",
+      "evidence": "Guest, Staff and server enforce the same per-item takeaway eligibility; existing items default enabled, ineligible items never become takeaway through bulk actions."
+    },
+    {
+      "id": "push_action_commit_claim",
+      "severity": "blocker",
+      "owner": "api/push_action.php + canonical order mutation",
+      "evidence": "Signed one-tap action token is claimed inside the same transaction as the successful mutation; pre-commit failure remains retryable and review deep-links the exact subject."
+    },
+    {
+      "id": "fresh_install_fk_dependency_order",
+      "severity": "blocker",
+      "owner": "database/schema.sql + install compatibility gate",
+      "evidence": "Every newly introduced foreign-key target exists before the referencing table is created; MySQL/MariaDB compatibility baseline forbids generated columns."
+    },
+    {
+      "id": "settlement_signature_parity",
+      "severity": "blocker",
+      "owner": "Finance/settlement_account_state_locked",
+      "evidence": "All settlement destinations validate the same paid-state-aware account signature published by operator feed; legacy invoice-only guard is absent."
+    },
+    {
+      "id": "print_destination_delete_audit_safe",
+      "severity": "blocker",
+      "owner": "Printing/admin destination lifecycle",
+      "evidence": "Only non-system preparation destinations with zero print_jobs may be physically deleted; system destinations and historical destinations remain auditable."
+    },
+    {
+      "id": "print_fifo_blocker_visibility",
+      "severity": "blocker",
+      "owner": "Printing/queue overview",
+      "evidence": "Waiting jobs surface the earlier unresolved Job that fences the destination; problem blockers are visually distinguished instead of showing only generic pending state."
+    },
+    {
+      "id": "print_primary_fallback_claim_owner",
+      "severity": "blocker",
+      "owner": "Print API v4 destination routing",
+      "evidence": "Primary route has priority; fallback Agent becomes claim-eligible only when primary path is not operational, and fallback Windows queue is snapshotted into the Attempt."
+    },
+    {
+      "id": "bill_edit_stepper_single_owner",
+      "severity": "major",
+      "owner": "Operator bill correction + quantity-stepper design contract",
+      "evidence": "Final and prepared quantities share data-bill-step/data-stepper-for and one geometry owner; duplicate prepared handler/geometry is absent."
+    },
+    {
+      "id": "print_agent_receipt_contract_parity",
+      "severity": "blocker",
+      "owner": "Print API v4 accept + supported Windows Agent local receipt contract",
+      "evidence": "Accept validates the actual Agent 6.0/6.1 local receipt format r-<32 hex>; local receipt syntax and content SHA mismatch have distinct error codes and a runtime validator test."
+    }
+  ]
+}

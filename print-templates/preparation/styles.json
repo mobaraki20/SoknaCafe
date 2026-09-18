@@ -1,0 +1,40 @@
+{
+  "format": "sokna-print-template-v2",
+  "paper_width_mm": 80,
+  "base_font_size": 28,
+  "title_font_size": 38,
+  "table_font_size": 44,
+  "line_spacing": 6,
+  "margin": 10,
+  "show_actor": false,
+  "show_time": true,
+  "show_order_number": true,
+  "show_section_titles": true,
+  "show_prices": false,
+  "footer": "",
+  "design": {
+    "format": "sokna-print-design-v2",
+    "layout_contract": "preparation-ticket-v2",
+    "density": "compact",
+    "font_stack": "Vazirmatn, Tahoma, \"Segoe UI\", sans-serif",
+    "header_alignment": "center",
+    "separator_style": "solid",
+    "item_layout": "quantity-first",
+    "section_order": [
+      "status",
+      "meta",
+      "items",
+      "notes",
+      "footer"
+    ],
+    "labels": {
+      "new_order": "سفارش جدید",
+      "reprint": "چاپ مجدد",
+      "adjustment": "اصلاح سفارش",
+      "cancel": "لغو سفارش",
+      "note": "یادداشت",
+      "takeaway": "بیرون‌بر",
+      "ticket_title": "فیش آماده‌سازی"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+/* Central design tokens — safe to override per brand without changing business logic. */
+:root{
+  --sokna-canvas:#f3efe7;--sokna-surface:#fffdf9;--sokna-surface-muted:#f7f3ec;
+  --sokna-sidebar:#203b31;--sokna-sidebar-raised:#29483c;--sokna-sidebar-text:#edf5f0;--sokna-sidebar-muted:#abc0b5;
+  --sokna-line:#d5d0c5;--sokna-line-strong:#aba397;
+  --sokna-success:#2f765f;--sokna-decrement:#9a5748;--sokna-warning:#a56b13;--sokna-danger:#aa3f34;--sokna-info:#2f6f79;
+
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;
+  --panel-gap-copy:var(--space-1);--panel-gap-control:var(--space-3);--panel-gap-section:var(--space-4);--panel-gap-page:var(--space-5);
+  --radius-sm:10px;--radius-md:14px;--radius-lg:20px;--radius-xl:28px;
+  --control-height:44px;--touch-target:44px;
+  --elevation-1:0 7px 25px rgba(32,37,34,.06);--elevation-2:0 14px 38px rgba(32,37,34,.12);
+  --transition-fast:160ms ease;--content-max:1500px;
+}
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}

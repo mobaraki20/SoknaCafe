@@ -1,0 +1,27 @@
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+def read(path): return (ROOT/path).read_text(encoding="utf-8")
+def need(cond,msg):
+    if not cond: raise SystemExit("FAIL: "+msg)
+quick=read("assets/js/staff-quick-order.js")
+op=read("assets/js/operator.js")
+css=read("assets/css/operator-live.css")
+need("destination.searchParams.set('open_table', String(table.id))" in quick,"successful quick order must reopen submitted table")
+need("destination.searchParams.set('quick_order_order'" in quick and "destination.searchParams.set('quick_order_number'" in quick,"fresh order identity must be carried to tables workspace")
+need("destination.searchParams.set('resume_settlement', 'itemized')" in quick,"late-accounting quick order must resume itemized settlement")
+need("'quick_order_mode','resume_settlement'" in op,"one-shot return/resume parameters must be removed from the URL after consumption")
+need("startupQuickOrderOrder" in op and "table-account-order-success" in op,"operator must identify the fresh order inside the reopened table")
+need("data-bill-order" in op and "is-quick-order-success" in op,"fresh order batch must be addressable and highlighted")
+need("quickOrderSuccessVisible" in op and "5200" in op,"success emphasis must be temporary")
+need("if(origin==='table-panel')returnUrl.searchParams.set('open_table'" in op,"cancel/back from table-panel quick order must preserve the originating table context")
+need("Order context:" in css,"order-context UI owner missing")
+page=read("includes/operator_page.php")
+panel=read("includes/panel_layout.php")
+need("$startupTableIntent" in page and "operator-startup-table-detail" in page,"server render must know table-detail startup intent before first paint")
+need("$firstTab=$startupTableIntent?'tables'" in page,"table-detail startup must render the tables panel first")
+need("aria-selected=\"<?= $firstTab==='tables'?'true':'false' ?>\"" in page,"table tab must be selected in the server first paint")
+need("array $bodyClasses = []" in panel,"panel layout must accept semantic startup body classes instead of inline hide/fade patches")
+need("const initial=startupOpenTable" in op,"client bootstrap must select tables before the first load when open_table is present")
+startup_branch=op.split("}else if(startupTable){",1)[1].split("}else{",1)[0]
+need(startup_branch.find("openTable(startupOpenTable)") < startup_branch.find("renderTableCards()"),"startup table detail must open before overview rendering")
+print("PASS: Quick Order preserves table context and identifies the fresh order")

@@ -1,6 +1,0 @@
-SOKNA source bootstrap
-Version: 1.36.4-dev.27
-Archive: soknacafe-import.tar.xz
-SHA256: c0a2484e34fca10e14ed3cf11be80cbbcf0de89fe500354725c2cd1e049585b3
-Encoding: base64 split into 19 ordered parts
-Source-of-truth: Handover R2 + dev.26 predecessor + Phase 1 dev.27

@@ -1,0 +1,41 @@
+{
+  "format": "sokna-print-template-v2",
+  "paper_width_mm": 80,
+  "base_font_size": 23,
+  "title_font_size": 30,
+  "table_font_size": 28,
+  "line_spacing": 5,
+  "margin": 9,
+  "show_actor": false,
+  "show_time": true,
+  "show_order_number": false,
+  "show_section_titles": true,
+  "show_prices": true,
+  "footer": "از همراهی شما سپاسگزاریم.",
+  "design": {
+    "format": "sokna-print-design-v2",
+    "layout_contract": "customer-receipt-v2",
+    "density": "compact",
+    "font_stack": "Vazirmatn, Tahoma, \"Segoe UI\", sans-serif",
+    "header_alignment": "center",
+    "separator_style": "solid",
+    "item_layout": "columnar",
+    "section_order": [
+      "brand",
+      "meta",
+      "items",
+      "summary",
+      "settlement",
+      "footer"
+    ],
+    "labels": {
+      "invoice": "فاکتور",
+      "prebill": "صورتحساب",
+      "items": "اقلام",
+      "subtotal": "جمع اقلام",
+      "discount": "تخفیف",
+      "total": "جمع نهایی",
+      "settlement": "نحوه ثبت"
+    }
+  }
+}

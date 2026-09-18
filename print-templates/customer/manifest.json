@@ -1,0 +1,7 @@
+{
+  "format": "sokna-print-template-package-v2",
+  "template_key": "customer",
+  "name": "قالب خوانای سند مشتری Sokna",
+  "version": "builtin-v2-1",
+  "paper_width_mm": 80
+}

@@ -1,0 +1,19 @@
+{
+  "document_kind": "customer_final",
+  "title": "کافه سکنا",
+  "badge": "فاکتور نهایی",
+  "document_status": "پرداخت‌شده · تسویه مستقیم",
+  "table_name": "میز ۸",
+  "invoice_number": "فاکتور ۲۸",
+  "display_date": "۱۶ مرداد ۱۴۰۵ · ۱۴:۳۶",
+  "sections": [{"title": "اقلام فاکتور", "items": [
+    {"name": "پاستا چیکن آلفردو", "quantity": 2, "unit_price": 580000, "line_total": 1160000},
+    {"name": "آب دوغ خیار", "quantity": 1, "unit_price": 260000, "line_total": 260000},
+    {"name": "سرویس بیرون‌بر", "quantity": 1, "unit_price": 15000, "line_total": 15000}
+  ]}],
+  "subtotal": 1435000,
+  "discount": 0,
+  "total": 1435000,
+  "settlement_label": "تسویه مستقیم",
+  "footer": "از همراهی شما سپاسگزاریم."
+}

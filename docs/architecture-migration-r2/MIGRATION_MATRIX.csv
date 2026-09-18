@@ -1,0 +1,19 @@
+﻿Area,Current source owner,Target decision,Action,Risk,Tests,Status
+Auth/Permissions,includes/auth.php + users/user_capabilities/user_preparation_areas,Preserve existing semantics; add Public projection,PRESERVE+EXTEND,High,auth projection; replay; capability matrix,Phase 2/4
+Orders,api/create_order.php + staff/api_quick_order.php + operator/ + waiter/,Preserve + add Table Draft,PRESERVE+ADD,High,idempotency; order regression; draft finalize,Phase 2/6
+Sellables,items + admin/items.php + menu catalog,Refactor to explicit menu_item/service_item,REFACTOR,Medium,catalog/order/receipt historical regression,Phase 6
+Tax,none,Add optional Tax module,ADD,High,golden calculation/rounding/receipt snapshot,Phase 6
+Inventory,includes/inventory.php + admin/inventory*.php,Preserve authority; add deferred-safe ingress,PRESERVE+EXTEND,High,movement idempotency; count draft/finalize,Phase 5
+Supply,modules/Supply/ + admin/purchases.php,Preserve; add batch/deferred-safe,PRESERVE+EXTEND,High,batch atomicity; duplicate receipt; conflict,Phase 5/6
+Expenses,none,Add simple module,ADD,Medium,deferred; reversal; period reporting,Phase 5/6
+Guest/Public,menu/index.php + api/create_order.php,Refactor to Public edge contract,REFACTOR,High,publish atomicity; degraded mode; submit result,Phase 3
+Relay,none,Implement realtime durable relay,ADD,Blocker,expiry; claim lease; exactly-once effect,Phase 2
+Deferred Work,none as framework,Add separate queue/projection,ADD,Blocker,reconcile/conflict/period late event,Phase 5
+Printing,includes/printing.php + print-agent/v4/,Internalize Print Worker,REFACTOR deployment; PRESERVE state machine,High,restart/retry/fallback/idempotency,Phase 7
+Notifications,includes/push.php + service-worker.js + tools/push-worker.php,Move queue processing to Runtime worker,REFACTOR owner; PRESERVE outbox,Medium,outbox retry; stale guard; failure isolation,Phase 7
+Accommodation,includes/accommodation.php + admin/accommodation*.php,Preserve business contract; adapt transport,PRESERVE+ADAPT,Medium,settlement/recovery/integration unavailable,Phase 7
+Center,includes/sokna_center.php + api/sokna_center_users.php + admin/personnel.php,Refactor to outbound integration,REFACTOR,Medium,Cafe authority; Center unavailable,Phase 7
+Setup/Updater/Recovery,install.php + includes/maintenance.php + updater/recovery tools,Adapt to target architecture,PRESERVE engines+EXTEND,High,update rollback; restore; takeover,Phase 1/8
+Observability,scattered logs/health/maintenance jobs,Add unified health/log/support contract,ADD+CONSOLIDATE,Medium,correlation; redaction; component health,Phase 1
+Preparation supervision,waiter/index.php + waiter/api_feed.php + waiter/api_action.php,Frozen visible vs actionable areas,REFACTOR,Blocker,supervisor-only read; assigned mutation only,Phase 6
+Theme/Media Publishing,guest CSS/assets/local file paths,Strict package/media revision publish,ADD+ADAPT,Medium,theme sandbox contract; asset atomic publish,Phase 3

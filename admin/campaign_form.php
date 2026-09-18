@@ -1,0 +1,44 @@
+<?php
+declare(strict_types=1);
+require dirname(__DIR__) . '/bootstrap.php';
+require_login(['admin']);
+sokna_module_require('marketing');
+require dirname(__DIR__) . '/includes/panel_layout.php';
+$id=(int)($_GET['id']??$_POST['id']??0);$campaign=[];$uploadedImage=null;$oldImage=null;
+if($id){$q=db()->prepare('SELECT * FROM campaigns WHERE id=?');$q->execute([$id]);$campaign=$q->fetch()?:[];if(!$campaign){flash('error','کمپین پیدا نشد.');redirect('marketing.php');}}
+if($_SERVER['REQUEST_METHOD']==='POST'){
+    verify_csrf($_POST['csrf_token']??null);
+    try{
+        $title=text_substr(trim((string)($_POST['title']??'')),0,140);$body=text_substr(trim((string)($_POST['body']??'')),0,400);$label=text_substr(trim((string)($_POST['action_label']??'')),0,80);$type=in_array(($_POST['action_type']??''),['none','external','category','events','about'],true)?(string)$_POST['action_type']:'none';
+        $value=$type==='category'?trim((string)($_POST['category_id']??'')):($type==='external'?trim((string)($_POST['external_url']??'')):'');
+        $startDateJ=trim((string)($_POST['starts_date_j']??''));$startTime=trim(en_digits((string)($_POST['starts_time']??'')));$endDateJ=trim((string)($_POST['ends_date_j']??''));$endTime=trim(en_digits((string)($_POST['ends_time']??'')));$sort=(int)en_digits((string)($_POST['sort_order']??0));$active=isset($_POST['active'])?1:0;
+        $starts=parse_optional_jalali_datetime($startDateJ,$startTime,'شروع کمپین');$ends=parse_optional_jalali_datetime($endDateJ,$endTime,'پایان کمپین');
+        if($title==='')throw new RuntimeException('عنوان کمپین را وارد کن.');if($type==='external'&&safe_external_url($value)==='')throw new RuntimeException('لینک بیرونی معتبر نیست.');if($type==='category'&&!ctype_digit($value))throw new RuntimeException('دسته مقصد را انتخاب کن.');if($starts!==null&&$ends!==null&&strtotime($ends)<=strtotime($starts))throw new RuntimeException('زمان پایان باید بعد از شروع باشد.');
+        $oldImage=$campaign['image_path']??null;$choice=resolve_image_input($_FILES['image']??[],$oldImage,$_POST);$uploadedImage=$choice['uploaded'];
+        $params=[$title,$body?:null,$choice['path'],$label?:null,$type,$value?:null,$starts,$ends,$active,$sort];
+        $wasExisting=$id>0;
+        if($id){$params[]=$id;db()->prepare('UPDATE campaigns SET title=?,body=?,image_path=?,action_label=?,action_type=?,action_value=?,starts_at=?,ends_at=?,active=?,sort_order=? WHERE id=?')->execute($params);}else{db()->prepare('INSERT INTO campaigns(title,body,image_path,action_label,action_type,action_value,starts_at,ends_at,active,sort_order)VALUES(?,?,?,?,?,?,?,?,?,?)')->execute($params);$id=(int)db()->lastInsertId();}
+        audit_log_write($wasExisting?'marketing.campaign_updated':'marketing.campaign_created','campaign',$id,['title'=>$title,'active'=>$active,'action_type'=>$type,'starts_at'=>$starts,'ends_at'=>$ends],(int)(current_user()['id']??0));
+        if($choice['changed']&&$oldImage)delete_upload_path($oldImage);flash('success','کمپین ذخیره شد.');redirect('marketing.php');
+    }catch(Throwable $e){if($uploadedImage)delete_upload_path($uploadedImage);error_log('campaign save: '.$e->getMessage());flash('error',safe_business_error_message($e,'ذخیره کمپین انجام نشد.'));$campaign=array_merge($campaign,$_POST);$campaign['action_value']=$value??($campaign['action_value']??'');}
+}
+$categories=db()->query('SELECT id,name FROM categories ORDER BY sort_order,id')->fetchAll();$type=(string)($campaign['action_type']??'none');$categoryValue=$type==='category'?(string)($campaign['action_value']??''):(string)($_POST['category_id']??'');$externalValue=$type==='external'?(string)($campaign['action_value']??''):(string)($_POST['external_url']??'');
+$startSource=!empty($campaign['starts_at'])?(string)$campaign['starts_at']:null;$endSource=!empty($campaign['ends_at'])?(string)$campaign['ends_at']:null;
+$startDateJValue=(string)($_POST['starts_date_j']??($startSource?jalali_date_input($startSource):''));$endDateJValue=(string)($_POST['ends_date_j']??($endSource?jalali_date_input($endSource):''));
+$startTimeValue=(string)($_POST['starts_time']??($startSource?date('H:i',strtotime($startSource)):''));$endTimeValue=(string)($_POST['ends_time']??($endSource?date('H:i',strtotime($endSource)):''));
+panel_header($id?'ویرایش کمپین':'کمپین جدید','marketing');
+?>
+<section class="card focused-form-card"><div class="card-head"><div><h2><?= $id?'ویرایش کمپین':'کمپین جدید' ?></h2><small>اطلاعات اصلی، عملکرد، زمان‌بندی و تصویر در یک فرم ساده.</small></div></div><div class="card-body"><form method="post" enctype="multipart/form-data" class="form-grid" data-preserve-form><?= csrf_field() ?><input type="hidden" name="id" value="<?= $id ?>">
+<div class="form-group full"><label>عنوان</label><input class="form-control" name="title" value="<?= e($campaign['title']??'') ?>" maxlength="140" required></div>
+<div class="form-group full"><label>متن کوتاه</label><textarea class="form-control" name="body" maxlength="400"><?= e($campaign['body']??'') ?></textarea></div>
+<div class="form-group"><label>متن دکمه</label><input class="form-control" name="action_label" value="<?= e($campaign['action_label']??'') ?>" maxlength="80" placeholder="مثلاً دیدن پیشنهاد"></div>
+<div class="form-group"><label>عملکرد دکمه</label><select class="form-control" name="action_type" data-choice-mode="compact" id="campaignActionType"><?php foreach(['none'=>'بدون دکمه','category'=>'دسته‌بندی منو','events'=>'رویدادها','about'=>'درباره سکنا','external'=>'لینک بیرونی'] as $key=>$label): ?><option value="<?= e($key) ?>" <?= $type===$key?'selected':'' ?>><?= e($label) ?></option><?php endforeach; ?></select></div>
+<div class="form-group full <?= $type==='category'?'':'hidden' ?>" data-action-value="category"><label>دسته مقصد</label><select class="form-control" name="category_id" data-choice-mode="adaptive" data-choice-search="true"><option value="">انتخاب دسته</option><?php foreach($categories as $cat): ?><option value="<?= (int)$cat['id'] ?>" <?= $categoryValue===(string)$cat['id']?'selected':'' ?>><?= e($cat['name']) ?></option><?php endforeach; ?></select></div>
+<div class="form-group full <?= $type==='external'?'':'hidden' ?>" data-action-value="external"><label>لینک بیرونی</label><input class="form-control ltr-input" dir="ltr" name="external_url" value="<?= e($externalValue) ?>" placeholder="https://..."></div>
+<div class="form-group"><label>شروع کمپین، اختیاری</label><div class="jalali-datetime-grid"><div class="jalali-date-control"><input class="form-control" id="campaignStartDateJ" name="starts_date_j" data-jalali-date inputmode="none" value="<?= e($startDateJValue) ?>" placeholder="۱۴۰۵/۰۵/۲۰" aria-label="تاریخ شروع شمسی"><button class="jalali-date-button" type="button" data-open-jalali="campaignStartDateJ" aria-label="انتخاب تاریخ شروع از تقویم"><?= ui_icon('calendar') ?></button></div><input class="form-control ltr-input" dir="ltr" type="time" name="starts_time" data-minute-step="15" step="900" value="<?= e($startTimeValue) ?>" aria-label="ساعت شروع"></div></div>
+<div class="form-group"><label>پایان کمپین، اختیاری</label><div class="jalali-datetime-grid"><div class="jalali-date-control"><input class="form-control" id="campaignEndDateJ" name="ends_date_j" data-jalali-date inputmode="none" value="<?= e($endDateJValue) ?>" placeholder="۱۴۰۵/۰۵/۲۷" aria-label="تاریخ پایان شمسی"><button class="jalali-date-button" type="button" data-open-jalali="campaignEndDateJ" aria-label="انتخاب تاریخ پایان از تقویم"><?= ui_icon('calendar') ?></button></div><input class="form-control ltr-input" dir="ltr" type="time" name="ends_time" data-minute-step="15" step="900" value="<?= e($endTimeValue) ?>" aria-label="ساعت پایان"></div></div>
+<div class="form-group"><label>اولویت نمایش</label><input class="form-control" type="text" inputmode="numeric" enterkeyhint="done" name="sort_order" value="<?= e(fa_digits((string)($campaign['sort_order']??0))) ?>"><small class="muted">در حالت اولویت‌دار، عدد کمتر زودتر نمایش داده می‌شود.</small></div>
+<?= image_picker_html($campaign['image_path']??null,'تصویر کمپین','تصویر افقی با نسبت ۲:۱ پیشنهاد می‌شود؛ اندازه مناسب ۱۲۰۰×۶۰۰ پیکسل و بدون متن ریز.','image/jpeg,image/png,image/webp') ?>
+<div class="form-group full"><label class="check-line"><input type="checkbox" name="active" <?= !isset($campaign['active'])||(int)$campaign['active']===1?'checked':'' ?>><span>فعال باشد</span></label></div><div class="form-group full panel-action-bar"><a class="btn btn-light" href="marketing.php">انصراف</a><button class="btn btn-primary">ذخیره کمپین</button></div></form></div></section>
+<script>document.getElementById('campaignActionType')?.addEventListener('change',e=>{document.querySelectorAll('[data-action-value]').forEach(el=>el.classList.toggle('hidden',el.dataset.actionValue!==e.target.value));});</script>
+<?php panel_footer(); ?>

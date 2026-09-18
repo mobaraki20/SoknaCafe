@@ -1,0 +1,1638 @@
+{
+  "schema_version": 1,
+  "kind": "acceptance_template_not_execution_results",
+  "document_version": "1.0",
+  "baseline_web_zip": "Sokna-CLEAN-INSTALL-1.36.4-dev.19.zip",
+  "baseline_zip_sha256": "9a37c1276f61d8199860f093cb312701f938e7805c79f7b2202bb27fc1b72993",
+  "baseline_web_version": "1.36.4-dev.19",
+  "reviewed_agent_sha": "2fb431962542ab59973142a9820eb673ab05d763",
+  "target_web_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+  "target_agent_sha": "6cf8b794676585eaff1a2a27c4e910667f7d8b46",
+  "shared_contract_hash": "4f6449dc0be986853a2a76216f1764dfad3b4ab315b94baab24a5917d89af07f",
+  "allowed_test_statuses": [
+    "PASS",
+    "FAIL",
+    "NOT_RUN",
+    "UAT_REQUIRED"
+  ],
+  "allowed_requirement_statuses": [
+    "OPEN",
+    "IMPLEMENTED_UNVERIFIED",
+    "VERIFIED",
+    "BLOCKED_EXTERNAL"
+  ],
+  "assessment": {
+    "web_verified": false,
+    "web_agent_integration_verified": false,
+    "operationally_accepted": false
+  },
+  "requirements": [
+    {
+      "id": "W01",
+      "title_fa": "قرارداد مشترک و نسخه هدف",
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "test_ids": [
+        "B01",
+        "B02",
+        "B49"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "PRINT_SHARED_CONTRACT.md",
+        "tests/fixtures/print-v4-dev20/manifest.json"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "IMPLEMENTED_UNVERIFIED"
+        }
+      ],
+      "notes_fa": "هیچ requirement تا تکمیل تمام test_idهای وابسته VERIFIED اعلام نشده است."
+    },
+    {
+      "id": "W02",
+      "title_fa": "Claim/Accept/Start و replay",
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "test_ids": [
+        "B03",
+        "B04",
+        "B05",
+        "B06",
+        "B07",
+        "B08",
+        "B09",
+        "B16",
+        "B49"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "print_v4_request_hash",
+        "print_v4_claim",
+        "print_v4_accept",
+        "print_v4_start"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "IMPLEMENTED_UNVERIFIED"
+        }
+      ],
+      "notes_fa": "هیچ requirement تا تکمیل تمام test_idهای وابسته VERIFIED اعلام نشده است."
+    },
+    {
+      "id": "W03",
+      "title_fa": "attempt_status",
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "test_ids": [
+        "B07",
+        "B08",
+        "B09",
+        "B10",
+        "B11",
+        "B12",
+        "B49"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "print_v4_attempt_status"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "IMPLEMENTED_UNVERIFIED"
+        }
+      ],
+      "notes_fa": "هیچ requirement تا تکمیل تمام test_idهای وابسته VERIFIED اعلام نشده است."
+    },
+    {
+      "id": "W04",
+      "title_fa": "Report و resolution",
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "test_ids": [
+        "B05",
+        "B11",
+        "B13",
+        "B14",
+        "B15",
+        "B16",
+        "B45",
+        "B47",
+        "B49"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "print_v4_report",
+        "print_v4_db_transient"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "IMPLEMENTED_UNVERIFIED"
+        }
+      ],
+      "notes_fa": "هیچ requirement تا تکمیل تمام test_idهای وابسته VERIFIED اعلام نشده است."
+    },
+    {
+      "id": "W05",
+      "title_fa": "validation/auth",
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "test_ids": [
+        "B12",
+        "B17",
+        "B18",
+        "B36",
+        "B42"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "print_agent_api_read_json",
+        "print_agent_api_int_field",
+        "print_agent_api_bool_field"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "IMPLEMENTED_UNVERIFIED"
+        }
+      ],
+      "notes_fa": "هیچ requirement تا تکمیل تمام test_idهای وابسته VERIFIED اعلام نشده است."
+    },
+    {
+      "id": "W06",
+      "title_fa": "زمان و هویت/restore",
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "test_ids": [
+        "B19",
+        "B20",
+        "B50"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "print_database_time_to_utc"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "IMPLEMENTED_UNVERIFIED"
+        }
+      ],
+      "notes_fa": "هیچ requirement تا تکمیل تمام test_idهای وابسته VERIFIED اعلام نشده است."
+    },
+    {
+      "id": "W07",
+      "title_fa": "Print Intent و snapshot",
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "test_ids": [
+        "B06",
+        "B21",
+        "B22",
+        "B23",
+        "B24",
+        "B43",
+        "B50"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "print_response_wake_metadata",
+        "print_enqueue_job"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "IMPLEMENTED_UNVERIFIED"
+        }
+      ],
+      "notes_fa": "هیچ requirement تا تکمیل تمام test_idهای وابسته VERIFIED اعلام نشده است."
+    },
+    {
+      "id": "W08",
+      "title_fa": "retry/reprint/FIFO",
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "test_ids": [
+        "B15",
+        "B25",
+        "B26",
+        "B27",
+        "B28"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "print_admin_action_id",
+        "print_job_create_reprint",
+        "print_job_reroute_unprinted"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "IMPLEMENTED_UNVERIFIED"
+        }
+      ],
+      "notes_fa": "هیچ requirement تا تکمیل تمام test_idهای وابسته VERIFIED اعلام نشده است."
+    },
+    {
+      "id": "W09",
+      "title_fa": "مقصد و readiness",
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "test_ids": [
+        "B24",
+        "B29",
+        "B30",
+        "B31",
+        "B32",
+        "B50"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "admin/printing.php destination validation",
+        "print_reconcile_unmapped_preparation_jobs"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "IMPLEMENTED_UNVERIFIED"
+        }
+      ],
+      "notes_fa": "هیچ requirement تا تکمیل تمام test_idهای وابسته VERIFIED اعلام نشده است."
+    },
+    {
+      "id": "W10",
+      "title_fa": "Wake و bootstrap",
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "test_ids": [
+        "B02",
+        "B22",
+        "B33",
+        "B34",
+        "B35",
+        "B36",
+        "B49",
+        "B50"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "SoknaPushRuntime.printWake",
+        "api/print_bridge_capability.php"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "IMPLEMENTED_UNVERIFIED"
+        }
+      ],
+      "notes_fa": "هیچ requirement تا تکمیل تمام test_idهای وابسته VERIFIED اعلام نشده است."
+    },
+    {
+      "id": "W11",
+      "title_fa": "Preview و profile/revision",
+      "status": "BLOCKED_EXTERNAL",
+      "test_ids": [
+        "B02",
+        "B37",
+        "B38",
+        "B39",
+        "B49",
+        "B50"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "assets/js/print-template-designer.js exactRevision/exactSessionId"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "BLOCKED_EXTERNAL"
+        }
+      ],
+      "notes_fa": "وابستگی Agent واقعی/RenderProfile باز است؛ fail-closed حفظ شده."
+    },
+    {
+      "id": "W12",
+      "title_fa": "قالب‌ها",
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "test_ids": [
+        "B23",
+        "B40",
+        "B41",
+        "B42",
+        "B43"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "print_template_read_package",
+        "admin/print_templates.php"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "IMPLEMENTED_UNVERIFIED"
+        }
+      ],
+      "notes_fa": "هیچ requirement تا تکمیل تمام test_idهای وابسته VERIFIED اعلام نشده است."
+    },
+    {
+      "id": "W13",
+      "title_fa": "عیب‌یابی و UI",
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "test_ids": [
+        "B18",
+        "B19",
+        "B32",
+        "B44",
+        "B45",
+        "B46",
+        "B50"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "api/print_status_snapshot.php",
+        "admin/printing.php diagnostics"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "IMPLEMENTED_UNVERIFIED"
+        }
+      ],
+      "notes_fa": "هیچ requirement تا تکمیل تمام test_idهای وابسته VERIFIED اعلام نشده است."
+    },
+    {
+      "id": "W14",
+      "title_fa": "retirement/rotation",
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "test_ids": [
+        "B47",
+        "B50"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "printing_agent_unsettled_attempt_count"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "IMPLEMENTED_UNVERIFIED"
+        }
+      ],
+      "notes_fa": "هیچ requirement تا تکمیل تمام test_idهای وابسته VERIFIED اعلام نشده است."
+    },
+    {
+      "id": "W15",
+      "title_fa": "migration و rollout",
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "test_ids": [
+        "B01",
+        "B20",
+        "B48",
+        "B50"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "release/1.36.4-dev.20-print-web.sql",
+        "database/schema.sql"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "IMPLEMENTED_UNVERIFIED"
+        }
+      ],
+      "notes_fa": "هیچ requirement تا تکمیل تمام test_idهای وابسته VERIFIED اعلام نشده است."
+    },
+    {
+      "id": "W16",
+      "title_fa": "تست و evidence",
+      "status": "IMPLEMENTED_UNVERIFIED",
+      "test_ids": [
+        "B01",
+        "B48",
+        "B49",
+        "B50"
+      ],
+      "existing_preserved_symbols": [],
+      "changed_symbols": [
+        "tests/print_acceptance.php",
+        "tests/print-dev20-browser.py",
+        "tests/print-dev20-contract.py"
+      ],
+      "subclause_evidence": [
+        {
+          "evidence": "WEB_PRINT_TRACEABILITY.md",
+          "status": "IMPLEMENTED_UNVERIFIED"
+        }
+      ],
+      "notes_fa": "هیچ requirement تا تکمیل تمام test_idهای وابسته VERIFIED اعلام نشده است."
+    }
+  ],
+  "tests": [
+    {
+      "id": "B01",
+      "requirement_ids": [
+        "W01",
+        "W15",
+        "W16"
+      ],
+      "title_fa": "تثبیت مبنا و regression dev.19",
+      "environment": "Source + PHP/Browser",
+      "expected_fa": "ZIP/hash درست، diff فقط در scope مجاز؛ امکانات منو/Catalog/UI و بکاپ skb/Sodium dev.19 حفظ؛ source/target manifest کامل.",
+      "status": "PASS",
+      "test_names": [
+        "print-dev20-contract",
+        "printing-settings-browser",
+        "print-template-v2-browser"
+      ],
+      "test_paths": [
+        "tests/print-dev20-contract.py",
+        "tests/printing-settings-browser.py",
+        "tests/print-template-v2-browser.py"
+      ],
+      "command": "php tests/print_acceptance.php --case B01 --results artifacts/web-print-dev20/acceptance-b01",
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {
+        "php": "8.4.23",
+        "python": "3.13.5",
+        "node": "22.16.0",
+        "browser": "Chromium /usr/bin/chromium",
+        "os": "Linux sandbox"
+      },
+      "run_at": "2026-09-10T21:17:43.253975+00:00",
+      "exit_code": 0,
+      "evidence": [
+        "artifacts/web-print-dev20/acceptance-b01/summary.json",
+        "artifacts/web-print-dev20/regression/final-prepackage.log"
+      ],
+      "actual_fa": "baseline hash/dev.20 version/schema/contract و browser regressions روی source SHA ثبت‌شده PASS شدند؛ featureهای dev.19 در regressionهای موجود حفظ شدند.",
+      "blocker_fa": null
+    },
+    {
+      "id": "B02",
+      "requirement_ids": [
+        "W01",
+        "W10",
+        "W11"
+      ],
+      "title_fa": "قابلیت پروتکل در برابر آمادگی",
+      "environment": "API + fixture Agent",
+      "expected_fa": "وجود capability ثابت به معنی Listener/profile آماده نباشد؛ نسل/نسخهٔ ناسازگار صریح؛ compatibility matrix محدود با شواهد.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": "6cf8b794676585eaff1a2a27c4e910667f7d8b46",
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "نیازمند fixture/profile/local-identity سازگار با Agent target و/یا DB/API واقعی؛ Agent profile contract هنوز برای exact readiness کامل نیست."
+    },
+    {
+      "id": "B03",
+      "requirement_ids": [
+        "W02"
+      ],
+      "title_fa": "Claim با پاسخ گم‌شده",
+      "environment": "PHP + DB واقعی + HTTP fault",
+      "expected_fa": "commit Claim و قطع اتصال پیش از پاسخ؛ replay همان request، همان Attemptها و همان snapshot؛ بدون تخصیص دوم.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B04",
+      "requirement_ids": [
+        "W02"
+      ],
+      "title_fa": "Claim خالی و retention",
+      "environment": "PHP + DB واقعی",
+      "expected_fa": "پاسخ خالی ذخیره، سپس ایجاد Job تازه؛ request قبلی همچنان پاسخ خالی؛ cleanup ledger طبق TTL مصوب dedup را زود از بین نبرد.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B05",
+      "requirement_ids": [
+        "W02",
+        "W04"
+      ],
+      "title_fa": "reuse request با بدنهٔ دیگر",
+      "environment": "PHP + DB concurrent",
+      "expected_fa": "همان id/action/agent با payload/status/receipt متفاوت رد؛ درخواست سالم هم‌زمان فقط یک اثر؛ اثر تغییر agent_version طبق قرارداد.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B06",
+      "requirement_ids": [
+        "W02",
+        "W07"
+      ],
+      "title_fa": "snapshot مقصد در replay",
+      "environment": "PHP + DB",
+      "expected_fa": "بعد از Claim تنظیم مقصد/قالب عوض شود؛ پاسخ replay snapshot اولیه و payload/hash دقیق را حفظ کند.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B07",
+      "requirement_ids": [
+        "W02",
+        "W03"
+      ],
+      "title_fa": "Accept commit و انقضای lease",
+      "environment": "PHP API + DB + fake Agent",
+      "expected_fa": "پاسخ Accept گم، lease اولیه سپری؛ status/replay پذیرش واقعی را با receipt درست بازیابی کند؛ یک مالکیت.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B08",
+      "requirement_ids": [
+        "W02",
+        "W03"
+      ],
+      "title_fa": "رزرو واقعاً منقضی",
+      "environment": "PHP API + DB",
+      "expected_fa": "پیش از Accept منقضی؛ پاسخ وضعیت tuple واضح و بدون مجوز چاپ؛ status خواندنی state را پنهانی mutate نکند؛ expiry owner درست عمل کند.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B09",
+      "requirement_ids": [
+        "W02",
+        "W03"
+      ],
+      "title_fa": "Start و replay",
+      "environment": "PHP + DB + HTTP fault",
+      "expected_fa": "گم‌شدن پاسخ Start و تکرار؛ started همان Attempt، terminal به claimed تبدیل نشود؛ id/body conflict محافظت شود.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B10",
+      "requirement_ids": [
+        "W03"
+      ],
+      "title_fa": "receipt mismatch و next_action",
+      "environment": "PHP API + DB",
+      "expected_fa": "claimed/started با receipt ناسازگار یا missing طبق schema؛ هیچ action مجاز چاپ داده نشود؛ reserved بدون receiptِ ثبت‌شده جدا تفسیر شود.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B11",
+      "requirement_ids": [
+        "W03",
+        "W04"
+      ],
+      "title_fa": "stateهای terminal و انسانی",
+      "environment": "PHP API + DB",
+      "expected_fa": "submitted/failed/unknown/hold/resolved و tupleهای terminal/next_action؛ تصمیم دقیق و حفظ outcome/decision؛ هیچ وضعیت ambiguous به مجوز چاپ بدل نشود.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B12",
+      "requirement_ids": [
+        "W03",
+        "W05"
+      ],
+      "title_fa": "مالکیت status",
+      "environment": "PHP API + auth",
+      "expected_fa": "agent دیگر، lease اشتباه، session عادی و anonymous؛ رد بدون نشت؛ agent معتبر فقط اطلاعات مربوط خود را بخواند.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B13",
+      "requirement_ids": [
+        "W04"
+      ],
+      "title_fa": "Report commit و ACK گم",
+      "environment": "PHP API + DB",
+      "expected_fa": "همان report پس از قطع پاسخ ACK idempotent؛ attempt outcome از job retry_scheduled جدا؛ job/attempt/audit اتمیک.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B14",
+      "requirement_ids": [
+        "W04"
+      ],
+      "title_fa": "Spooler evidence ناقص/متفاوت",
+      "environment": "PHP API + DB",
+      "expected_fa": "submitted بدون id، terminal replay با id خالی/متفاوت و same request با evidence دیگر؛ success جعلی ممنوع؛ وضعیت قبلی حفظ.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B15",
+      "requirement_ids": [
+        "W04",
+        "W08"
+      ],
+      "title_fa": "late report و human resolution هم‌زمان",
+      "environment": "MySQL/MariaDB دو connection",
+      "expected_fa": "رقابت report و human resolve/reprint؛ سیاست قفل واحد، نتیجهٔ deterministic مجاز، تصمیم انسانی overwrite نشود و outcome قبلی گم نشود.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B16",
+      "requirement_ids": [
+        "W02",
+        "W04"
+      ],
+      "title_fa": "خطای DB و deadlock",
+      "environment": "DB واقعی + fault",
+      "expected_fa": "1062 receipt، unique دیگر، deadlock و قطع DB جدا طبقه‌بندی شوند؛ transient receipt_conflict نشود؛ retry محدود با identity ثابت.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B17",
+      "requirement_ids": [
+        "W05"
+      ],
+      "title_fa": "schema و محدودیت HTTP",
+      "environment": "HTTP integration",
+      "expected_fa": "method/content-type/JSON object/types/body oversized/hash بلند/ready=[] و missing؛ رد دقیق بدون truncate خطرناک یا allocation نامحدود.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B18",
+      "requirement_ids": [
+        "W05",
+        "W13"
+      ],
+      "title_fa": "مجوز نقش و CSRF",
+      "environment": "Browser + sessionهای واقعی",
+      "expected_fa": "admin، صندوق، سفارش‌گیر و anonymous؛ عملیات مجاز کار کند، mutation بی‌مجوز/CSRF رد؛ چارچوب permission جدید موازی ایجاد نشود.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B19",
+      "requirement_ids": [
+        "W06",
+        "W13"
+      ],
+      "title_fa": "UTC و ساعت نمایش",
+      "environment": "PHP + DB timezone fixtures",
+      "expected_fa": "تمام wire times و snapshot last_submitted_at offset صریح؛ DB timezone تهران/UTC، تاریخ جلالی و clock skew؛ داده تاریخی کور تبدیل نشود.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B20",
+      "requirement_ids": [
+        "W06",
+        "W15"
+      ],
+      "title_fa": "restore با Agent جلوتر",
+      "environment": "Recovery lab / DB + Agent simulator",
+      "expected_fa": "DB قدیمی در حضور شواهد بعد از backup؛ pause/reconcile و generation طبق قرارداد؛ صفر reprint خودکار و حفظ امکانات skb.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B21",
+      "requirement_ids": [
+        "W07"
+      ],
+      "title_fa": "اتمیک بودن سفارش و چاپ لازم",
+      "environment": "Domain production + DB fault",
+      "expected_fa": "برای workflowهای ثبت/اصلاح/لغو/تسویه، enqueue لازم fail؛ transaction طبق قرارداد rollback؛ network در transaction نباشد.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B22",
+      "requirement_ids": [
+        "W07",
+        "W10"
+      ],
+      "title_fa": "metadata فقط پس از commit",
+      "environment": "PHP workflow + HTTP",
+      "expected_fa": "rollback/savepoint، exception و success=false با HTTP200؛ هیچ wake برای Job commit‌نشده؛ success commit‌شده شناسهٔ درست داشته باشد.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B23",
+      "requirement_ids": [
+        "W07",
+        "W12"
+      ],
+      "title_fa": "payload/template مستقل از شبکه",
+      "environment": "DB + fake Agent",
+      "expected_fa": "قالب فعال عوض/حذف و اینترنت بعد از دریافت قطع؛ payload ثابت خودکفا، hash bytes درست، fetch مستقل قالب در print path صفر.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B24",
+      "requirement_ids": [
+        "W07",
+        "W09"
+      ],
+      "title_fa": "چاپ آزمایشی واقعی",
+      "environment": "Domain/API + renderer fixture",
+      "expected_fa": "customer/preparation با document_kind و area صحیح، قالب/profile مقصد؛ برچسب آزمایشی و عدم mutation سفارش/مالی واقعی.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B25",
+      "requirement_ids": [
+        "W08"
+      ],
+      "title_fa": "retry بعد از سقف",
+      "environment": "MySQL/MariaDB + UI",
+      "expected_fa": "پنج شکست ایمن و retry انسانی؛ یک چرخه تازه معتبر، attempt_no صعودی و audit کامل؛ unknown وارد safe retry نشود.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B26",
+      "requirement_ids": [
+        "W08"
+      ],
+      "title_fa": "دوبارکلیک و response loss انسانی",
+      "environment": "Browser + DB concurrent",
+      "expected_fa": "retry/reprint/reroute تکراری با همان action identity یک اثر؛ درخواست صریح تازه طبق policy جدا؛ random dedup کلید مانع replay نشود.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B27",
+      "requirement_ids": [
+        "W08"
+      ],
+      "title_fa": "failed قدیمی و reprint FIFO",
+      "environment": "Domain + DB واقعی",
+      "expected_fa": "reprint از failed قابل دستیابی؛ جانشین پشت blocker حل‌نشده گیر نکند یا عملیات با مسیر مجاز جایگزین شود؛ رفع blocker اتمیک و audited.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B28",
+      "requirement_ids": [
+        "W08"
+      ],
+      "title_fa": "audit چرخه در reroute",
+      "environment": "MySQL/MariaDB واقعی",
+      "expected_fa": "reroute از failed چرخه جدید، timestamp و actor درست بر مبنای مقدار قبلی؛ حفظ ترتیب assignment و عدم reset تاریخچه.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B29",
+      "requirement_ids": [
+        "W09"
+      ],
+      "title_fa": "رقابت نگاشت area",
+      "environment": "DB دو connection",
+      "expected_fa": "دو مقصد برای یک area هم‌زمان؛ conflict معنایی commit نشود؛ lock scope و ترتیب مشترک.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B30",
+      "requirement_ids": [
+        "W09"
+      ],
+      "title_fa": "اعتبار geometry و queue",
+      "environment": "API + DB + Browser",
+      "expected_fa": "عرض صفر/منفی/NaN/بزرگ، copies نامعتبر و queue خالی؛ رد قابل فهم؛ profile stale را verified نگیر و snapshot کار پذیرفته‌شده ثابت بماند.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B31",
+      "requirement_ids": [
+        "W09"
+      ],
+      "title_fa": "رفع preparation_area_unmapped",
+      "environment": "Domain + DB",
+      "expected_fa": "پس از اصلاح نگاشت، Job قدیمی به area صحیح برود؛ multi-area بدون split مصوب اشتباه هدایت نشود.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B32",
+      "requirement_ids": [
+        "W09",
+        "W13"
+      ],
+      "title_fa": "Primary/fallback و مقصد مستقل",
+      "environment": "Domain + DB",
+      "expected_fa": "مسیر اصلی offline و fallback مجاز؛ claimed به دیگری منتقل نشود؛ مقصد سالم مستقل پیش برود و optional disabled کل سلامت را خراب نکند.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B33",
+      "requirement_ids": [
+        "W10"
+      ],
+      "title_fa": "coalescing Wake",
+      "environment": "Browser JS + fake local bridge",
+      "expected_fa": "دو پاسخ چاپ سریع حین in-flight و چند مقصد یک Agent؛ آخرین wake لازم حفظ، ارسال محدود/ادغام‌شده، بدون Job یا Attempt دوم.",
+      "status": "PASS",
+      "test_names": [
+        "print-dev20-browser B33"
+      ],
+      "test_paths": [
+        "tests/print-dev20-browser.py"
+      ],
+      "command": "python3 tests/print-dev20-browser.py --case B33 --results artifacts/web-print-dev20/browser",
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {
+        "php": "8.4.23",
+        "python": "3.13.5",
+        "node": "22.16.0",
+        "browser": "Chromium /usr/bin/chromium",
+        "os": "Linux sandbox"
+      },
+      "run_at": "2026-09-10T21:17:43.253975+00:00",
+      "exit_code": 0,
+      "evidence": [
+        "artifacts/web-print-dev20/browser/B33.json",
+        "artifacts/web-print-dev20/browser/B33-wake.png"
+      ],
+      "actual_fa": "Chromium headless واقعی روی JS production/fixture محدود اجرا و تمام assertionهای case PASS شد.",
+      "blocker_fa": null
+    },
+    {
+      "id": "B34",
+      "requirement_ids": [
+        "W10"
+      ],
+      "title_fa": "timeout و fallback",
+      "environment": "Browser + fake bridge/API",
+      "expected_fa": "bootstrap/loopback کند، رد permission، بسته‌شدن tab و Bridge خاموش؛ UI سفارش متوقف/تکرار نشود، قفل in-flight آزاد و polling کافی باشد.",
+      "status": "PASS",
+      "test_names": [
+        "print-dev20-browser B34"
+      ],
+      "test_paths": [
+        "tests/print-dev20-browser.py"
+      ],
+      "command": "python3 tests/print-dev20-browser.py --case B34 --results artifacts/web-print-dev20/browser",
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {
+        "php": "8.4.23",
+        "python": "3.13.5",
+        "node": "22.16.0",
+        "browser": "Chromium /usr/bin/chromium",
+        "os": "Linux sandbox"
+      },
+      "run_at": "2026-09-10T21:17:43.253975+00:00",
+      "exit_code": 0,
+      "evidence": [
+        "artifacts/web-print-dev20/browser/B34.json"
+      ],
+      "actual_fa": "Chromium headless واقعی روی JS production/fixture محدود اجرا و تمام assertionهای case PASS شد.",
+      "blocker_fa": null
+    },
+    {
+      "id": "B35",
+      "requirement_ids": [
+        "W10"
+      ],
+      "title_fa": "تطبیق دستگاه محلی",
+      "environment": "Browser + Agent fixtures",
+      "expected_fa": "دو صندوق/Agent با port یکسان و موبایل؛ identity غلط/credential دوردست به localhost نامربوط مجوز exact/wake موفق ندهد؛ fallback واضح.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": "6cf8b794676585eaff1a2a27c4e910667f7d8b46",
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "نیازمند fixture/profile/local-identity سازگار با Agent target و/یا DB/API واقعی؛ Agent profile contract هنوز برای exact readiness کامل نیست."
+    },
+    {
+      "id": "B36",
+      "requirement_ids": [
+        "W05",
+        "W10"
+      ],
+      "title_fa": "امنیت bootstrap و secret",
+      "environment": "HTTP + Browser + export/cache tests",
+      "expected_fa": "role unauthorized، origin نامعتبر، stale generation، arbitrary URL، service worker cache و log؛ هیچ bearer/lease/pairing عمومی یا secret در target نامعتبر نشت نکند.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B37",
+      "requirement_ids": [
+        "W11"
+      ],
+      "title_fa": "revision race قبل از debounce",
+      "environment": "Browser deterministic timing",
+      "expected_fa": "فرم تغییر کند و پاسخ قبلی پیش از timer تازه برسد؛ تصویر قدیمی پذیرفته نشود؛ sessionهای جدا و abort/latest update درست.",
+      "status": "PASS",
+      "test_names": [
+        "print-dev20-browser B37"
+      ],
+      "test_paths": [
+        "tests/print-dev20-browser.py"
+      ],
+      "command": "python3 tests/print-dev20-browser.py --case B37 --results artifacts/web-print-dev20/browser",
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {
+        "php": "8.4.23",
+        "python": "3.13.5",
+        "node": "22.16.0",
+        "browser": "Chromium /usr/bin/chromium",
+        "os": "Linux sandbox"
+      },
+      "run_at": "2026-09-10T21:17:43.253975+00:00",
+      "exit_code": 0,
+      "evidence": [
+        "artifacts/web-print-dev20/browser/B37.json",
+        "artifacts/web-print-dev20/browser/B37-preview-revision.png"
+      ],
+      "actual_fa": "Chromium headless واقعی روی JS production/fixture محدود اجرا و تمام assertionهای case PASS شد.",
+      "blocker_fa": null
+    },
+    {
+      "id": "B38",
+      "requirement_ids": [
+        "W11"
+      ],
+      "title_fa": "DPI و profile مقصد",
+      "environment": "Browser + Agent profile fixtures",
+      "expected_fa": "دو مقصد هم‌عرض با 203/300 و DPI X/Y متفاوت؛ مقصد منتخب/profile واقعی استفاده شود، dpi ثابت203 حذف و stale profile exact نشود.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": "6cf8b794676585eaff1a2a27c4e910667f7d8b46",
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "نیازمند fixture/profile/local-identity سازگار با Agent target و/یا DB/API واقعی؛ Agent profile contract هنوز برای exact readiness کامل نیست."
+    },
+    {
+      "id": "B39",
+      "requirement_ids": [
+        "W11"
+      ],
+      "title_fa": "busy و خطای preview",
+      "environment": "Browser + bounded Agent fixture",
+      "expected_fa": "429/busy/timeout، تصویر بزرگ/نامعتبر و تغییر width/scenario؛ retry محدود، label و تصویر هم‌معنا، حفظ فرم و عدم ساخت print job.",
+      "status": "PASS",
+      "test_names": [
+        "print-dev20-browser B39"
+      ],
+      "test_paths": [
+        "tests/print-dev20-browser.py"
+      ],
+      "command": "python3 tests/print-dev20-browser.py --case B39 --results artifacts/web-print-dev20/browser",
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {
+        "php": "8.4.23",
+        "python": "3.13.5",
+        "node": "22.16.0",
+        "browser": "Chromium /usr/bin/chromium",
+        "os": "Linux sandbox"
+      },
+      "run_at": "2026-09-10T21:17:43.253975+00:00",
+      "exit_code": 0,
+      "evidence": [
+        "artifacts/web-print-dev20/browser/B39.json",
+        "artifacts/web-print-dev20/browser/B39-preview-fail-closed.png"
+      ],
+      "actual_fa": "Chromium headless واقعی روی JS production/fixture محدود اجرا و تمام assertionهای case PASS شد.",
+      "blocker_fa": null
+    },
+    {
+      "id": "B40",
+      "requirement_ids": [
+        "W12"
+      ],
+      "title_fa": "حذف قالب فعال و imported",
+      "environment": "DB + Browser",
+      "expected_fa": "import با source builtin قابل حذف؛ active replacement روشن و اتمیک؛ استاندارد جاری policy روشن؛ آخرین قالب بی‌جایگزین حذف نشود.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B41",
+      "requirement_ids": [
+        "W12"
+      ],
+      "title_fa": "race قالب و active_guard",
+      "environment": "DB دو connection",
+      "expected_fa": "activate/delete/import/reset هم‌زمان؛ دقیقاً یک active معتبر با guard سازگار؛ شکست transaction active را از بین نبرد.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B42",
+      "requirement_ids": [
+        "W12",
+        "W05"
+      ],
+      "title_fa": "import امن و provenance",
+      "environment": "PHP parser + fixtures",
+      "expected_fa": "ZIP bomb/path traversal/entry زیاد/XML خارجی/executable و JSON بزرگ رد؛ import سالم source_version و hash درست، تکرار طبق policy.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B43",
+      "requirement_ids": [
+        "W07",
+        "W12"
+      ],
+      "title_fa": "بازچاپ تاریخی و layout",
+      "environment": "DB + document/renderer fixtures",
+      "expected_fa": "پس از تغییر/حذف قالب، بازچاپ از snapshot با برچسب reprint؛ چاپ با قالب جدید عملیات صریح جدا؛ unsupported layout بی‌اثر پذیرفته نشود.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B44",
+      "requirement_ids": [
+        "W13"
+      ],
+      "title_fa": "count و pagination",
+      "environment": "DB + Browser",
+      "expected_fa": "25 مشکل، حل5، count20 مستقل از صفحه/فیلتر؛ سابقه حل‌شده حفظ و KPI/آخرین submitted از query درست.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B45",
+      "requirement_ids": [
+        "W13",
+        "W04"
+      ],
+      "title_fa": "خطای گزارش زیر heartbeat سالم",
+      "environment": "API heartbeat + UI",
+      "expected_fa": "report conflict/auth blocked و heartbeat موفق؛ خطا/age محفوظ؛ اطلاعات local قدیمی unknown/stale، سلامت endpoint/profile از runtime واقعی.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B46",
+      "requirement_ids": [
+        "W13"
+      ],
+      "title_fa": "refresh بدون خراب‌کردن فرم",
+      "environment": "Browser desktop/mobile",
+      "expected_fa": "فرم باز، focus/scroll/unsaved inputs، پاسخ‌های خارج از ترتیب و تغییر نقش؛ snapshot به‌روز اما فرم حفظ؛ raw secret نمایش داده نشود.",
+      "status": "PASS",
+      "test_names": [
+        "print-dev20-browser B46"
+      ],
+      "test_paths": [
+        "tests/print-dev20-browser.py"
+      ],
+      "command": "python3 tests/print-dev20-browser.py --case B46 --results artifacts/web-print-dev20/browser",
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {
+        "php": "8.4.23",
+        "python": "3.13.5",
+        "node": "22.16.0",
+        "browser": "Chromium /usr/bin/chromium",
+        "os": "Linux sandbox"
+      },
+      "run_at": "2026-09-10T21:17:43.253975+00:00",
+      "exit_code": 0,
+      "evidence": [
+        "artifacts/web-print-dev20/browser/B46.json",
+        "artifacts/web-print-dev20/browser/B46-refresh-mobile.png",
+        "artifacts/web-print-dev20/browser/B46-refresh-desktop.png"
+      ],
+      "actual_fa": "Chromium headless واقعی روی JS production/fixture محدود اجرا و تمام assertionهای case PASS شد.",
+      "blocker_fa": null
+    },
+    {
+      "id": "B47",
+      "requirement_ids": [
+        "W14",
+        "W04"
+      ],
+      "title_fa": "retire و rotation با outbox",
+      "environment": "API + DB + fake Agent",
+      "expected_fa": "کار باز و گزارش معلق هنگام retire/rotate؛ drain/restricted-report طبق policy، revoke واقعی رعایت، عدم reassignment یا حذف history؛ agent قدیمی دوباره active نشود.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "pdo_mysql/MariaDB/API/session acceptance environment لازم برای assertionهای کامل این case در sandbox موجود نیست؛ SQLite/static به‌عنوان PASS استفاده نشد."
+    },
+    {
+      "id": "B48",
+      "requirement_ids": [
+        "W15",
+        "W16"
+      ],
+      "title_fa": "نصب و upgrade رسمی از dev.19",
+      "environment": "MySQL/MariaDB + updater",
+      "expected_fa": "fresh و upgrade با stateهای چاپ/قالب؛ failure/rollback policy، schema هم‌معنا، preserving skb/Sodium/Catalog/UI؛ لینک Agent فقط release دقیق معتبر.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "بسته update ساخته می‌شود، اما acceptance رسمی fresh/upgrade روی MySQL/MariaDB واقعی در این runtime اجرا نشده است."
+    },
+    {
+      "id": "B49",
+      "requirement_ids": [
+        "W01",
+        "W02",
+        "W03",
+        "W04",
+        "W10",
+        "W11",
+        "W16"
+      ],
+      "title_fa": "یکپارچگی با Agent اصلاح‌شده",
+      "environment": "Windows + PHP/DB واقعی",
+      "expected_fa": "SHA هر دو مشخص؛ loss/replay/409/auth recovery، Wake و exact profile/parity با capture واقعی؛ fixture به‌جای جفت واقعی PASS نشود.",
+      "status": "NOT_RUN",
+      "test_names": [],
+      "test_paths": [],
+      "command": "php tests/print_acceptance.php --suite integration --results artifacts/web-print-dev20/acceptance-integration",
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": "6cf8b794676585eaff1a2a27c4e910667f7d8b46",
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [
+        "artifacts/web-print-dev20/acceptance-integration/summary.json"
+      ],
+      "actual_fa": null,
+      "blocker_fa": "A49/B49 به Windows Agent production transport، acceptance server، token file، destination seed، fault proxy و mutation opt-in واقعی نیاز دارد."
+    },
+    {
+      "id": "B50",
+      "requirement_ids": [
+        "W06",
+        "W07",
+        "W09",
+        "W10",
+        "W11",
+        "W13",
+        "W14",
+        "W15",
+        "W16"
+      ],
+      "title_fa": "پذیرش صندوق و پرینتر",
+      "environment": "UAT وب + Windows + دستگاه هدف",
+      "expected_fa": "مرورگر HTTPS/local permission، صندوق/موبایل، قطع اینترنت، restart، paper-out، receipts58/80 در صورت پشتیبانی، RTL و رسید بلند؛ 50 چاپ و حداقل24h soak با شواهد بدون تکرار ناخواسته.",
+      "status": "UAT_REQUIRED",
+      "test_names": [],
+      "test_paths": [],
+      "command": null,
+      "web_source_sha": "18a0930106df17190378fa5a43422a993fc5096a",
+      "agent_source_sha": null,
+      "runtime_versions": {},
+      "run_at": null,
+      "exit_code": null,
+      "evidence": [],
+      "actual_fa": null,
+      "blocker_fa": "نیازمند Windows cashier + پرینتر هدف، قطع اینترنت/restart/paper-out، 50 چاپ و soak حداقل 24 ساعت."
+    }
+  ],
+  "external_dependencies": [
+    {
+      "id": "EXT_DB",
+      "status": "BLOCKED_EXTERNAL",
+      "description_fa": "pdo_mysql/MariaDB acceptance runtime در sandbox موجود نیست؛ تست‌های دو connection و migration واقعی اجرا نشد."
+    },
+    {
+      "id": "EXT_AGENT_A49",
+      "status": "BLOCKED_EXTERNAL",
+      "description_fa": "Windows Agent real API integration و fault proxy با ورودی‌های SERVER_DEPENDENCIES.md فراهم نیست؛ B49 NOT_RUN."
+    },
+    {
+      "id": "EXT_PROFILE",
+      "status": "BLOCKED_EXTERNAL",
+      "description_fa": "RenderProfile destination/queue و local device identity قابل اثبات از Agent remediation در Web contract موجود نیست؛ exact preview fail-closed است."
+    },
+    {
+      "id": "EXT_UAT",
+      "status": "UAT_REQUIRED",
+      "description_fa": "Windows cashier/printer، paper-out/restart/offline، 50 چاپ و soak >=24h لازم است."
+    }
+  ],
+  "review_rounds": [
+    {
+      "round": 1,
+      "file": "REVIEW_ROUND_1.md",
+      "status": "COMPLETE",
+      "finding_fa": "Root cause/API/wake/replay/retirement و UX/operations/security بررسی شد؛ DB/Agent/UAT gate باز ماند."
+    },
+    {
+      "round": 2,
+      "file": "REVIEW_ROUND_2.md",
+      "status": "COMPLETE",
+      "finding_fa": "Regression draftTemplate در exact preview کشف و اصلاح شد؛ lint/static/browser دوباره PASS شد."
+    }
+  ]
+}

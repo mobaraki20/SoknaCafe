@@ -1,0 +1,146 @@
+{
+  "version": "1.32.14",
+  "viewports": [
+    320,
+    360,
+    390,
+    412,
+    768,
+    1366
+  ],
+  "routes": [
+    {
+      "area": "critical-route",
+      "routes": [
+        "admin/subscribers.php?view=<id>",
+        "admin/subscribers.php",
+        "admin/invoices.php"
+      ],
+      "states": [
+        "authenticated",
+        "invoice",
+        "payment",
+        "reversal",
+        "empty-ledger"
+      ],
+      "physical": [
+        "MariaDB/MySQL query execution",
+        "authenticated staging HTTP 200"
+      ]
+    },
+    {
+      "area": "financial",
+      "routes": [
+        "admin/invoices.php archive",
+        "admin/invoices.php detail",
+        "admin/subscribers.php list",
+        "admin/subscribers.php profile",
+        "admin/accommodation.php"
+      ],
+      "states": [
+        "normal",
+        "filtered",
+        "empty",
+        "reversal",
+        "long-items",
+        "metadata-open",
+        "exception-only status"
+      ],
+      "physical": [
+        "Android touch",
+        "print/reprint where applicable"
+      ]
+    },
+    {
+      "area": "inventory",
+      "routes": [
+        "admin/inventory_receive.php",
+        "admin/inventory_waste.php",
+        "admin/inventory_count.php",
+        "admin/inventory_item.php"
+      ],
+      "states": [
+        "keyboard-open",
+        "optional-fields-added",
+        "date-only",
+        "exact-time",
+        "money-entry",
+        "validation-error"
+      ],
+      "physical": [
+        "Android IME",
+        "MariaDB transaction"
+      ]
+    },
+    {
+      "area": "menu",
+      "routes": [
+        "admin/items.php quick edit",
+        "admin/item_form.php"
+      ],
+      "states": [
+        "flags-visible",
+        "swipe-down-clean",
+        "swipe-down-dirty",
+        "money-edit",
+        "choice-open",
+        "schedule-date-only",
+        "overnight-schedule",
+        "recipe-existing",
+        "recipe-unknown-cost"
+      ],
+      "physical": [
+        "Android touch/keyboard"
+      ]
+    },
+    {
+      "area": "date-time",
+      "routes": [
+        "item schedule",
+        "events",
+        "campaigns",
+        "tags",
+        "inventory optional exact time"
+      ],
+      "states": [
+        "29-day",
+        "30-day",
+        "31-day",
+        "jalali-swipe-left",
+        "jalali-swipe-right",
+        "minute-step-15",
+        "minute-step-5",
+        "calendar-icon-contained"
+      ],
+      "physical": [
+        "Android swipe/touch"
+      ]
+    },
+    {
+      "area": "notifications",
+      "routes": [
+        "operator calls",
+        "preparation",
+        "shared device controls",
+        "admin push diagnostics"
+      ],
+      "states": [
+        "floor recipient",
+        "prep-area recipient",
+        "admin-default-silent",
+        "one-tap-accept",
+        "already-claimed",
+        "expired-device",
+        "worker-backlog",
+        "full-pipeline-test",
+        "stale-worker-detected"
+      ],
+      "physical": [
+        "Android background Web Push",
+        "notification action buttons",
+        "PWA closed/background"
+      ]
+    }
+  ],
+  "rule": "Automation PASS never converts a physical row to PASS. Final promotion requires critical MariaDB/MySQL and authenticated HTTP rows to execute successfully; otherwise the artifact remains RC/UAT_REQUIRED."
+}

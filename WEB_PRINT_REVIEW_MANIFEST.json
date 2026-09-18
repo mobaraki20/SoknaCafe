@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-10T21:17:43.253975+00:00",
+  "project": "Sokna Web Print",
+  "baseline": {
+    "version": "1.36.4-dev.19",
+    "zip": "Sokna-CLEAN-INSTALL-1.36.4-dev.19.zip",
+    "sha256": "9a37c1276f61d8199860f093cb312701f938e7805c79f7b2202bb27fc1b72993",
+    "git_commit": "0f474b18582e2186cc67b4eb444c40d00f78ef2c"
+  },
+  "target": {
+    "version": "1.36.4-dev.20",
+    "branch": "work/web-print-dev19-remediation",
+    "production_code_commit": "18a0930106df17190378fa5a43422a993fc5096a",
+    "web_remote": null
+  },
+  "agent": {
+    "official_release": {
+      "version": "6.2.0",
+      "sha": "2fb431962542ab59973142a9820eb673ab05d763",
+      "tag": "v6.2.0"
+    },
+    "remediation_candidate": {
+      "branch": "feat/agent-remediation-post-6.2",
+      "sha": "6cf8b794676585eaff1a2a27c4e910667f7d8b46",
+      "status": "UNVERIFIED"
+    },
+    "pair_integration_verified": false
+  },
+  "shared_contract": {
+    "path": "PRINT_SHARED_CONTRACT.md",
+    "sha256": "4f6449dc0be986853a2a76216f1764dfad3b4ab315b94baab24a5917d89af07f"
+  },
+  "migration": {
+    "path": "release/1.36.4-dev.20-print-web.sql",
+    "from": "1.36.4-dev.19",
+    "real_mysql_tested": false
+  },
+  "runtime": {
+    "php": "8.4.23",
+    "node": "22.16.0",
+    "python": "3.13.5",
+    "chromium": "/usr/bin/chromium",
+    "pdo_mysql": false
+  },
+  "test_summary": {
+    "pass": [
+      "B01",
+      "B33",
+      "B34",
+      "B37",
+      "B39",
+      "B46"
+    ],
+    "not_run_count": 43,
+    "uat_required": [
+      "B50"
+    ],
+    "web_verified": false,
+    "web_agent_integration_verified": false,
+    "operationally_accepted": false
+  },
+  "packages": {
+    "clean_install": null,
+    "update": null,
+    "checksums": "PACKAGE_CHECKSUMS.txt"
+  },
+  "notes": [
+    "No web Git remote is configured; no PR URL was invented.",
+    "Package hashes are recorded in PACKAGE_CHECKSUMS.txt after build.",
+    "Remediation Agent candidate is not treated as an official release or integration PASS."
+  ]
+}

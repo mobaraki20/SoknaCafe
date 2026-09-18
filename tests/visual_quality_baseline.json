@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "rule": "Known legacy page-composition debt is explicit. New multi-surface pages without a shared flow owner fail the gate; fixed debt must be removed from this file.",
+  "top_level_surface_debt": [
+    {"path": "admin/inventory_count_start.php", "reason": "legacy multi-card composition pending migration to a shared page-flow owner"},
+    {"path": "admin/inventory_review.php", "reason": "legacy multi-card composition pending migration to a shared page-flow owner"},
+    {"path": "admin/maintenance.php", "reason": "legacy multi-card composition pending migration to a shared page-flow owner"},
+    {"path": "admin/marketing.php", "reason": "legacy multi-card composition pending migration to a shared page-flow owner"},
+    {"path": "admin/printing.php", "reason": "legacy multi-card composition pending migration to a shared page-flow owner"}
+  ]
+}

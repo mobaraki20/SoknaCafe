@@ -1,0 +1,13 @@
+(()=>{'use strict';
+  const allowed=item=>Boolean(item) && Number(item.takeaway_allowed ?? 1)===1;
+  const quantity=line=>Math.max(0,Number(line?.quantity||0));
+  const normalizedTakeaway=line=>allowed(line?.item||line)?Math.max(0,Math.min(quantity(line),Number(line?.takeaway_quantity||0))):0;
+  const clamp=(line)=>{line.takeaway_quantity=normalizedTakeaway(line);return line};
+  const takeaway=line=>normalizedTakeaway(line);
+  const eligibleQuantity=lines=>[...lines].reduce((sum,line)=>sum+(allowed(line?.item||line)?quantity(line):0),0);
+  const takeawayQuantity=lines=>[...lines].reduce((sum,line)=>sum+takeaway(line),0);
+  const setAll=(lines,on)=>{for(const line of lines){line.takeaway_quantity=on&&allowed(line?.item||line)?quantity(line):0;}return lines};
+  const label=(line,format=n=>String(n))=>{const q=quantity(line),t=takeaway(line);if(t<=0)return '';if(t>=q)return 'همه بیرون‌بر';return `${format(t)} از ${format(q)} بیرون‌بر`};
+  const ratioHtml=(t,q,format=n=>String(n))=>`<span class="fulfillment-ratio"><bdi dir="rtl">${format(t)}</bdi><span>از</span><bdi dir="rtl">${format(q)}</bdi></span>`;
+  window.SoknaFulfillment={allowed,clamp,quantity,takeaway,eligibleQuantity,takeawayQuantity,setAll,label,ratioHtml};
+})();

@@ -1,0 +1,118 @@
+<?php
+declare(strict_types=1);
+require dirname(__DIR__) . '/bootstrap.php';
+require_login(['admin']);
+sokna_module_require('reporting');
+require dirname(__DIR__) . '/includes/panel_layout.php';
+require_once dirname(__DIR__) . '/includes/reporting.php';
+require_once dirname(__DIR__) . '/includes/xlsx_export.php';
+
+function report_event_filter(string $column, string $start, string $end, string $shiftKey=''): array {
+    $sql="$column>=? AND $column<?";$params=[$start,$end];
+    if($shiftKey!==''){[$shiftSql,$shiftParams]=business_shift_time_sql($column,$shiftKey);$sql.=' AND '.$shiftSql;array_push($params,...$shiftParams);}
+    return [$sql,$params];
+}
+function report_snapshot_filter(string $alias, string $fromDate, string $toDate, string $shiftKey=''): array {
+    return business_snapshot_filter_sql($alias,$fromDate,$toDate,$shiftKey);
+}
+function report_scalar(PDO $pdo, string $sql, array $params=[]): mixed {
+    $stmt=$pdo->prepare($sql);$stmt->execute($params);$value=$stmt->fetchColumn();return $value===false?null:$value;
+}
+
+$range=report_range_resolve('today');
+$fromDate=(string)$range['from'];$toDate=(string)$range['to'];
+$error=(string)$range['error'];
+$shiftOptions=business_report_shift_options($fromDate,$toDate,true);
+$showShiftFilter=count($shiftOptions)>1;
+$shiftScope=(string)($_GET['shift']??'all');if(!isset($shiftOptions[$shiftScope]))$shiftScope='all';
+$selectedShift=(!in_array($shiftScope,['all','compare'],true)&&isset($shiftOptions[$shiftScope]))?$shiftScope:'';
+// Raw audit/staff action timestamps do not carry immutable shift snapshots. Only
+// apply a clock-time shift predicate while that shift still exists in current config.
+$eventShiftKey=$selectedShift!==''&&business_shift_by_key($selectedShift)?$selectedShift:'';
+[$start,$end]=business_date_range_bounds($fromDate,$toDate);$startSql=$start->format('Y-m-d H:i:s');$endSql=$end->format('Y-m-d H:i:s');
+$accommodationLiveEnabled=accommodation_live_operations_enabled();
+$accommodationVisible=$accommodationLiveEnabled||accommodation_history_exists();
+$validSettlement=report_valid_settlement_sql('sr');
+$settleWhere="$validSettlement AND sr.business_date>=? AND sr.business_date<=?";$settleParams=[$fromDate,$toDate];if($selectedShift!==''){$settleWhere.=' AND sr.business_shift_key=?';$settleParams[]=$selectedShift;}
+[$orderWhere,$orderParams]=report_snapshot_filter('o',$fromDate,$toDate,$selectedShift);
+[$callWhere,$callParams]=report_snapshot_filter('w',$fromDate,$toDate,$selectedShift);
+[$sessionWhere,$sessionParams]=report_snapshot_filter('s',$fromDate,$toDate,$selectedShift);
+[$auditWhere,$auditParams]=report_event_filter('a.created_at',$startSql,$endSql,'');
+$accEffectiveTime=accommodation_transfer_effective_time_sql('at');
+[$accEventWhere,$accEventParams]=report_event_filter($accEffectiveTime,$startSql,$endSql,'');
+
+$orderStmt=db()->prepare("SELECT COUNT(*) total,SUM(o.status='cancelled') cancelled,SUM(o.status='completed') completed,SUM(o.status IN('pending_approval','new','accounted')) active,COALESCE(AVG(CASE WHEN o.accepted_at IS NOT NULL THEN TIMESTAMPDIFF(SECOND,o.created_at,o.accepted_at) END),0) avg_accept_seconds,COALESCE(SUM(o.total_amount),0) operational_amount FROM orders o WHERE $orderWhere");$orderStmt->execute($orderParams);$orderStats=$orderStmt->fetch()?:[];
+$checkoutStmt=db()->prepare("SELECT COALESCE(SUM(sr.subtotal),0) checkout_subtotal,COALESCE(SUM(sr.discount),0) checkout_discount,COALESCE(SUM(sr.total),0) checkout_total FROM settlement_records sr WHERE $settleWhere");$checkoutStmt->execute($settleParams);$checkoutStats=$checkoutStmt->fetch()?:[];
+$reversalWhere="sr.status='reversal' AND sr.business_date>=? AND sr.business_date<=?";$reversalParams=[$fromDate,$toDate];if($selectedShift!==''){$reversalWhere.=' AND sr.business_shift_key=?';$reversalParams[]=$selectedShift;}$revStmt=db()->prepare("SELECT COALESCE(SUM(sr.total),0) total FROM settlement_records sr WHERE $reversalWhere");$revStmt->execute($reversalParams);$checkoutStats['checkout_voided_total']=(int)($revStmt->fetchColumn()?:0);
+$accommodationStats=['posted_total'=>0,'voided_total'=>0,'attention'=>0];
+if($accommodationVisible){
+    $accPostedWhere=$settleWhere." AND sr.destination='accommodation'";
+    $accommodationStats['posted_total']=(int)(report_scalar(db(),"SELECT COALESCE(SUM(sr.total),0) FROM settlement_records sr WHERE $accPostedWhere",$settleParams)??0);
+    $accVoidedWhere=$reversalWhere." AND sr.destination='accommodation'";
+    $accommodationStats['voided_total']=(int)(report_scalar(db(),"SELECT COALESCE(SUM(sr.total),0) FROM settlement_records sr WHERE $accVoidedWhere",$reversalParams)??0);
+    $attentionWhere=accommodation_attention_where_sql('at');
+    $attentionStmt=db()->prepare("SELECT COUNT(*) FROM accommodation_transfers at WHERE $accEventWhere AND $attentionWhere");
+    $attentionStmt->execute($accEventParams);$accommodationStats['attention']=(int)($attentionStmt->fetchColumn()?:0);
+}
+
+$callStmt=db()->prepare("SELECT COUNT(*) total,SUM(w.status='done') done,SUM(w.status='cancelled') cancelled,SUM(w.status IN('new','accepted')) active,COALESCE(AVG(CASE WHEN w.accepted_at IS NOT NULL THEN TIMESTAMPDIFF(SECOND,w.created_at,w.accepted_at) END),0) avg_response_seconds FROM waiter_calls w WHERE $callWhere");$callStmt->execute($callParams);$callStats=$callStmt->fetch()?:[];
+$sessionStmt=db()->prepare("SELECT COUNT(*) total,SUM(s.status='closed') closed,SUM(s.status='active') active,COALESCE(AVG(CASE WHEN s.ended_at IS NOT NULL THEN TIMESTAMPDIFF(SECOND,s.started_at,s.ended_at) END),0) avg_duration_seconds FROM table_sessions s WHERE $sessionWhere");$sessionStmt->execute($sessionParams);$sessionStats=$sessionStmt->fetch()?:[];
+$orderDetailSql="SELECT o.id,o.status,o.order_source,o.created_at,o.accepted_at,o.total_amount,t.name table_name,u.display_name accepted_by,cu.display_name created_by,(SELECT GROUP_CONCAT(CONCAT(oi.quantity,' عدد ',oi.item_name) ORDER BY oi.id SEPARATOR '، ') FROM order_items oi WHERE oi.order_id=o.id) item_summary FROM orders o JOIN cafe_tables t ON t.id=o.table_id LEFT JOIN users u ON u.id=o.accepted_by_user_id LEFT JOIN users cu ON cu.id=o.created_by_user_id WHERE $orderWhere";
+$recentStmt=db()->prepare($orderDetailSql." ORDER BY o.created_at DESC LIMIT 100");$recentStmt->execute($orderParams);$orders=$recentStmt->fetchAll();
+$staffUnavailable=$selectedShift!==''&&$eventShiftKey==='';
+$staffRows=[];
+if(!$staffUnavailable){
+    [$historyWhere,$historyParams]=report_event_filter('h.created_at',$startSql,$endSql,$eventShiftKey);[$handledWhere,$handledParams]=report_event_filter('w.created_at',$startSql,$endSql,$eventShiftKey);
+    $staffSql="SELECT u.id,u.display_name,(SELECT COUNT(*) FROM order_status_history h WHERE h.actor_user_id=u.id AND $historyWhere) order_actions,(SELECT COUNT(*) FROM waiter_calls w WHERE w.accepted_by_user_id=u.id AND $handledWhere) handled_calls FROM users u WHERE u.active=1 ORDER BY order_actions DESC,handled_calls DESC,u.display_name";$staffStmt=db()->prepare($staffSql);$staffStmt->execute([...$historyParams,...$handledParams]);$staffRows=$staffStmt->fetchAll();
+}
+$comparisonRows=[];if($shiftScope==='compare'){$compareShifts=business_report_shift_identities($shiftOptions);foreach($compareShifts as $key=>$label){$fw="$validSettlement AND sr.business_date>=? AND sr.business_date<=? AND sr.business_shift_key=?";$fp=[$fromDate,$toDate,$key];[$ow,$op]=report_snapshot_filter('o',$fromDate,$toDate,$key);[$cw,$cp]=report_snapshot_filter('w',$fromDate,$toDate,$key);[$sw,$sp]=report_snapshot_filter('s',$fromDate,$toDate,$key);$sales=(int)(report_scalar(db(),"SELECT COALESCE(SUM(sr.total),0) FROM settlement_records sr WHERE $fw",$fp)??0);$invoices=(int)(report_scalar(db(),"SELECT COUNT(*) FROM settlement_records sr WHERE $fw",$fp)??0);$ordersCount=(int)(report_scalar(db(),"SELECT COUNT(*) FROM orders o WHERE $ow",$op)??0);$callsCount=(int)(report_scalar(db(),"SELECT COUNT(*) FROM waiter_calls w WHERE $cw",$cp)??0);$sessionsCount=(int)(report_scalar(db(),"SELECT COUNT(*) FROM table_sessions s WHERE $sw",$sp)??0);$comparisonRows[]=['label'=>$label,'sales'=>$sales,'invoices'=>$invoices,'avg'=>$invoices?(int)round($sales/$invoices):0,'orders'=>$ordersCount,'calls'=>$callsCount,'sessions'=>$sessionsCount];}}
+
+$outsideActivity=['orders'=>0,'calls'=>0,'sessions'=>0,'settlements'=>0,'total'=>0];
+try{$outsideActivity=business_outside_activity_counts($fromDate,$toDate);}catch(Throwable $e){error_log('operations report outside-shift audit: '.$e->getMessage());}
+$rangeLabel=(string)$range['label'];
+if(($_GET['action']??'')==='export'){
+    $exportQuery=$_GET;unset($exportQuery['action']);$exportReturn='operations_report.php'.($exportQuery?'?'.http_build_query($exportQuery):'');
+    try{report_export_guard((int)($orderStats['total']??0),'سفارش‌های عملیات');report_export_guard((int)($sessionStats['total']??0),'نشست‌های میز');}catch(RuntimeException $e){flash('warning',$e->getMessage());redirect($exportReturn);}
+    $exportOrderStmt=db()->prepare($orderDetailSql.' ORDER BY o.created_at DESC');$exportOrderStmt->execute($orderParams);$exportOrders=$exportOrderStmt->fetchAll();
+    $summary=[[xlsx_cell('عملیات سکنا','title',3)],[xlsx_cell('بازه: '.$rangeLabel.($shiftScope!=='all'?' · '.($shiftOptions[$shiftScope]??''):''),'meta',3)],[xlsx_cell('شاخص','header'),xlsx_cell('مقدار','header'),xlsx_cell('توضیح','header')],['کل سفارش‌ها',xlsx_cell((int)($orderStats['total']??0),'integer'),''],['میانگین پذیرش سفارش',human_duration_seconds((float)($orderStats['avg_accept_seconds']??0)),''],['فراخوان‌ها',xlsx_cell((int)($callStats['total']??0),'integer'),'میانگین پاسخ: '.human_duration_seconds((float)($callStats['avg_response_seconds']??0))],['نشست میز',xlsx_cell((int)($sessionStats['total']??0),'integer'),'باز: '.(int)($sessionStats['active']??0)],['فروش خالص تسویه‌شده',xlsx_cell((int)($checkoutStats['checkout_total']??0),'money'),''],['رخداد خارج از ساعت شیفت',xlsx_cell((int)($outsideActivity['total']??0),'integer'),'']];
+    $orderSheet=[[xlsx_cell('سفارش‌های بازه','title',5)],[xlsx_cell('بازه کامل · '.$rangeLabel,'meta',5)],[xlsx_cell('زمان','header'),xlsx_cell('میز/سفارش','header'),xlsx_cell('آیتم‌ها','header'),xlsx_cell('وضعیت','header'),xlsx_cell('ثبت/پذیرش','header')]];
+    foreach($exportOrders as $order)$orderSheet[]=[format_jalali_compact((string)$order['created_at']),order_display_label($order).' · '.(string)$order['table_name'],(string)($order['item_summary']?:'—'),order_status_label((string)$order['status']),($order['order_source']??'guest')==='staff'?('ثبت توسط '.($order['created_by']?:'کارکنان')):(string)($order['accepted_by']?:'—')];
+    $staffSheet=[[xlsx_cell('فعالیت کارکنان','title',3)],[xlsx_cell($staffUnavailable?'تفکیک این شیفت تاریخی از داده فعلی ممکن نیست.':'بازه: '.$rangeLabel,'meta',3)],[xlsx_cell('کارمند','header'),xlsx_cell('اقدام سفارش','header'),xlsx_cell('فراخوان رسیدگی‌شده','header')]];
+    foreach($staffRows as $row)$staffSheet[]=[(string)$row['display_name'],xlsx_cell((int)$row['order_actions'],'integer'),xlsx_cell((int)$row['handled_calls'],'integer')];
+    $sessionDetailStmt=db()->prepare("SELECT s.id,t.name table_name,s.status,s.started_at,s.ended_at,s.business_date,s.business_shift_label,s.checkout_total,s.checkout_discount,cu.display_name closed_by,du.display_name discount_by,vu.display_name checkout_voided_by,s.checkout_voided_at FROM table_sessions s JOIN cafe_tables t ON t.id=s.table_id LEFT JOIN users cu ON cu.id=s.closed_by_user_id LEFT JOIN users du ON du.id=s.discount_by_user_id LEFT JOIN users vu ON vu.id=s.checkout_voided_by_user_id WHERE $sessionWhere ORDER BY s.started_at DESC,s.id DESC");
+    $sessionDetailStmt->execute($sessionParams);$sessionDetails=$sessionDetailStmt->fetchAll();
+    $sessionSheet=[[xlsx_cell('نشست‌ها و تسویه میز','title',9)],[xlsx_cell('بازه کامل · '.$rangeLabel,'meta',9)],[xlsx_cell('میز','header'),xlsx_cell('شروع','header'),xlsx_cell('پایان','header'),xlsx_cell('شیفت','header'),xlsx_cell('وضعیت','header'),xlsx_cell('مبلغ تسویه','header'),xlsx_cell('تخفیف','header'),xlsx_cell('ثبت تخفیف','header'),xlsx_cell('بستن/برگشت','header')]];
+    foreach($sessionDetails as $row){$finalActor=(string)($row['closed_by']?:'—');if(!empty($row['checkout_voided_at']))$finalActor='برگشت توسط '.(string)($row['checkout_voided_by']?:'—');$sessionSheet[]=[(string)$row['table_name'],format_jalali_compact((string)$row['started_at']),$row['ended_at']?format_jalali_compact((string)$row['ended_at']):'—',(string)($row['business_shift_label']?:'—'),(string)$row['status'],xlsx_cell((int)($row['checkout_total']??0),'money'),xlsx_cell((int)($row['checkout_discount']??0),'money'),(string)($row['discount_by']?:'—'),$finalActor];}
+    $sheets=[['name'=>'خلاصه','rows'=>$summary,'widths'=>[30,24,50],'freeze_row'=>3],['name'=>'سفارش‌ها','rows'=>$orderSheet,'widths'=>[24,28,52,20,24],'freeze_row'=>3,'auto_filter'=>'A3:E'.max(3,count($orderSheet)),'landscape'=>true],['name'=>'نشست‌ها و تسویه','rows'=>$sessionSheet,'widths'=>[18,22,22,20,18,20,18,24,28],'freeze_row'=>3,'auto_filter'=>'A3:I'.max(3,count($sessionSheet)),'landscape'=>true],['name'=>'فعالیت کارکنان','rows'=>$staffSheet,'widths'=>[28,20,24],'freeze_row'=>3]];
+    if($accommodationVisible){
+        $accSheet=[[xlsx_cell('انتقال‌های اقامت','title',8)],[xlsx_cell('بازه: '.$rangeLabel,'meta',8)],[xlsx_cell('زمان','header'),xlsx_cell('روز عملیاتی','header'),xlsx_cell('شیفت','header'),xlsx_cell('میز','header'),xlsx_cell('رزرو / اتاق','header'),xlsx_cell('وضعیت','header'),xlsx_cell('مبلغ','header'),xlsx_cell('ثبت‌کننده / خطا','header')]];
+        $accExportSql="SELECT at.*,ts.status session_status,t.name table_name,u.display_name actor,sr.id settlement_record_id,sr.business_date settlement_business_date,sr.business_shift_key settlement_shift_key,sr.business_shift_label settlement_shift_label,rev.id reversal_settlement_record_id FROM accommodation_transfers at JOIN table_sessions ts ON ts.id=at.session_id JOIN cafe_tables t ON t.id=ts.table_id LEFT JOIN users u ON u.id=at.operator_user_id LEFT JOIN settlement_records sr ON sr.accommodation_transfer_id=at.id AND sr.status='completed' AND sr.destination='accommodation' LEFT JOIN settlement_records rev ON rev.reverses_settlement_id=sr.id AND rev.status='reversal' WHERE (($accEventWhere) OR (sr.business_date>=? AND sr.business_date<=?)) ORDER BY $accEffectiveTime,at.id";
+        $stmt=db()->prepare($accExportSql);$stmt->execute([...$accEventParams,$fromDate,$toDate]);
+        foreach($stmt as $r){
+            $r=accommodation_enrich_transfer($r);
+            if(!empty($r['settlement_business_date'])){$businessDate=(string)$r['settlement_business_date'];$businessShiftKey=(string)($r['settlement_shift_key']?:'outside');$businessShiftLabel=(string)($r['settlement_shift_label']?:'خارج از شیفت');}
+            else{$b=business_assignment((string)$r['created_at']);$businessDate=(string)$b['business_date'];$businessShiftKey=(string)$b['shift_key'];$businessShiftLabel=(string)$b['shift_label'];}
+            if($businessDate<$fromDate||$businessDate>$toDate)continue;if($selectedShift!==''&&$businessShiftKey!==$selectedShift)continue;
+            $actor=(string)($r['actor']?:'—');if(!empty($r['last_error']))$actor.=' · خطا: '.(string)$r['last_error'];
+            $accSheet[]=[format_jalali_compact((string)$r['created_at']),format_jalali_date($businessDate,false),$businessShiftLabel,(string)$r['table_name'],'رزرو '.(string)$r['reservation_code'].' · اتاق '.(string)$r['room_name_snapshot'],(string)$r['status_label'],xlsx_cell((int)$r['amount'],'money'),$actor];
+            try{report_export_guard(max(0,count($accSheet)-3),'انتقال‌های اقامتگاه');}catch(RuntimeException $e){flash('warning',$e->getMessage());redirect($exportReturn);}
+        }
+        $sheets[]=['name'=>'انتقال اقامت','rows'=>$accSheet,'widths'=>[22,18,22,16,38,22,20,42],'freeze_row'=>3,'auto_filter'=>'A3:H'.max(3,count($accSheet)),'landscape'=>true];
+    }
+    xlsx_download('sokna-operations.xlsx',$sheets);
+}
+panel_header('عملیات','operations_report');
+?>
+<div class="panel-surface-stack">
+<section class="report-shell"><div class="report-shell-head"><div><strong>عملیات</strong><small>چه اتفاقی افتاد، کجا تأخیر یا استثنا داشتیم و تیم چه اقداماتی انجام داد. مبنای گزارش: روز عملیاتی.</small></div><span class="report-range-summary"><?= e($rangeLabel) ?></span></div><form method="get" class="report-filter-grid"><?php report_render_range_fields($range,'operationsReport'); ?><?php if($showShiftFilter): ?><div class="form-group"><label for="operationsShift">شیفت</label><select class="form-control" id="operationsShift" name="shift" data-choice-mode="adaptive" data-choice-label="شیفت"><?php foreach($shiftOptions as $key=>$label): ?><option value="<?= e($key) ?>" <?= $shiftScope===$key?'selected':'' ?>><?= e($label) ?></option><?php endforeach; ?></select></div><?php endif; ?><div class="report-filter-actions"><button class="btn btn-primary">نمایش</button><button class="btn btn-light" name="action" value="export">خروجی Excel</button></div></form></section>
+<?php if($error): ?><div class="alert alert-warning"><?= e($error) ?></div><?php endif; ?>
+<?php if($accommodationVisible&&(int)($accommodationStats['attention']??0)>0): ?><div class="report-exception-strip"><strong><?= fa_digits((int)$accommodationStats['attention']) ?> انتقال اقامت نیازمند رسیدگی</strong><span>انتقال اقامت نیازمند رسیدگی در این بازه وجود دارد. <a href="accommodation.php">بررسی انتقال‌ها</a></span></div><?php endif; ?>
+<?php if((int)$outsideActivity['total']>0): ?><div class="report-exception-strip"><strong><?= fa_digits((int)$outsideActivity['total']) ?> رخداد خارج از ساعت شیفت</strong><span>سفارش <?= fa_digits((int)$outsideActivity['orders']) ?> · فراخوان <?= fa_digits((int)$outsideActivity['calls']) ?> · نشست <?= fa_digits((int)$outsideActivity['sessions']) ?> · تسویه <?= fa_digits((int)$outsideActivity['settlements']) ?></span></div><?php endif; ?>
+<?php if($comparisonRows): ?><section class="card"><div class="card-head"><div><h2>مقایسه شیفت‌ها</h2><small>فروش بر اساس شیفت ثبت‌شده هنگام تسویه محاسبه می‌شود.</small></div></div><div class="report-data-list"><?php foreach($comparisonRows as $r): ?><article class="report-data-row" style="--report-metric-count:6"><div class="report-data-primary"><strong><?= e($r['label']) ?></strong><small>خلاصه همان شیفت در بازه انتخابی</small></div><div class="report-data-metric"><span>فروش</span><strong><?= e(toman_number($r['sales'])) ?></strong></div><div class="report-data-metric"><span>فاکتور</span><strong><?= fa_digits($r['invoices']) ?></strong></div><div class="report-data-metric"><span>میانگین فاکتور</span><strong><?= e(toman_number($r['avg'])) ?></strong></div><div class="report-data-metric"><span>سفارش</span><strong><?= fa_digits($r['orders']) ?></strong></div><div class="report-data-metric"><span>فراخوان</span><strong><?= fa_digits($r['calls']) ?></strong></div><div class="report-data-metric"><span>نشست</span><strong><?= fa_digits($r['sessions']) ?></strong></div></article><?php endforeach; ?></div></section><?php endif; ?>
+<div class="metric-grid report-metrics"><article class="metric-card"><span>کل سفارش‌ها</span><strong><?= fa_digits((int)($orderStats['total']??0)) ?></strong><small><?= fa_digits((int)($orderStats['active']??0)) ?> فعال · <?= fa_digits((int)($orderStats['cancelled']??0)) ?> لغو</small></article><article class="metric-card"><span>میانگین پذیرش سفارش</span><strong><?= e(human_duration_seconds((float)($orderStats['avg_accept_seconds']??0))) ?></strong></article><article class="metric-card"><span>فراخوان‌ها</span><strong><?= fa_digits((int)($callStats['total']??0)) ?></strong><small><?= e(human_duration_seconds((float)($callStats['avg_response_seconds']??0))) ?> میانگین پاسخ</small></article><article class="metric-card"><span>نشست میز</span><strong><?= fa_digits((int)($sessionStats['total']??0)) ?></strong><small><?= fa_digits((int)($sessionStats['active']??0)) ?> باز</small></article><article class="metric-card"><span>میانگین زمان حضور</span><strong><?= e(human_duration_seconds((float)($sessionStats['avg_duration_seconds']??0))) ?></strong></article><article class="metric-card"><span>فروش خالص تسویه‌شده</span><strong><?= e(toman((int)($checkoutStats['checkout_total']??0))) ?></strong><small><?php if(((int)($checkoutStats['checkout_voided_total']??0))>0): ?>برگشت ثبت‌شده <?= e(toman((int)$checkoutStats['checkout_voided_total'])) ?><?php elseif(((int)($checkoutStats['checkout_discount']??0))>0): ?>تخفیف <?= e(toman((int)$checkoutStats['checkout_discount'])) ?><?php else: ?>بدون برگشت یا تخفیف ثبت‌شده<?php endif; ?></small></article><?php if($accommodationVisible): ?><article class="metric-card"><span>ثبت‌شده در حساب اقامت</span><strong><?= e(toman((int)($accommodationStats['posted_total']??0))) ?></strong><small>برگشت‌خورده <?= e(toman((int)($accommodationStats['voided_total']??0))) ?></small></article><?php endif; ?></div>
+<div class="page-grid report-detail-grid">
+<section class="card table-card"><div class="card-head"><div><h2>سفارش‌های بازه</h2><small>حداکثر ۱۰۰ سفارش اخیر</small></div></div><div class="data-table-wrap"><table class="data-table report-mobile-list report-orders-table"><thead><tr><th>زمان</th><th>سفارش/میز</th><th>آیتم‌ها</th><th>وضعیت</th><th>پذیرنده</th></tr></thead><tbody><?php if(!$orders): ?><tr><td colspan="5" class="empty-state">در این بازه سفارشی نیست.</td></tr><?php endif; ?><?php foreach($orders as $order): ?><tr><td class="report-order-time"><?= e(format_jalali_compact($order['created_at'])) ?></td><td class="report-order-id"><div class="table-cell-medallion"><?= table_medallion_html((string)$order['table_name'],'state-order','sm') ?><span><strong><?= e(order_display_label($order)) ?></strong><small><?= e(fa_digits((string)$order['table_name'])) ?></small></span></div></td><td class="report-order-items"><?= e(fa_digits((string)($order['item_summary']?:'—'))) ?></td><td class="report-order-status"><span class="badge badge-<?= e($order['status']) ?>"><?= e(order_status_label($order['status'])) ?></span></td><td class="report-order-actor"><?= e(($order['order_source']??'guest')==='staff'?('ثبت توسط '.($order['created_by']?:'کارکنان')):($order['accepted_by']?:'—')) ?></td></tr><?php endforeach; ?></tbody></table></div></section>
+<section class="card table-card"><div class="card-head"><div><h2>فعالیت کارکنان</h2><?php if($eventShiftKey!==''): ?><small>فعالیت کارکنان در ساعت‌های همین شیفت نمایش داده می‌شود.</small><?php elseif($staffUnavailable): ?><small>فعالیت کارکنان برای این شیفت تاریخی قابل تفکیک نیست؛ عدد با مبنای دیگری جایگزین نشده است.</small><?php endif; ?></div></div><div class="data-table-wrap"><table class="data-table report-mobile-list report-staff-table"><thead><tr><th>کارمند</th><th>اقدام سفارش</th><th>فراخوان رسیدگی‌شده</th></tr></thead><tbody><?php foreach($staffRows as $row): ?><tr><td><strong><?= e($row['display_name']) ?></strong></td><td><span class="report-inline-label">سفارش</span> <?= fa_digits((int)$row['order_actions']) ?></td><td><span class="report-inline-label">فراخوان</span> <?= fa_digits((int)$row['handled_calls']) ?></td></tr><?php endforeach; ?><?php if(!$staffRows): ?><tr><td colspan="3" class="empty-state">فعالیت ثبت‌شده‌ای نیست.</td></tr><?php endif; ?></tbody></table></div></section>
+</div>
+</div>
+<?php panel_footer(); ?>

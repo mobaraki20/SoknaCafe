@@ -1,0 +1,371 @@
+{
+  "login.php": {
+    "family": "auth",
+    "tests": [
+      "v1306-login-picker-browser.py",
+      "panel-keyboard-input-browser.py"
+    ]
+  },
+  "admin/index.php": {
+    "family": "dashboard",
+    "tests": [
+      "dashboard-stabilization-browser.py",
+      "v1328-panel-experience-browser.py"
+    ]
+  },
+  "admin/tables.php": {
+    "family": "tables",
+    "tests": [
+      "v1302-admin-pages-browser.py",
+      "v1305-tables-layout-browser.py",
+      "v1360-ui-conformance-browser.py"
+    ]
+  },
+  "admin/qr.php": {
+    "family": "tables",
+    "tests": [
+      "v1302-admin-pages-browser.py",
+      "v1360-ui-conformance-browser.py"
+    ]
+  },
+  "operator/index.php": {
+    "family": "operations",
+    "tests": [
+      "operator-live-browser.py",
+      "hotfix-1301-operator-browser.py"
+    ]
+  },
+  "staff/quick-order.php": {
+    "family": "operations",
+    "tests": [
+      "staff-quick-order-browser.py",
+      "quick-order-undo-swipe-browser.py",
+      "quick-order-uncertain-browser.py"
+    ]
+  },
+  "waiter/index.php": {
+    "family": "operations",
+    "tests": [
+      "staff-action-queue-browser.py",
+      "v1326-remaining-mobile-browser.py"
+    ]
+  },
+  "admin/purchases.php": {
+    "family": "supply",
+    "tests": [
+      "v1360-supply-browser.py",
+      "v1340-ui-browser.py",
+      "v1360-ui-conformance-browser.py"
+    ]
+  },
+  "operator/supply-needs.php": {
+    "family": "supply",
+    "tests": [
+      "v1360-supply-browser.py",
+      "v1340-ui-browser.py"
+    ]
+  },
+  "admin/inventory.php": {
+    "family": "inventory",
+    "tests": [
+      "inventory-v1320-browser.py",
+      "v1360-ui-conformance-browser.py"
+    ]
+  },
+  "admin/inventory_adjustment.php": {
+    "family": "inventory",
+    "tests": [
+      "inventory-v1320-browser.py",
+      "v1360-ui-conformance-browser.py"
+    ]
+  },
+  "admin/inventory_categories.php": {
+    "family": "inventory",
+    "tests": [
+      "inventory-v1320-browser.py",
+      "v1360-ui-conformance-browser.py"
+    ]
+  },
+  "admin/inventory_count.php": {
+    "family": "inventory",
+    "tests": [
+      "inventory-v1320-browser.py",
+      "v1360-ui-conformance-browser.py"
+    ]
+  },
+  "admin/inventory_count_start.php": {
+    "family": "inventory",
+    "tests": [
+      "inventory-v1320-browser.py",
+      "v1360-ui-conformance-browser.py"
+    ]
+  },
+  "admin/inventory_item.php": {
+    "family": "inventory",
+    "tests": [
+      "inventory-v1320-browser.py"
+    ]
+  },
+  "admin/inventory_item_form.php": {
+    "family": "inventory",
+    "tests": [
+      "inventory-v1320-browser.py",
+      "v1315-touch-focus-browser.py",
+      "v1360-ui-conformance-browser.py"
+    ]
+  },
+  "admin/inventory_items.php": {
+    "family": "inventory",
+    "tests": [
+      "inventory-v1320-browser.py",
+      "items-management-refinement-browser.py"
+    ]
+  },
+  "admin/inventory_opening.php": {
+    "family": "inventory",
+    "tests": [
+      "inventory-v1320-browser.py",
+      "v1315-touch-focus-browser.py"
+    ]
+  },
+  "admin/inventory_receive.php": {
+    "family": "inventory",
+    "tests": [
+      "inventory-v1320-browser.py",
+      "v1315-touch-focus-browser.py"
+    ]
+  },
+  "admin/inventory_review.php": {
+    "family": "inventory",
+    "tests": [
+      "inventory-v1320-browser.py"
+    ]
+  },
+  "admin/inventory_waste.php": {
+    "family": "inventory",
+    "tests": [
+      "inventory-v1320-browser.py",
+      "v1315-touch-focus-browser.py"
+    ]
+  },
+  "admin/categories.php": {
+    "family": "menu",
+    "tests": [
+      "category-navigation-browser.py",
+      "v1324-design-system-browser.py"
+    ]
+  },
+  "admin/category_form.php": {
+    "family": "menu",
+    "tests": [
+      "category-navigation-browser.py",
+      "panel-dialog-form-browser.py"
+    ]
+  },
+  "admin/items.php": {
+    "family": "menu",
+    "tests": [
+      "items-management-refinement-browser.py",
+      "v1324-design-system-browser.py"
+    ]
+  },
+  "admin/menu_form.php": {
+    "family": "menu",
+    "tests": [
+      "v1324-design-system-browser.py",
+      "panel-dialog-form-browser.py"
+    ]
+  },
+  "admin/item_form.php": {
+    "family": "menu",
+    "tests": [
+      "items-management-refinement-browser.py",
+      "panel-validation-browser.py"
+    ]
+  },
+  "admin/tags.php": {
+    "family": "menu",
+    "tests": [
+      "v1324-design-system-browser.py"
+    ]
+  },
+  "admin/tag_form.php": {
+    "family": "menu",
+    "tests": [
+      "panel-dialog-form-browser.py"
+    ]
+  },
+  "admin/menu_transfer.php": {
+    "family": "menu",
+    "tests": [
+      "v1324-design-system-browser.py"
+    ]
+  },
+  "admin/invoices.php": {
+    "family": "finance",
+    "tests": [
+      "v1326-financial-browser.py"
+    ]
+  },
+  "operator/invoices.php": {
+    "family": "finance",
+    "tests": [
+      "v1326-financial-browser.py"
+    ]
+  },
+  "admin/subscribers.php": {
+    "family": "finance",
+    "tests": [
+      "v1326-financial-browser.py"
+    ]
+  },
+  "operator/subscribers.php": {
+    "family": "finance",
+    "tests": [
+      "v1326-financial-browser.py"
+    ]
+  },
+  "admin/financial_periods.php": {
+    "family": "finance",
+    "tests": [
+      "v1326-financial-browser.py"
+    ]
+  },
+  "admin/accommodation.php": {
+    "family": "finance",
+    "tests": [
+      "v1306-accommodation-responsive-browser.py",
+      "accommodation-browser.py"
+    ]
+  },
+  "admin/analytics.php": {
+    "family": "reporting",
+    "tests": [
+      "v1305-analytics-browser.py",
+      "v1325-panel-reporting-browser.py"
+    ]
+  },
+  "admin/activity_report.php": {
+    "family": "reporting",
+    "tests": [
+      "v1333-activity-browser.py"
+    ]
+  },
+  "admin/operations_report.php": {
+    "family": "reporting",
+    "tests": [
+      "operations-report-date-browser.py",
+      "v1325-panel-reporting-browser.py"
+    ]
+  },
+  "admin/inventory_report.php": {
+    "family": "reporting",
+    "tests": [
+      "v1325-panel-reporting-browser.py"
+    ]
+  },
+  "admin/marketing.php": {
+    "family": "marketing",
+    "tests": [
+      "event-meta-browser.py",
+      "v1324-design-system-browser.py"
+    ]
+  },
+  "admin/campaign_form.php": {
+    "family": "marketing",
+    "tests": [
+      "panel-validation-browser.py"
+    ]
+  },
+  "admin/events.php": {
+    "family": "marketing",
+    "tests": [
+      "event-meta-browser.py",
+      "v1326-remaining-mobile-browser.py"
+    ]
+  },
+  "admin/event_form.php": {
+    "family": "marketing",
+    "tests": [
+      "event-meta-browser.py",
+      "panel-validation-browser.py"
+    ]
+  },
+  "admin/settings.php": {
+    "family": "settings",
+    "tests": [
+      "settings-sections-mobile-browser.py",
+      "v1306-settings-ui-browser.py"
+    ]
+  },
+  "admin/users.php": {
+    "family": "settings",
+    "tests": [
+      "v1326-remaining-mobile-browser.py"
+    ]
+  },
+  "admin/modules.php": {
+    "family": "settings",
+    "tests": [
+      "v1360-modules-browser.py",
+      "v1360-ui-conformance-browser.py"
+    ]
+  },
+  "admin/personnel.php": {
+    "family": "settings",
+    "tests": [
+      "sokna-center-browser.py",
+      "v1326-center-entitlement-browser.py"
+    ]
+  },
+  "admin/center_settings.php": {
+    "family": "settings",
+    "tests": [
+      "sokna-center-browser.py"
+    ]
+  },
+  "admin/accommodation_settings.php": {
+    "family": "settings",
+    "tests": [
+      "accommodation-browser.py"
+    ]
+  },
+  "admin/messages.php": {
+    "family": "settings",
+    "tests": [
+      "messages-v2-browser.py"
+    ]
+  },
+  "admin/push_devices.php": {
+    "family": "settings",
+    "tests": [
+      "v13216-notification-runtime-browser.py",
+      "v1326-remaining-mobile-browser.py"
+    ]
+  },
+  "admin/printing.php": {
+    "family": "printing",
+    "tests": [
+      "printing-system-browser.py",
+      "printing-settings-browser.py"
+    ]
+  },
+  "admin/print_templates.php": {
+    "family": "printing",
+    "tests": [
+      "print-template-v2-browser.py"
+    ]
+  },
+  "admin/maintenance.php": {
+    "family": "maintenance",
+    "tests": [
+      "backup-manager-browser.py"
+    ]
+  },
+  "admin/update/index.php": {
+    "family": "maintenance",
+    "tests": [
+      "updater-current-browser.py"
+    ]
+  }
+}

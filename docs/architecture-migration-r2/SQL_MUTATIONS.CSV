@@ -1,0 +1,386 @@
+﻿file,line,operation,table,table_owner
+admin/campaign_form.php,20,INSERT INTO,campaigns,marketing
+admin/campaign_form.php,20,UPDATE,campaigns,marketing
+admin/categories.php,21,UPDATE,categories,menu
+admin/categories.php,30,DELETE FROM,categories,menu
+admin/category_form.php,37,UPDATE,categories,menu
+admin/category_form.php,41,INSERT INTO,categories,menu
+admin/category_form.php,46,DELETE FROM,menu_categories,menu
+admin/category_form.php,47,DELETE FROM,menu_categories,menu
+admin/category_form.php,55,DELETE FROM,menu_items,menu
+admin/category_form.php,58,DELETE FROM,menu_items,menu
+admin/event_form.php,78,UPDATE,events,marketing
+admin/event_form.php,82,INSERT INTO,events,marketing
+admin/events.php,21,UPDATE,events,marketing
+admin/events.php,26,UPDATE,events,marketing
+admin/events.php,29,UPDATE,events,marketing
+admin/events.php,32,UPDATE,events,marketing
+admin/events.php,35,DELETE FROM,events,marketing
+admin/financial_periods.php,19,UPDATE,financial_periods,finance
+admin/inventory_categories.php,27,UPDATE,inventory_categories,inventory
+admin/inventory_categories.php,32,INSERT INTO,inventory_categories,inventory
+admin/inventory_categories.php,48,UPDATE,inventory_categories,inventory
+admin/inventory_count.php,54,UPDATE,inventory_count_lines,inventory
+admin/inventory_count.php,55,UPDATE,inventory_count_lines,inventory
+admin/inventory_count.php,56,UPDATE,inventory_count_lines,inventory
+admin/inventory_count.php,57,UPDATE,inventory_count_lines,inventory
+admin/inventory_item_form.php,129,UPDATE,inventory_items,inventory
+admin/inventory_item_form.php,134,INSERT INTO,inventory_items,inventory
+admin/inventory_item_form.php,137,INSERT INTO,inventory_balances,inventory
+admin/inventory_item_form.php,170,UPDATE,inventory_purchase_units,inventory
+admin/inventory_item_form.php,171,INSERT INTO,inventory_purchase_units,inventory
+admin/inventory_item_form.php,175,UPDATE,inventory_purchase_units,inventory
+admin/inventory_item_form.php,179,INSERT INTO,inventory_purchase_units,inventory
+admin/inventory_item_form.php,193,UPDATE,inventory_items,inventory
+admin/inventory_items.php,25,UPDATE,inventory_items,inventory
+admin/inventory_review.php,21,UPDATE,inventory_items,inventory
+admin/inventory_review.php,22,UPDATE,inventory_purchase_units,inventory
+admin/item_form.php,156,UPDATE,items,menu
+admin/item_form.php,159,INSERT INTO,items,menu
+admin/item_form.php,161,UPDATE,items,menu
+admin/item_form.php,164,DELETE FROM,item_tags,menu
+admin/item_form.php,165,INSERT INTO,item_tags,menu
+admin/items.php,70,UPDATE,menu_categories,menu
+admin/items.php,83,UPDATE,items,menu
+admin/items.php,98,UPDATE,items,menu
+admin/items.php,125,UPDATE,items,menu
+admin/items.php,145,UPDATE,items,menu
+admin/items.php,148,UPDATE,items,menu
+admin/items.php,151,UPDATE,items,menu
+admin/items.php,159,DELETE FROM,menu_items,menu
+admin/marketing.php,12,INSERT INTO,settings,platform
+admin/marketing.php,12,UPDATE,setting_value,UNKNOWN
+admin/marketing.php,13,UPDATE,campaigns,marketing
+admin/marketing.php,14,DELETE FROM,campaigns,marketing
+admin/menu_form.php,28,UPDATE,menus,menu
+admin/menu_form.php,32,INSERT INTO,menus,menu
+admin/menu_transfer.php,219,INSERT INTO,categories,menu
+admin/menu_transfer.php,220,UPDATE,categories,menu
+admin/menu_transfer.php,226,INSERT INTO,items,menu
+admin/menu_transfer.php,227,UPDATE,items,menu
+admin/menu_transfer.php,228,DELETE FROM,menu_items,menu
+admin/menu_transfer.php,229,INSERT INTO,menu_items,menu
+admin/menu_transfer.php,275,INSERT INTO,item_tags,menu
+admin/menu_transfer.php,276,DELETE FROM,item_tags,menu
+admin/menu_transfer.php,277,UPDATE,items,menu
+admin/messages.php,34,DELETE FROM,settings,platform
+admin/messages.php,43,DELETE FROM,settings,platform
+admin/messages.php,47,INSERT INTO,settings,platform
+admin/messages.php,47,UPDATE,setting_value,UNKNOWN
+admin/print_templates.php,53,UPDATE,print_templates,printing
+admin/print_templates.php,54,INSERT INTO,print_templates,printing
+admin/print_templates.php,106,UPDATE,print_templates,printing
+admin/print_templates.php,106,UPDATE,print_templates,printing
+admin/print_templates.php,110,UPDATE,print_templates,printing
+admin/print_templates.php,110,UPDATE,print_templates,printing
+admin/print_templates.php,111,DELETE FROM,print_templates,printing
+admin/print_templates.php,113,UPDATE,print_templates,printing
+admin/print_templates.php,113,UPDATE,print_templates,printing
+admin/printing.php,128,UPDATE,portably,UNKNOWN
+admin/printing.php,139,INSERT INTO,settings,platform
+admin/printing.php,139,UPDATE,setting_value,UNKNOWN
+admin/printing.php,146,INSERT INTO,print_agents,printing
+admin/printing.php,155,UPDATE,print_agents,printing
+admin/printing.php,164,UPDATE,print_agents,printing
+admin/printing.php,180,UPDATE,print_agents,printing
+admin/printing.php,181,DELETE FROM,print_agents,printing
+admin/printing.php,187,INSERT INTO,print_destinations,printing
+admin/printing.php,200,DELETE FROM,print_destinations,printing
+admin/printing.php,222,UPDATE,print_destinations,printing
+admin/printing.php,239,UPDATE,print_destinations,printing
+admin/push_devices.php,11,INSERT INTO,settings,platform
+admin/push_devices.php,11,UPDATE,setting_value,UNKNOWN
+admin/push_devices.php,15,UPDATE,push_subscriptions,notifications
+admin/qr.php,10,UPDATE,cafe_tables,orders
+admin/qr.php,11,UPDATE,cafe_tables,orders
+admin/settings.php,8,INSERT INTO,settings,platform
+admin/settings.php,8,UPDATE,setting_value,UNKNOWN
+admin/settings.php,121,UPDATE,users,platform
+admin/tables.php,45,UPDATE,cafe_tables,orders
+admin/tables.php,49,INSERT INTO,cafe_tables,orders
+admin/tables.php,56,INSERT INTO,cafe_tables,orders
+admin/tables.php,67,UPDATE,cafe_tables,orders
+admin/tables.php,69,DELETE FROM,cafe_tables,orders
+admin/tag_form.php,5,INSERT INTO,tags,menu
+admin/tag_form.php,5,UPDATE,tags,menu
+admin/tags.php,4,DELETE FROM,tags,menu
+admin/tags.php,4,UPDATE,tags,menu
+admin/update/index.php,7,UPDATE,workflow,UNKNOWN
+admin/update/index.php,9,UPDATE,never,UNKNOWN
+admin/users.php,86,UPDATE,users,platform
+admin/users.php,89,UPDATE,users,platform
+admin/users.php,93,INSERT INTO,users,platform
+admin/users.php,98,UPDATE,user_capabilities,platform
+admin/users.php,99,INSERT INTO,user_capabilities,platform
+admin/users.php,99,UPDATE,enabled,UNKNOWN
+admin/users.php,103,DELETE FROM,user_preparation_areas,orders
+admin/users.php,105,INSERT INTO,user_preparation_areas,orders
+admin/users.php,143,UPDATE,users,platform
+api/create_order.php,217,INSERT INTO,orders,orders
+api/create_order.php,238,INSERT INTO,order_items,orders
+api/create_order.php,255,INSERT INTO,order_status_history,orders
+api/guest_orders.php,231,DELETE FROM,order_items,orders
+api/guest_orders.php,232,INSERT INTO,order_items,orders
+api/guest_orders.php,236,UPDATE,orders,orders
+api/guest_orders.php,287,UPDATE,orders,orders
+api/guest_orders.php,288,INSERT INTO,order_status_history,orders
+api/metric.php,25,INSERT INTO,menu_metrics_daily,reporting
+api/metric.php,25,UPDATE,metric_value,UNKNOWN
+api/metric.php,37,INSERT INTO,menu_search_terms_daily,reporting
+api/metric.php,37,UPDATE,display_term,UNKNOWN
+api/push_action.php,19,UPDATE,waiter_calls,orders
+api/push_action.php,23,UPDATE,waiter_calls,orders
+api/waiter_call.php,90,INSERT INTO,waiter_calls,orders
+api/waiter_call.php,124,UPDATE,waiter_calls,orders
+includes/accommodation.php,51,INSERT INTO,settings,platform
+includes/accommodation.php,51,UPDATE,setting_value,UNKNOWN
+includes/accommodation.php,352,UPDATE,accommodation_transfers,accommodation
+includes/accommodation.php,356,UPDATE,accommodation_transfers,accommodation
+includes/accommodation.php,363,INSERT INTO,accommodation_transfers,accommodation
+includes/accommodation.php,422,UPDATE,accommodation_transfers,accommodation
+includes/accommodation.php,459,UPDATE,accommodation_transfers,accommodation
+includes/accommodation.php,470,UPDATE,accommodation_transfers,accommodation
+includes/accommodation.php,487,UPDATE,accommodation_transfers,accommodation
+includes/accommodation.php,529,UPDATE,table_sessions,orders
+includes/accommodation.php,532,UPDATE,waiter_calls,orders
+includes/accommodation.php,554,UPDATE,accommodation_transfers,accommodation
+includes/accommodation.php,562,UPDATE,accommodation_transfers,accommodation
+includes/accommodation.php,577,UPDATE,accommodation_transfers,accommodation
+includes/accommodation.php,630,UPDATE,accommodation_transfers,accommodation
+includes/accommodation.php,635,INSERT INTO,settings,platform
+includes/accommodation.php,635,UPDATE,setting_value,UNKNOWN
+includes/default_menu_seed.php,54,INSERT INTO,menus,menu
+includes/default_menu_seed.php,55,UPDATE,menus,menu
+includes/default_menu_seed.php,84,INSERT INTO,categories,menu
+includes/default_menu_seed.php,85,UPDATE,categories,menu
+includes/default_menu_seed.php,117,INSERT INTO,menu_categories,menu
+includes/default_menu_seed.php,117,UPDATE,sort_order,UNKNOWN
+includes/default_menu_seed.php,131,INSERT INTO,items,menu
+includes/default_menu_seed.php,132,UPDATE,items,menu
+includes/default_menu_seed.php,179,UPDATE,items,menu
+includes/default_menu_seed.php,187,UPDATE,categories,menu
+includes/function_domains/audit.php,56,INSERT INTO,audit_log,platform
+includes/functions.php,342,UPDATE,inside,UNKNOWN
+includes/functions.php,875,INSERT INTO,order_business_sequences,orders
+includes/functions.php,875,UPDATE,business_date,UNKNOWN
+includes/functions.php,883,UPDATE,order_business_sequences,orders
+includes/functions.php,1197,UPDATE,table_sessions,orders
+includes/functions.php,1200,UPDATE,orders,orders
+includes/functions.php,1204,INSERT INTO,order_status_history,orders
+includes/functions.php,1458,INSERT INTO,table_sessions,orders
+includes/functions.php,1462,UPDATE,waiter_calls,orders
+includes/functions.php,1499,UPDATE,orders,orders
+includes/functions.php,1500,INSERT INTO,order_status_history,orders
+includes/functions.php,1504,UPDATE,table_sessions,orders
+includes/functions.php,1506,UPDATE,waiter_calls,orders
+includes/functions.php,1518,INSERT INTO,table_session_clients,orders
+includes/functions.php,1518,UPDATE,last_seen_at,UNKNOWN
+includes/inventory.php,58,INSERT INTO,settings,platform
+includes/inventory.php,58,UPDATE,setting_value,UNKNOWN
+includes/inventory.php,358,INSERT INTO,inventory_items,inventory
+includes/inventory.php,509,UPDATE,inventory_balances,inventory
+includes/inventory.php,515,UPDATE,its,UNKNOWN
+includes/inventory.php,620,INSERT INTO,inventory_movements,inventory
+includes/inventory.php,646,UPDATE,inventory_balances,inventory
+includes/inventory.php,762,UPDATE,inventory_recipe_versions,inventory
+includes/inventory.php,771,INSERT INTO,inventory_recipe_versions,inventory
+includes/inventory.php,774,INSERT INTO,inventory_recipe_components,inventory
+includes/inventory.php,1055,UPDATE,inventory_order_events,inventory
+includes/inventory.php,1061,UPDATE,inventory_order_events,inventory
+includes/inventory.php,1179,UPDATE,inventory_order_events,inventory
+includes/inventory.php,1224,INSERT INTO,settings,platform
+includes/inventory.php,1224,UPDATE,setting_value,UNKNOWN
+includes/inventory.php,1239,INSERT INTO,inventory_count_sessions,inventory
+includes/inventory.php,1258,INSERT INTO,inventory_count_lines,inventory
+includes/inventory.php,1290,UPDATE,inventory_count_sessions,inventory
+includes/inventory.php,1317,UPDATE,inventory_count_lines,inventory
+includes/inventory.php,1342,UPDATE,inventory_count_sessions,inventory
+includes/inventory.php,1345,INSERT INTO,settings,platform
+includes/inventory.php,1345,UPDATE,setting_value,UNKNOWN
+includes/inventory.php,1346,INSERT INTO,settings,platform
+includes/inventory.php,1346,UPDATE,setting_value,UNKNOWN
+includes/inventory.php,1348,INSERT INTO,settings,platform
+includes/inventory.php,1348,UPDATE,setting_value,UNKNOWN
+includes/inventory_seed.php,31,INSERT INTO,inventory_items,inventory
+includes/inventory_seed.php,32,INSERT INTO,inventory_purchase_units,inventory
+includes/inventory_seed.php,33,INSERT INTO,inventory_balances,inventory
+includes/maintenance.php,944,INSERT INTO,settings,platform
+includes/maintenance.php,944,UPDATE,setting_value,UNKNOWN
+includes/menu_catalog.php,161,DELETE FROM,menu_items,menu
+includes/menu_catalog.php,163,INSERT INTO,menu_items,menu
+includes/modules.php,13,UPDATE,are,UNKNOWN
+includes/modules.php,487,UPDATE,settings,platform
+includes/printing.php,776,INSERT INTO,print_jobs,printing
+includes/printing.php,880,UPDATE,print_jobs,printing
+includes/printing.php,1265,UPDATE,print_jobs,printing
+includes/printing.php,1276,UPDATE,print_jobs,printing
+includes/printing.php,1303,UPDATE,print_attempts,printing
+includes/printing.php,1308,UPDATE,print_jobs,printing
+includes/printing.php,1333,UPDATE,print_attempts,printing
+includes/printing.php,1335,UPDATE,print_jobs,printing
+includes/printing.php,1378,UPDATE,print_jobs,printing
+includes/printing.php,1382,UPDATE,print_jobs,printing
+includes/printing.php,1402,UPDATE,print_jobs,printing
+includes/push.php,62,INSERT INTO,settings,platform
+includes/push.php,62,UPDATE,setting_value,UNKNOWN
+includes/push.php,398,INSERT INTO,settings,platform
+includes/push.php,398,UPDATE,setting_value,UNKNOWN
+includes/push.php,444,INSERT INTO,push_action_claims,notifications
+includes/push.php,681,INSERT INTO,push_event_queue,notifications
+includes/push.php,683,UPDATE,id,UNKNOWN
+includes/push.php,776,UPDATE,push_event_deliveries,notifications
+includes/push.php,777,UPDATE,push_event_queue,notifications
+includes/push.php,787,UPDATE,push_event_queue,notifications
+includes/push.php,805,UPDATE,push_event_queue,notifications
+includes/push.php,864,UPDATE,push_subscriptions,notifications
+includes/push.php,867,UPDATE,push_event_deliveries,notifications
+includes/push.php,870,INSERT INTO,push_delivery_log,notifications
+includes/push.php,926,UPDATE,push_event_queue,notifications
+includes/push.php,936,UPDATE,push_event_queue,notifications
+includes/push.php,951,UPDATE,push_event_queue,notifications
+includes/settlement.php,30,INSERT INTO,financial_periods,finance
+includes/settlement.php,53,UPDATE,financial_periods,finance
+includes/settlement.php,267,INSERT INTO,settlement_records,finance
+includes/settlement.php,372,UPDATE,orders,orders
+includes/settlement.php,373,INSERT INTO,order_status_history,orders
+includes/settlement.php,381,UPDATE,table_sessions,orders
+includes/settlement.php,386,UPDATE,table_sessions,orders
+includes/settlement.php,391,UPDATE,settlement_records,finance
+includes/settlement.php,538,UPDATE,table_sessions,orders
+includes/settlement.php,544,UPDATE,orders,orders
+includes/settlement.php,545,INSERT INTO,order_status_history,orders
+includes/settlement.php,550,UPDATE,waiter_calls,orders
+includes/settlement.php,570,INSERT INTO,settlement_records,finance
+includes/settlement.php,580,INSERT INTO,settlement_record_lines,finance
+includes/settlement.php,583,UPDATE,settlement_records,finance
+includes/settlement.php,585,UPDATE,table_sessions,orders
+includes/settlement.php,623,UPDATE,table_sessions,orders
+includes/settlement.php,639,UPDATE,orders,orders
+includes/settlement.php,640,INSERT INTO,order_status_history,orders
+includes/settlement.php,647,UPDATE,waiter_calls,orders
+includes/settlement.php,650,UPDATE,table_sessions,orders
+includes/settlement.php,664,INSERT INTO,settlement_records,finance
+includes/settlement.php,687,UPDATE,settlement_records,finance
+includes/settlement_allocations.php,296,INSERT INTO,settlement_record_lines,finance
+includes/sokna_center.php,150,INSERT INTO,settings,platform
+includes/sokna_center.php,150,UPDATE,setting_value,UNKNOWN
+includes/sokna_center.php,157,DELETE FROM,settings,platform
+includes/sokna_center.php,197,INSERT INTO,settings,platform
+includes/sokna_center.php,197,UPDATE,setting_value,UNKNOWN
+includes/sokna_center.php,710,DELETE FROM,settings,platform
+includes/sokna_center.php,713,INSERT INTO,settings,platform
+includes/subscribers.php,100,INSERT INTO,subscriber_ledger,subscribers
+includes/subscribers_page.php,99,UPDATE,subscribers,subscribers
+includes/subscribers_page.php,103,INSERT INTO,subscribers,subscribers
+includes/updater_engine/1.5.1/console.php,5,UPDATE,center,UNKNOWN
+includes/updater_engine/1.5.1/runtime.php,7,UPDATE,engine,UNKNOWN
+includes/updater_engine/1.5.1/runtime.php,1481,UPDATE,completed,UNKNOWN
+includes/updater_engine/1.5.1/runtime.php,1991,UPDATE,cancelled,UNKNOWN
+includes/updater_engine/1.5.2/console.php,5,UPDATE,center,UNKNOWN
+includes/updater_engine/1.5.2/runtime.php,7,UPDATE,engine,UNKNOWN
+includes/updater_engine/1.5.2/runtime.php,1517,UPDATE,completed,UNKNOWN
+includes/updater_engine/1.5.2/runtime.php,2027,UPDATE,cancelled,UNKNOWN
+includes/updater_engine/1.5.3/console.php,5,UPDATE,center,UNKNOWN
+includes/updater_engine/1.5.3/runtime.php,7,UPDATE,engine,UNKNOWN
+includes/updater_engine/1.5.3/runtime.php,1517,UPDATE,completed,UNKNOWN
+includes/updater_engine/1.5.3/runtime.php,2027,UPDATE,cancelled,UNKNOWN
+install.php,234,INSERT INTO,settings,platform
+install.php,234,UPDATE,setting_value,UNKNOWN
+install.php,237,INSERT INTO,users,platform
+install.php,237,UPDATE,password_hash,UNKNOWN
+modules/Supply/domain.php,159,UPDATE,inventory_supply_needs,supply
+modules/Supply/domain.php,168,INSERT INTO,inventory_supply_needs,supply
+modules/Supply/domain.php,183,UPDATE,inventory_supply_needs,supply
+modules/Supply/domain.php,191,INSERT INTO,inventory_supply_needs,supply
+modules/Supply/domain.php,211,UPDATE,inventory_supply_needs,supply
+modules/Supply/domain.php,221,UPDATE,inventory_supply_needs,supply
+modules/Supply/domain.php,223,UPDATE,inventory_supply_needs,supply
+modules/Supply/domain.php,249,UPDATE,inventory_supply_needs,supply
+modules/Supply/domain.php,270,UPDATE,inventory_supply_needs,supply
+modules/Supply/domain.php,295,UPDATE,inventory_supply_needs,supply
+modules/Supply/domain.php,361,UPDATE,inventory_supply_needs,supply
+modules/Supply/domain.php,369,UPDATE,inventory_supply_needs,supply
+modules/Supply/domain.php,416,UPDATE,inventory_supply_needs,supply
+modules/Supply/domain.php,423,INSERT INTO,inventory_supply_receipts,supply
+modules/Supply/domain.php,427,INSERT INTO,inventory_supply_receipt_allocations,supply
+modules/Supply/domain.php,444,UPDATE,inventory_supply_needs,supply
+modules/Supply/domain.php,457,UPDATE,inventory_supply_needs,supply
+notification_preferences.php,18,INSERT INTO,user_notification_preferences,notifications
+notification_preferences.php,18,UPDATE,enabled,UNKNOWN
+operator/api_bill.php,95,INSERT INTO,orders,orders
+operator/api_bill.php,99,INSERT INTO,order_items,orders
+operator/api_bill.php,101,INSERT INTO,order_status_history,orders
+operator/api_bill.php,158,UPDATE,order_items,orders
+operator/api_bill.php,160,INSERT INTO,order_item_adjustments,orders
+operator/api_bill.php,166,UPDATE,orders,orders
+operator/api_bill.php,170,INSERT INTO,preparation_adjustments,orders
+operator/api_bill.php,173,DELETE FROM,order_preparation_claims,orders
+operator/api_bill.php,253,INSERT INTO,invoice_discount_audit,finance
+operator/api_bill.php,255,UPDATE,table_sessions,orders
+operator/api_controls.php,39,INSERT INTO,settings,platform
+operator/api_controls.php,39,UPDATE,setting_value,UNKNOWN
+operator/api_controls.php,63,INSERT INTO,settings,platform
+operator/api_controls.php,63,UPDATE,setting_value,UNKNOWN
+operator/api_status.php,80,UPDATE,orders,orders
+operator/api_status.php,81,INSERT INTO,order_status_history,orders
+operator/api_table_session.php,216,UPDATE,table_sessions,orders
+operator/api_table_session.php,232,UPDATE,table_sessions,orders
+operator/api_table_session.php,241,UPDATE,orders,orders
+operator/api_table_session.php,243,UPDATE,order_item_adjustments,orders
+operator/api_table_session.php,245,UPDATE,invoice_discount_audit,finance
+operator/api_table_session.php,247,UPDATE,waiter_calls,orders
+operator/api_waiter.php,22,INSERT INTO,settings,platform
+operator/api_waiter.php,22,UPDATE,setting_value,UNKNOWN
+operator/api_waiter.php,47,UPDATE,waiter_calls,orders
+operator/api_waiter.php,55,UPDATE,waiter_calls,orders
+operator/api_waiter.php,64,UPDATE,waiter_calls,orders
+operator/api_waiter.php,68,UPDATE,waiter_calls,orders
+print-agent/v4/api.php,255,DELETE FROM,print_claim_requests,printing
+print-agent/v4/api.php,266,UPDATE,print_attempts,printing
+print-agent/v4/api.php,269,UPDATE,print_jobs,printing
+print-agent/v4/api.php,273,UPDATE,print_jobs,printing
+print-agent/v4/api.php,423,UPDATE,print_agents,printing
+print-agent/v4/api.php,477,UPDATE,print_claim_requests,printing
+print-agent/v4/api.php,516,UPDATE,print_attempts,printing
+print-agent/v4/api.php,518,INSERT INTO,print_attempts,printing
+print-agent/v4/api.php,520,UPDATE,print_jobs,printing
+print-agent/v4/api.php,534,UPDATE,print_claim_requests,printing
+print-agent/v4/api.php,536,INSERT INTO,print_claim_reconciliations,UNKNOWN
+print-agent/v4/api.php,585,UPDATE,print_claim_requests,printing
+print-agent/v4/api.php,588,UPDATE,print_claim_requests,printing
+print-agent/v4/api.php,591,UPDATE,print_agents,printing
+print-agent/v4/api.php,609,UPDATE,print_jobs,printing
+print-agent/v4/api.php,615,INSERT INTO,print_attempts,printing
+print-agent/v4/api.php,618,UPDATE,print_jobs,printing
+print-agent/v4/api.php,624,UPDATE,print_claim_requests,printing
+print-agent/v4/api.php,626,UPDATE,print_agents,printing
+print-agent/v4/api.php,672,UPDATE,print_attempts,printing
+print-agent/v4/api.php,673,UPDATE,print_jobs,printing
+print-agent/v4/api.php,698,UPDATE,print_attempts,printing
+print-agent/v4/api.php,706,UPDATE,print_jobs,printing
+print-agent/v4/api.php,721,UPDATE,print_attempts,printing
+print-agent/v4/api.php,750,UPDATE,print_attempts,printing
+print-agent/v4/api.php,752,UPDATE,print_jobs,printing
+print-agent/v4/api.php,754,UPDATE,print_agents,printing
+print-agent/v4/api.php,763,UPDATE,print_attempts,printing
+print-agent/v4/api.php,766,UPDATE,print_jobs,printing
+print-agent/v4/api.php,767,UPDATE,print_agents,printing
+print-agent/v4/api.php,771,UPDATE,print_jobs,printing
+print-agent/v4/api.php,778,UPDATE,print_jobs,printing
+print-agent/v4/api.php,781,UPDATE,print_jobs,printing
+staff/api_quick_order.php,237,UPDATE,table_sessions,orders
+staff/api_quick_order.php,274,INSERT INTO,orders,orders
+staff/api_quick_order.php,278,INSERT INTO,order_items,orders
+staff/api_quick_order.php,282,INSERT INTO,order_status_history,orders
+tools/push-worker.php,29,INSERT INTO,settings,platform
+tools/push-worker.php,29,UPDATE,setting_value,UNKNOWN
+waiter/api_action.php,14,UPDATE,waiter_calls,orders
+waiter/api_action.php,15,UPDATE,waiter_calls,orders
+waiter/api_action.php,15,UPDATE,waiter_calls,orders
+waiter/api_action.php,25,INSERT INTO,order_preparation_claims,orders
+waiter/api_action.php,25,UPDATE,claimed_at,UNKNOWN
+waiter/api_action.php,34,UPDATE,preparation_adjustments,orders
+waiter/api_feed.php,71,UPDATE,preparation_adjustments,orders
+waiter/api_push.php,52,INSERT INTO,push_subscriptions,notifications
+waiter/api_push.php,52,UPDATE,user_id,UNKNOWN
+waiter/api_push.php,58,UPDATE,push_subscriptions,notifications

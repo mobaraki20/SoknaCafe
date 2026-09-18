@@ -1,0 +1,41 @@
+{
+  "version": "1.36.4-dev.21",
+  "environment": {
+    "php": "8.4.23",
+    "mysql_mariadb_available": false,
+    "windows_available": false
+  },
+  "baseline": {
+    "zip_sha256_verified": true,
+    "rc01_explicit_null_reproduced": true,
+    "rc04_last_seen_fallback_confirmed": true
+  },
+  "runtime": {
+    "H01": "PASS",
+    "H02": "PASS",
+    "H03": "PASS",
+    "H04": "NOT_RUN",
+    "H05": "NOT_RUN",
+    "H06": "NOT_RUN",
+    "H07": "NOT_RUN",
+    "H08": "NOT_RUN",
+    "H09": "NOT_RUN",
+    "H10": "NOT_RUN",
+    "H11": "NOT_RUN",
+    "H12": "NOT_RUN",
+    "H13": "NOT_RUN",
+    "H14": "NOT_RUN"
+  },
+  "static_contract_tests": "PASS",
+  "php_lint": "PASS",
+  "full_release_gate": "PARTIAL_TIMEOUT_NO_FAILURE_BEFORE_TIMEOUT",
+  "notes": "H04-H14 require MySQL/MariaDB and/or browser/two-connection runtime for acceptance-level PASS. Static contract checks cover implementation but are not substituted for required runtime environments.",
+  "package_gates": {
+    "update_package_built": "PASS",
+    "update_manifest_integrity": "PASS",
+    "updater_runtime_acceptance": "BLOCKED_EXTERNAL",
+    "updater_runtime_blocker": "pdo_mysql driver is unavailable in this execution container; updater stopped before live file changes",
+    "clean_install_archive_structure": "PASS"
+  },
+  "schema_parity": "PASS"
+}

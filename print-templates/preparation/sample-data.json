@@ -1,0 +1,14 @@
+{
+  "document_kind": "preparation",
+  "title": "کافه سکنا",
+  "badge": "فیش آماده‌سازی — آشپزخانه",
+  "status_label": "سفارش جدید",
+  "table_name": "میز ۸",
+  "order_number": "۱۲۷",
+  "display_date": "۱۶ مرداد · ۱۴:۳۰",
+  "customer_note": "سس جدا باشد",
+  "sections": [{"title": "آشپزخانه", "items": [
+    {"name": "پاستا چیکن آلفردو", "quantity": 3, "note": "بدون قارچ", "fulfillment_mode": "takeaway"},
+    {"name": "برگر مرغ", "quantity": 1, "note": "بدون پیاز", "fulfillment_mode": "dine_in"}
+  ]}]
+}

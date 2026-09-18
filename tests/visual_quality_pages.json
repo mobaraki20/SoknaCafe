@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "rule": "Visual baselines become promotion evidence only after human UAT approval of the named real state. Pending baselines must never be described as visually PASS.",
+  "pages": [
+    {
+      "id": "push_devices_worker_stopped",
+      "source": "admin/push_devices.php",
+      "state": "self-draining active + backlog + optional independent worker + active devices",
+      "widths": [
+        320,
+        360,
+        390,
+        412,
+        768,
+        1366
+      ],
+      "baseline_status": "pending_uat"
+    },
+    {
+      "id": "subscriber_profile_populated",
+      "source": "includes/subscribers_page.php",
+      "state": "populated ledger + financial history",
+      "widths": [
+        320,
+        360,
+        390,
+        412,
+        768,
+        1366
+      ],
+      "baseline_status": "pending_uat"
+    },
+    {
+      "id": "item_form_schedule",
+      "source": "admin/item_form.php",
+      "state": "tags + date range + daily schedule",
+      "widths": [
+        320,
+        360,
+        390,
+        412,
+        768,
+        1366
+      ],
+      "baseline_status": "pending_uat"
+    },
+    {
+      "id": "invoice_detail_populated",
+      "source": "admin/invoices.php",
+      "state": "multi-line receipt + metadata",
+      "widths": [
+        320,
+        360,
+        390,
+        412,
+        768,
+        1366
+      ],
+      "baseline_status": "pending_uat"
+    },
+    {
+      "id": "accommodation_history",
+      "source": "admin/accommodation.php",
+      "state": "history populated + filters",
+      "widths": [
+        320,
+        360,
+        390,
+        412,
+        768,
+        1366
+      ],
+      "baseline_status": "pending_uat"
+    },
+    {
+      "id": "quick_edit_item",
+      "source": "admin/items.php",
+      "state": "dirty quick edit + flags + schedule",
+      "widths": [
+        320,
+        360,
+        390,
+        412
+      ],
+      "baseline_status": "pending_uat"
+    },
+    {
+      "id": "invoices_archive_populated",
+      "source": "includes/invoices_page.php",
+      "state": "archive populated + search + active filters",
+      "widths": [
+        320,
+        360,
+        390,
+        412,
+        768,
+        1366
+      ],
+      "baseline_status": "pending_uat"
+    },
+    {
+      "id": "subscriber_directory_populated",
+      "source": "includes/subscribers_page.php",
+      "state": "directory populated + debt balance + filters",
+      "widths": [
+        320,
+        360,
+        390,
+        412,
+        768,
+        1366
+      ],
+      "baseline_status": "pending_uat"
+    },
+    {
+      "id": "financial_periods_populated",
+      "source": "admin/financial_periods.php",
+      "state": "current period + history + close eligible state",
+      "widths": [
+        320,
+        360,
+        390,
+        412,
+        768,
+        1366
+      ],
+      "baseline_status": "pending_uat"
+    },
+    {
+      "id": "messages_v2_populated",
+      "source": "admin/messages.php",
+      "state": "search + groups + changed/optional filters + tokenized editable messages",
+      "widths": [
+        320,
+        360,
+        390,
+        412,
+        768,
+        1366
+      ],
+      "baseline_status": "pending_uat"
+    },
+    {
+      "id": "print_template_v2_customer",
+      "source": "admin/print_templates.php",
+      "state": "customer template editor + 58/80 preview + version history",
+      "widths": [
+        320,
+        360,
+        390,
+        412,
+        768,
+        1366
+      ],
+      "baseline_status": "pending_uat"
+    },
+    {
+      "id": "print_template_v2_preparation",
+      "source": "admin/print_templates.php",
+      "state": "preparation template editor + takeaway/adjustment preview",
+      "widths": [
+        320,
+        360,
+        390,
+        412,
+        768,
+        1366
+      ],
+      "baseline_status": "pending_uat"
+    }
+  ]
+}
