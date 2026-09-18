@@ -43,8 +43,8 @@ function sokna_module_registry(): array
             'owns_tables' => ['relay_processed_requests'],
             'entrypoints' => [],
             'capabilities' => [],
-            'background_jobs' => ['tools/relay-worker.php','tools/relay-projection-worker.php'],
-            'public_contracts' => ['sokna_relay_* protocol/client/dispatch/projection contracts'],
+            'background_jobs' => ['tools/relay-worker.php','tools/relay-projection-worker.php','tools/remote-read-worker.php'],
+            'public_contracts' => ['sokna_relay_* protocol/client/dispatch/projection contracts','remote read-model snapshot contracts'],
         ],
         'menu' => [
             'label' => 'منو و مهمان',
