@@ -86,7 +86,7 @@ ok('۲ عدد به سفارش جدید اضافه می‌شود' not in op, 'bil
 ok("از حساب حذف می‌شود.`;save.disabled=false;save.textContent='حذف از حساب'" in op,'bill edit zero/removal semantics')
 ok('order-review-line' in op and 'order-review-total' in read('assets/css/panel.css'),'order review uses structured rows and highlighted total')
 # Guest category rails have one owner and live-layout navigation.
-rail=read('assets/js/horizontal-rail.js');catnav=read('assets/js/category-navigation.js');menu=read('assets/js/menu.js');index=read('menu/index.php')
+rail=read('assets/js/horizontal-rail.js');catnav=read('assets/js/category-navigation.js');menu=read('assets/js/menu.js');index=(read('menu/index.php') + '\n' + read('includes/guest_menu_view.php'))
 ok('window.SoknaHorizontalRail = {install, installAll, reveal}' in rail and 'function enhanceHorizontalRail' not in menu+menu,'one horizontal rail controller')
 ok('const absoluteTop' in catnav and 'positions' not in catnav and 'guest-header' not in catnav,'category navigation uses live positions and excludes non-sticky header')
 ok(index.index('horizontal-rail.js') < index.index('category-navigation.js'),'rail owner loads before category navigation')
