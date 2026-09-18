@@ -188,7 +188,11 @@ check(is_string($guestCss) && str_contains($guestCss, '.waiter-fab') && str_cont
 $panelCss = file_get_contents(dirname(__DIR__) . '/assets/css/panel.css');
 $panelLayoutCss = file_get_contents(dirname(__DIR__) . '/assets/css/panel-layout.css');
 check(is_string($panelLayoutCss) && str_contains($panelLayoutCss, '.panel-shell') && str_contains($panelLayoutCss, '.sidebar'), 'Canonical panel stylesheet is missing.');
-$guestSource = file_get_contents(dirname(__DIR__) . '/menu/index.php');
+$guestRouteSource = file_get_contents(dirname(__DIR__) . '/menu/index.php');
+$guestViewSource = file_get_contents(dirname(__DIR__) . '/includes/guest_menu_view.php');
+$guestSource = is_string($guestRouteSource) && is_string($guestViewSource)
+    ? $guestRouteSource . "\n" . $guestViewSource
+    : false;
 check(is_string($guestSource) && substr_count($guestSource, 'class="waiter-fab"') === 1, 'Guest menu must expose exactly one waiter action.');
 check(is_string($guestSource) && str_contains($guestSource, 'category-orbit') && !str_contains($guestSource, 'guest-main-tabs'), 'Guest category navigation must use one compact strip.');
 check(is_string($guestSource) && str_contains($guestSource, 'assets/css/guest-menu.css') && str_contains($guestSource, 'menu-layout-<?= e($layout) ?>'), 'Guest menu must load the canonical shared-layout layer.');
