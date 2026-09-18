@@ -5,7 +5,7 @@ require dirname(__DIR__,3).'/bootstrap.php';
 $installationId=public_verify_local_signature();
 $body=public_json_body();
 $models=is_array($body['models']??null)?$body['models']:[];
-$allowed=['operations','preparation','inventory','inventory_cost','reports'];
+$allowed=['operations','preparation','inventory','inventory_cost','reports','deferred_context'];
 $pdo=public_db();$synced=0;$unchanged=0;
 $pdo->beginTransaction();
 try{
