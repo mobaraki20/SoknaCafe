@@ -63,7 +63,7 @@ Sokna هنوز عملیاتی/Production-live اعلام نشده است.
 
 - Registry مرکزی ماژول‌ها: `includes/modules.php`
 - نقشه فعال ماژول‌ها و Dependencyها: `docs/ARCHITECTURE_MODULE_MAP_1.36_FA.md`
-- Gate مالکیت ماژول‌ها: `tests/v1360-module-ownership-contract.py`؛ در 1.36 فعلی ۱۳ ماژول، ۵۵ Table جاری و ۹۶ Route/API را پوشش می‌دهد.
+- Gate مالکیت ماژول‌ها: `tests/v1360-module-ownership-contract.py`؛ در checkpoint Phase 5 فعلی ۱۵ ماژول و ۶۷ Table Local جاری را پوشش می‌دهد؛ Route ownership همچنان با Gate معماری enforce می‌شود.
 - کد جدید حق Mutation مستقیم داده Owner دیگر را ندارد؛ باید از Contract عمومی آن Domain استفاده کند. Cross-writeهای تاریخیِ فعلی در Module Map ثبت شده‌اند و هنگام لمس همان Workflow باید تدریجی جمع شوند.
 - Dependency cycle مجاز نیست.
 - Module toggle فقط وقتی ساخته می‌شود که Route، Navigation، Background work، History و Permission آن end-to-end gate شده باشند. Toggle نمایشی/نیمه‌کاره ممنوع است.
@@ -103,3 +103,18 @@ Supply/Purchasing اولین Pilot مرزبندی Domain است و Owner آن `m
 
 ### Phase 4 Remote Read ownership
 از `1.36.4-dev.30`، دسترسی راه‌دور کارکنان برای Read Modelها از همان Local account/capability/area projection استفاده می‌کند. Public فقط آخرین snapshotهای محدود `operations/preparation/inventory/inventory_cost/reports` را نگه می‌دارد؛ Order/Settlement/Inventory canonical state همچنان فقط Local است. Surface راه‌دور Phase 4 read-only است و در stale/offline mode باید آخرین sync را صریح نشان دهد. هیچ capability، role یا permission system موازی برای Remote ساخته نشود.
+
+
+### Phase 5 Deferred-safe ownership
+از `1.36.4-dev.31`، Realtime Relay و Deferred-safe دو boundary مستقل و غیرقابل‌ادغام هستند. Public `deferred_work` را فقط برای pending/review/result محدود نگه می‌دارد؛ Local receipt ledger منبع idempotency نتیجه Business است.
+
+قواعد غیرقابل‌نقض:
+- enqueue Deferred success نهایی نیست؛ success Business فقط بعد از Local commit است.
+- `occurred_at` باید حفظ شود و از commit time جداست.
+- Local در هر dispatch حساب فعال، permission، expected state/version و period را دوباره بررسی می‌کند.
+- count finalize، settlement، committed order mutation، preparation mutation، inventory correction، payment/expense reversal هرگز Deferred نیستند.
+- late event مربوط به period بسته قبل از review هیچ Business mutation ندارد.
+- duplicate late event فقط یک review candidate دارد.
+- normal close با Pending/Needs-review یا Public paired-but-unknown مسدود است؛ override فقط Admin با reason + immutable audit.
+- Public هیچ canonical Orders/Finance/Inventory/Expenses ledger authority ندارد.
+- Remote Staff باید `pending_sync`, `needs_review`, `committed`, `rejected` را برای کاربر قابل تشخیص نگه دارد.
