@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      SOKNA_SCREENSHOT_DIR: ${{ runner.temp }}
+      SOKNA_SCREENSHOT_DIR: /tmp
     steps:
       - name: Checkout
         uses: actions/checkout@v4
