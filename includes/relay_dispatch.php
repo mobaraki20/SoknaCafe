@@ -13,6 +13,8 @@ final class SoknaRelayBusinessRejection extends RuntimeException
 function sokna_relay_dispatch_registry(): array
 {
     require_once __DIR__ . '/guest_order_service.php';
+    require_once __DIR__ . '/guest_order_manage_service.php';
+    require_once __DIR__ . '/guest_order_status_service.php';
     require_once __DIR__ . '/waiter_call_service.php';
     return [
         'guest_order.submit' => static function(PDO $pdo, array $envelope): array {
@@ -25,6 +27,38 @@ function sokna_relay_dispatch_registry(): array
                 );
             }
         },
+        'guest_order.list' => static function(PDO $pdo, array $envelope): array {
+            try {
+                return guest_order_manage_list($pdo, is_array($envelope['payload'] ?? null) ? $envelope['payload'] : []);
+            } catch (GuestOrderEditException $e) {
+                throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
+            }
+        },
+        'guest_order.status' => static function(PDO $pdo, array $envelope): array {
+            try {
+                return guest_order_status_lookup($pdo, is_array($envelope['payload'] ?? null) ? $envelope['payload'] : []);
+            } catch (GuestOrderStatusException $e) {
+                throw new SoknaRelayBusinessRejection($e->errorCode,['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()]);
+            }
+        },
+        'order.edit' => static function(PDO $pdo, array $envelope): array {
+            try {
+                $payload=is_array($envelope['payload'] ?? null) ? $envelope['payload'] : [];
+                $payload['action']='update';
+                return guest_order_manage_mutate_tx($pdo,$payload);
+            } catch (GuestOrderEditException $e) {
+                throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
+            }
+        },
+        'order.cancel' => static function(PDO $pdo, array $envelope): array {
+            try {
+                $payload=is_array($envelope['payload'] ?? null) ? $envelope['payload'] : [];
+                $payload['action']='cancel';
+                return guest_order_manage_mutate_tx($pdo,$payload);
+            } catch (GuestOrderEditException $e) {
+                throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
+            }
+        },
         'waiter_call.create' => static function(PDO $pdo, array $envelope): array {
             try {
                 $payload=is_array($envelope['payload'] ?? null) ? $envelope['payload'] : [];
@@ -34,6 +68,20 @@ function sokna_relay_dispatch_registry(): array
                     $e->errorCode,
                     array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details)
                 );
+            }
+        },
+        'waiter_call.status' => static function(PDO $pdo, array $envelope): array {
+            try {
+                return waiter_call_status($pdo,is_array($envelope['payload'] ?? null)?$envelope['payload']:[]);
+            } catch (WaiterCallException $e) {
+                throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
+            }
+        },
+        'waiter_call.cancel' => static function(PDO $pdo, array $envelope): array {
+            try {
+                return waiter_call_cancel_tx($pdo,is_array($envelope['payload'] ?? null)?$envelope['payload']:[]);
+            } catch (WaiterCallException $e) {
+                throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
             }
         },
     ];
