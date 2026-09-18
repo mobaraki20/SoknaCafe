@@ -35,11 +35,14 @@ Checkpoint: synthetic realtime request دقیقاً once business commit؛ timeo
 - degraded read behavior و disable order/waiter-call هنگام Local unavailable
 Checkpoint: failed publish revision فعال قبلی را خراب نکند؛ submit فقط پس از Local commit success شود.
 
-## Phase 4 — Remote Read Models
-- role/capability-aware projections
-- stale indicators و read-only degrade
-- 4G staff flows
-Checkpoint: permission matrix و stale UX تست شود.
+## Phase 4 — Remote Read Models — IMPLEMENTED in 1.36.4-dev.30
+- role/capability-aware projections از همان Local user/capability/area authority
+- پنج projection محدود: operations / preparation / inventory / inventory_cost / reports
+- Runtime outbound sync با `tools/remote-read-worker.php`
+- Public Remote Staff read-only surface در `/staff/?installation_id=...`
+- stale indicators، last-sync و read-only degrade هنگام unavailable بودن Local
+- Preparation monitor/assigned-area matrix بدون اعطای mutation جدید
+Checkpoint: static boundary contract + HTTP/MariaDB permission/area/stale tests + full regression باید قبل از Merge سبز باشند.
 
 ## Phase 5 — Deferred-safe + Financial Reconciliation
 - queue/store جدا
