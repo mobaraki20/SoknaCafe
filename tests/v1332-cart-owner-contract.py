@@ -6,7 +6,7 @@ guest=(ROOT/'assets/css/guest-menu.css').read_text()
 qo=(ROOT/'assets/css/quick-order.css').read_text()
 gjs=(ROOT/'assets/js/menu.js').read_text()
 sjs=(ROOT/'assets/js/staff-quick-order.js').read_text()
-index=(ROOT/'menu/index.php').read_text()
+index=((ROOT/'menu/index.php').read_text() + '\n' + (ROOT/'includes/guest_menu_view.php').read_text())
 staff=(ROOT/'staff/quick-order.php').read_text()
 for selector in ('.cart-drawer{','.drawer-backdrop{','.drawer-head{','.drawer-content{','.cart-line{','.qty-control{','.drawer-foot{','.total-row{','.empty-cart{'):
     assert selector not in app, f'Guest cart selector leaked back into app.css: {selector}'
