@@ -99,3 +99,7 @@ Supply/Purchasing اولین Pilot مرزبندی Domain است و Owner آن `m
 
 ### Phase 2 Relay ownership
 از 1.36.4-dev.28، Relay یک ماژول Core صریح است. جدول relay_processed_requests فقط متعلق به Relay محلی است؛ Public Edge فقط state محدود انتقال، Auth Projection، Heartbeat و Emergency Audit را نگه می‌دارد و مالک Business State canonical نیست.
+
+
+### Phase 4 Remote Read ownership
+از `1.36.4-dev.30`، دسترسی راه‌دور کارکنان برای Read Modelها از همان Local account/capability/area projection استفاده می‌کند. Public فقط آخرین snapshotهای محدود `operations/preparation/inventory/inventory_cost/reports` را نگه می‌دارد؛ Order/Settlement/Inventory canonical state همچنان فقط Local است. Surface راه‌دور Phase 4 read-only است و در stale/offline mode باید آخرین sync را صریح نشان دهد. هیچ capability، role یا permission system موازی برای Remote ساخته نشود.
