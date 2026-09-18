@@ -3,6 +3,18 @@ declare(strict_types=1);
 
 const SOKNA_RELAY_PROTOCOL_VERSION = 'sokna-relay-v1';
 const SOKNA_RELAY_TERMINAL_STATES = ['committed','rejected','expired','cancelled','unknown_review'];
+const SOKNA_DEFERRED_STATES = ['pending_sync','committed','needs_review','rejected'];
+const SOKNA_DEFERRED_TERMINAL_STATES = ['committed','needs_review','rejected'];
+const SOKNA_DEFERRED_KINDS = [
+    'supply.need.create',
+    'supply.status.prepare',
+    'supply.status.return',
+    'supply.receipt',
+    'inventory.waste',
+    'inventory.count_draft',
+    'subscriber.payment',
+    'expense.create',
+];
 const SOKNA_RELAY_REALTIME_KINDS = [
     'guest_order.submit',
     'guest_order.list',
@@ -108,4 +120,32 @@ function sokna_relay_validate_realtime_envelope(array $envelope, bool $allowSynt
 function sokna_relay_is_terminal(string $state): bool
 {
     return in_array($state, SOKNA_RELAY_TERMINAL_STATES, true);
+}
+
+
+function sokna_deferred_validate_envelope(array $envelope): array
+{
+    $errors=[];
+    $requestId=trim((string)($envelope['request_id']??''));
+    if($requestId===''||strlen($requestId)>96||preg_match('/^[A-Za-z0-9._:-]+$/',$requestId)!==1)$errors[]='request_id';
+    $kind=trim((string)($envelope['kind']??''));
+    if(!in_array($kind,SOKNA_DEFERRED_KINDS,true))$errors[]='kind';
+    $createdAt=trim((string)($envelope['created_at']??''));
+    $occurredAt=trim((string)($envelope['occurred_at']??''));
+    $createdTs=sokna_relay_parse_time($createdAt);
+    $occurredTs=sokna_relay_parse_time($occurredAt);
+    if($createdTs<=0)$errors[]='created_at';
+    if($occurredTs<=0)$errors[]='occurred_at';
+    if($occurredTs>time()+300)$errors[]='occurred_at_future';
+    if(!isset($envelope['payload'])||!is_array($envelope['payload']))$errors[]='payload';
+    if(isset($envelope['expected_version'])&&!is_int($envelope['expected_version'])&&!is_string($envelope['expected_version']))$errors[]='expected_version';
+    if(isset($envelope['expected_state'])&&!is_string($envelope['expected_state']))$errors[]='expected_state';
+    $actor=trim((string)($envelope['actor_projection_id']??$envelope['session_id']??''));
+    if($actor==='')$errors[]='actor_projection_id';
+    return ['ok'=>$errors===[],'errors'=>$errors,'occurred_ts'=>$occurredTs];
+}
+
+function sokna_deferred_is_terminal(string $state): bool
+{
+    return in_array($state,SOKNA_DEFERRED_TERMINAL_STATES,true);
 }
