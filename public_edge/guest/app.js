@@ -168,7 +168,7 @@ async function enqueueRecord(record){
   const data=await response.json().catch(()=>({}));
   if(!response.ok){
     const error=new Error(publicErrorMessage(data.error));
-    error.safeToRetry=response.status<500&&data.error!=='request_id_conflict';
+    error.definitive=true;
     error.code=String(data.error||'');
     throw error;
   }
@@ -189,15 +189,32 @@ async function submitAndWait(record){
   writePending(record);
   syncActionLocks();
 
-  // A transport failure after POST is ambiguous: first ask Public whether the
-  // exact request_id exists, then retry the SAME logical request if needed.
+  // Resume/ambiguous paths always inspect the durable Public request first.
+  // This prevents a stale Local heartbeat from hiding an already-enqueued job.
   let accepted=false;
+  try{
+    const existing=await resultLookup(record);
+    if(!existing.missing){
+      const terminal=terminalResult(existing,record);
+      if(terminal){
+        if(terminal.ok)return terminal.result;
+        terminal.error.terminal=true;
+        throw terminal.error;
+      }
+      accepted=true;
+    }
+  }catch(error){
+    if(error?.terminal)throw error;
+  }
+
+  // A transport failure after POST is ambiguous: ask Public whether the exact
+  // request_id exists, then retry the SAME logical request if needed.
   for(let attempt=0;attempt<3&&!accepted;attempt++){
     try{
       await enqueueRecord(record);
       accepted=true;
     }catch(error){
-      if(error?.safeToRetry){
+      if(error?.definitive){
         clearPending(record.kind);
         syncActionLocks();
         throw error;
@@ -225,11 +242,12 @@ async function submitAndWait(record){
       const terminal=terminalResult(data,record);
       if(terminal){
         if(terminal.ok)return terminal.result;
+        terminal.error.terminal=true;
         throw terminal.error;
       }
     }catch(error){
       // Network/result lookup failures keep the exact request pending.
-      if(error?.message&&error.message!=='وضعیت درخواست قابل بررسی نیست.')throw error;
+      if(error?.terminal)throw error;
     }
   }
 
