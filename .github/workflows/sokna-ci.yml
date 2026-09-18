@@ -22,6 +22,7 @@ on:
       - 'schema/**'
       - 'scripts/**'
       - '.github/workflows/sokna-ci.yml'
+      - '.gitattributes'
   pull_request:
   workflow_dispatch:
 
