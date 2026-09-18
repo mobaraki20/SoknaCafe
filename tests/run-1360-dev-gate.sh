@@ -31,6 +31,7 @@ php tests/phase2-relay-contract.php
 php tests/phase2-projection-contract.php
 php tests/phase2-public-boundary-contract.php
 php tests/phase3-guest-publish-contract.php
+php tests/phase3-guest-runtime-contract.php
 
 echo '== Supply / modular contracts =='
 python tests/v1360-supply-module-contract.py
