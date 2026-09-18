@@ -98,6 +98,7 @@ function guest_publish_build_snapshot(PDO $pdo): array
         FROM cafe_tables WHERE active=1 ORDER BY table_number,sort_order,id")->fetchAll(PDO::FETCH_ASSOC);
     $tables = array_map(static fn(array $row): array => [
         'name'=>(string)$row['name'],'code'=>(string)$row['code'],'token'=>(string)$row['access_token'],
+        'public_ref'=>substr(hash('sha256',(string)$row['access_token']),0,32),
         'table_number'=>(int)$row['table_number'],'sort_order'=>(int)($row['sort_order'] ?? 0),
         'zone_label'=>(string)($row['zone_label'] ?? ''),
     ], $tables);
@@ -210,7 +211,8 @@ function guest_availability_payload(PDO $pdo): array
     }
     $payload = [
         'generated_at'=>gmdate('c'),'order_acceptance'=>$acceptance,
-        'waiter_enabled'=>setting_bool('public_waiter_call_enabled',false),'items'=>$items,
+        'waiter_enabled_table'=>setting_bool('waiter_call_enabled',true),
+        'waiter_enabled_public'=>setting_bool('public_waiter_call_enabled',false),'items'=>$items,
     ];
     $payload['version']=hash('sha256', sokna_relay_canonical_json($payload));
     return $payload;
