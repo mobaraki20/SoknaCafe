@@ -94,3 +94,66 @@ function waiter_call_create(PDO $pdo,array $data):array
     try{$result=waiter_call_create_tx($pdo,$data);$pdo->commit();return $result;}
     catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
 }
+
+
+function waiter_call_table(PDO $pdo,string $tableToken,bool $forUpdate=false):?array
+{
+    if($tableToken==='')return null;
+    $sql='SELECT id,name,access_token FROM cafe_tables WHERE access_token=? AND active=1 LIMIT 1'.($forUpdate?' FOR UPDATE':'');
+    $stmt=$pdo->prepare($sql);$stmt->execute([$tableToken]);$row=$stmt->fetch();
+    return $row?:null;
+}
+
+function waiter_call_status(PDO $pdo,array $data):array
+{
+    $tableToken=trim((string)($data['table_token']??''));
+    $clientToken=trim((string)($data['client_token']??''));
+    $code=trim((string)($data['call_code']??''));
+    $table=waiter_call_table($pdo,$tableToken);
+    if(!$table)throw new WaiterCallException('invalid_qr',customer_message('invalid_qr'),404);
+    if($code===''){
+        $find=$pdo->prepare("SELECT public_code,status,updated_at FROM waiter_calls WHERE table_id=? AND status IN('new','accepted') ORDER BY id DESC LIMIT 1");
+        $find->execute([(int)$table['id']]);
+    }else{
+        $find=$pdo->prepare('SELECT public_code,status,updated_at FROM waiter_calls WHERE public_code=? AND table_id=? LIMIT 1');
+        $find->execute([$code,(int)$table['id']]);
+    }
+    $row=$find->fetch();
+    if(!$row)return ['success'=>true,'status'=>'none'];
+    $owned=false;
+    if($clientToken!==''&&$code!==''){
+        $owner=$pdo->prepare('SELECT COUNT(*) FROM waiter_calls WHERE public_code=? AND table_id=? AND client_token=?');
+        $owner->execute([$code,(int)$table['id'],$clientToken]);$owned=(bool)$owner->fetchColumn();
+    }
+    return [
+        'success'=>true,'call_code'=>(string)$row['public_code'],'status'=>(string)$row['status'],
+        'updated_at'=>(string)$row['updated_at'],'owned'=>$owned,
+    ];
+}
+
+function waiter_call_cancel_tx(PDO $pdo,array $data):array
+{
+    if(!$pdo->inTransaction())throw new LogicException('waiter_call_cancel_tx requires an open transaction.');
+    $tableToken=trim((string)($data['table_token']??''));
+    $clientToken=trim((string)($data['client_token']??''));
+    $code=trim((string)($data['call_code']??''));
+    if($clientToken===''||$code==='')throw new WaiterCallException('not_owner','این درخواست از همین گوشی ثبت نشده.',403);
+    $table=waiter_call_table($pdo,$tableToken,true);
+    if(!$table)throw new WaiterCallException('invalid_qr',customer_message('invalid_qr'),404);
+    $lookup=$pdo->prepare('SELECT status,client_token FROM waiter_calls WHERE public_code=? AND table_id=? LIMIT 1 FOR UPDATE');
+    $lookup->execute([$code,(int)$table['id']]);$row=$lookup->fetch();
+    if(!$row)return ['success'=>true,'status'=>'unchanged'];
+    if(!hash_equals((string)$row['client_token'],$clientToken))throw new WaiterCallException('not_owner','این درخواست از همین گوشی ثبت نشده.',403);
+    if((string)$row['status']==='cancelled')return ['success'=>true,'status'=>'cancelled','duplicate'=>true];
+    if((string)$row['status']!=='new')return ['success'=>true,'status'=>'unchanged'];
+    $update=$pdo->prepare("UPDATE waiter_calls SET status='cancelled',active_table_guard=NULL,cancelled_at=NOW(),cancel_reason='customer' WHERE public_code=? AND table_id=? AND client_token=? AND status='new'");
+    $update->execute([$code,(int)$table['id'],$clientToken]);
+    return ['success'=>true,'status'=>$update->rowCount()?'cancelled':'unchanged'];
+}
+
+function waiter_call_cancel(PDO $pdo,array $data):array
+{
+    $pdo->beginTransaction();
+    try{$result=waiter_call_cancel_tx($pdo,$data);$pdo->commit();return $result;}
+    catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+}
