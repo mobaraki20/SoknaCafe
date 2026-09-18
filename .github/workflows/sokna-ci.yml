@@ -244,7 +244,9 @@ jobs:
           SOKNA_PUBLIC_TEST_DSN: mysql:host=127.0.0.1;port=3306;dbname=sokna_public;charset=utf8mb4
           SOKNA_PUBLIC_TEST_DB_USER: root
           SOKNA_PUBLIC_TEST_DB_PASS: root
-        run: php tests/phase2-public-http.php
+        run: |
+          php tests/phase2-public-http.php
+          php tests/phase3-guest-publish-http.php
       - name: Public edge log on failure
         if: failure()
         shell: bash
