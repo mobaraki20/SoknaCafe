@@ -207,7 +207,15 @@ check(is_string($schemaSource) && str_contains($schemaSource, 'uq_table_sessions
 $authSource = file_get_contents(dirname(__DIR__) . '/includes/auth.php');
 check(is_string($authSource) && str_contains($authSource, 'function is_logged_in') && str_contains($authSource, 'function login('), 'Login runtime functions are missing.');
 $orderApiSource = file_get_contents(dirname(__DIR__) . '/api/create_order.php');
-check(is_string($orderApiSource) && str_contains($orderApiSource, "client_token']") && str_contains($orderApiSource, 'order_status_history'), 'Order idempotency or initial status history is missing.');
+$orderServiceSource = file_get_contents(dirname(__DIR__) . '/includes/guest_order_service.php');
+check(
+    is_string($orderApiSource)
+    && is_string($orderServiceSource)
+    && str_contains($orderApiSource, 'guest_order_commit(db(),$data)')
+    && str_contains($orderServiceSource, "client_token']")
+    && str_contains($orderServiceSource, 'order_status_history'),
+    'Order idempotency or initial status history is missing.'
+);
 $menuJsSource = file_get_contents(dirname(__DIR__) . '/assets/js/menu.js');
 check(is_string($menuJsSource) && str_contains($menuJsSource, 'data.client_token || submittedTarget?.client_token || pendingToken'), 'Guest tracking must use the server-confirmed client token.');
 $panelLayout = file_get_contents(dirname(__DIR__) . '/includes/panel_layout.php');
