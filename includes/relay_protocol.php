@@ -7,6 +7,7 @@ const SOKNA_RELAY_REALTIME_KINDS = [
     'guest_order.submit',
     'guest_order.list',
     'guest_order.status',
+    'guest_table.context',
     'waiter_call.create',
     'waiter_call.status',
     'waiter_call.cancel',
