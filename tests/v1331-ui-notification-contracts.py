@@ -10,7 +10,7 @@ schema=read('database/schema.sql')
 panel=read('includes/panel_layout.php')
 admin=read('admin/push_devices.php')
 guest=read('assets/js/menu.js')
-guest_markup=(read('menu/index.php') + '\n' + read('includes/guest_menu_view.php'))
+guest_markup=((read('menu/index.php') + '\n' + read('includes/guest_menu_view.php')) + '\n' + read('includes/guest_menu_view.php'))
 quick=read('assets/js/staff-quick-order.js')
 quick_markup=read('staff/quick-order.php')
 
@@ -36,7 +36,7 @@ assert 'id="guestTakeawayLayer"' in guest_markup and 'id="guestTakeawayConfirm"'
 assert 'guestFulfillmentControl' not in guest_markup
 assert 'takeawayDraft' in guest and 'closeGuestTakeawaySheet(true)' in guest
 assert 'closeGuestTakeawaySheet(false)' in guest
-assert 'fulfillment.ratioHtml' in guest and 'takeaway_allowed' in (read('menu/index.php') + '\n' + read('includes/guest_menu_view.php'))
+assert 'fulfillment.ratioHtml' in guest and 'takeaway_allowed' in ((read('menu/index.php') + '\n' + read('includes/guest_menu_view.php')) + '\n' + read('includes/guest_menu_view.php'))
 assert 'window.SoknaFulfillment' in policy
 # Conflict must block submit and require explicit latest-version reload.
 assert 'id="guestOrderConflict"' in guest_markup and 'id="guestOrderConflictPrimary"' in guest_markup and 'id="guestOrderConflictSecondary"' in guest_markup
