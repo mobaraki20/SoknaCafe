@@ -34,7 +34,7 @@ def schema_tables() -> set[str]:
 data = php_registry()
 registry: dict[str, dict] = data['registry']
 need(data['errors'] == [], f"module dependency/ownership metadata errors: {data['errors']}")
-need(len(registry) == 14, f"unexpected module count: {len(registry)}")
+need(len(registry) == 15, f"unexpected module count: {len(registry)}")
 need([key for key,module in registry.items() if module.get('toggleable')] == ['inventory','supply','marketing','reporting','personnel'], 'only end-to-end hardened optional modules may expose runtime toggles')
 
 required_fields = {
@@ -68,7 +68,7 @@ need(not duplicates, f"duplicate table owners: {duplicates}")
 discovered = schema_tables()
 owned = set(owners)
 need(discovered == owned, f"table ownership coverage mismatch missing={sorted(discovered-owned)} extra={sorted(owned-discovered)}")
-need(len(discovered) == 62, f"expected 62 current schema tables, found {len(discovered)}")
+need(len(discovered) == 67, f"expected 62 current schema tables, found {len(discovered)}")
 
 # Every user/agent-facing PHP route has one module owner. This keeps HTTP ownership explicit
 # without forcing entrypoint files to move folders.
