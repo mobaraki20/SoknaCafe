@@ -95,3 +95,7 @@ Supply/Purchasing اولین Pilot مرزبندی Domain است و Owner آن `m
 - آیا تغییر، داده/مالی/Audit/Print reliability را بدون مسیر Recovery به خطر می‌اندازد؟
 
 اگر پاسخ‌ها روشن نیست، قبل از توسعه Scope را دوباره بررسی کنید.
+
+
+### Phase 2 Relay ownership
+از 1.36.4-dev.28، Relay یک ماژول Core صریح است. جدول relay_processed_requests فقط متعلق به Relay محلی است؛ Public Edge فقط state محدود انتقال، Auth Projection، Heartbeat و Emergency Audit را نگه می‌دارد و مالک Business State canonical نیست.

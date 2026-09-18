@@ -42,6 +42,16 @@ function sokna_runtime_worker_registry(): array
             'command' => [PHP_BINARY, $root . '/tools/backup-worker.php'],
             'required' => true,
         ],
+        'relay' => [
+            'interval_seconds' => 1,
+            'command' => [PHP_BINARY, $root . '/tools/relay-worker.php', '--once'],
+            'required' => false,
+        ],
+        'relay_projection' => [
+            'interval_seconds' => 60,
+            'command' => [PHP_BINARY, $root . '/tools/relay-projection-worker.php', '--once'],
+            'required' => false,
+        ],
     ];
 }
 

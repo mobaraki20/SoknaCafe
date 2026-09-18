@@ -8,6 +8,13 @@ return [
         'pass' => '',
         'charset' => 'utf8mb4',
     ],
+    'relay' => [
+        'enabled' => false,
+        'public_base_url' => '',
+        'installation_id' => '',
+        'shared_secret' => '', // installer/pairing managed; never commit a real secret
+        'timeout_seconds' => 8,
+    ],
     'app' => [
         'url' => '',
         'key' => 'CHANGE_ME_TO_A_RANDOM_SECRET',

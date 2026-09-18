@@ -438,3 +438,11 @@ Core/Finance/Orders/Platform/Menu و Printing نباید Casual Toggle داشت�
 - **Historical migration archive in active source = 0**
 
 این Map مبنای توسعه Moduleهای بعدی است؛ جابه‌جایی Folder به‌تنهایی Modularization محسوب نمی‌شود.
+
+
+## Relay (Phase 2)
+- Module key: relay
+- Owner: includes/relay_*.php + tools/relay-worker.php + tools/relay-projection-worker.php
+- Local persistent owner: relay_processed_requests
+- Boundary: Public فقط Relay/Auth Projection/Heartbeat/Emergency Audit را نگه می‌دارد؛ Order/Settlement/Inventory و سایر Business Stateهای canonical فقط Local هستند.
+- Runtime: Local outbound polling/claim/ACK؛ هیچ inbound اینترنتی به Local لازم نیست.
