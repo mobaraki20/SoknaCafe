@@ -1,0 +1,154 @@
+name: SOKNA CI
+
+on:
+  push:
+    branches: [main, 'phase/**', 'dev/**']
+    paths-ignore:
+      - 'Sokna-1.36.4-dev.27-PHASE1.zip'
+      - '.bootstrap/**'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-regression:
+    name: Linux regression gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect imported source
+        shell: bash
+        run: test -f VERSION.txt || { echo 'Source not imported yet'; exit 0; }
+      - name: Setup PHP
+        if: hashFiles('VERSION.txt') != ''
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_mysql, openssl
+          coverage: none
+      - name: Setup Python browser harness
+        if: hashFiles('VERSION.txt') != ''
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check playwright
+          python -m playwright install --with-deps chromium
+          CHROMIUM="$(python - <<'PY'
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              print(p.chromium.executable_path)
+          PY
+          )"
+          sudo ln -sf "$CHROMIUM" /usr/bin/chromium
+          /usr/bin/chromium --version
+      - name: Full environment-independent dev gate
+        if: hashFiles('VERSION.txt') != ''
+        shell: bash
+        run: bash tests/run-1360-dev-gate.sh
+
+  windows-phase1:
+    name: Windows Phase 1 runtime validation
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      SOKNA_DATA_DIR: ${{ runner.temp }}\sokna-data
+      SOKNA_LOCAL_HOSTNAME: sokna.local
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect imported source
+        id: source
+        shell: pwsh
+        run: |
+          if (Test-Path VERSION.txt) {
+            "ready=true" >> $env:GITHUB_OUTPUT
+          } else {
+            "ready=false" >> $env:GITHUB_OUTPUT
+            Write-Host 'Source not imported yet'
+          }
+      - name: Setup PHP
+        if: steps.source.outputs.ready == 'true'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_mysql, openssl
+          coverage: none
+      - name: Tool versions
+        if: steps.source.outputs.ready == 'true'
+        shell: pwsh
+        run: |
+          php --version
+          node --version
+          python --version
+          Get-Content VERSION.txt
+      - name: PHP lint
+        if: steps.source.outputs.ready == 'true'
+        shell: pwsh
+        run: |
+          $failed = @()
+          $files = Get-ChildItem -Path . -Recurse -File -Filter *.php | Where-Object { $_.FullName -notmatch '[\\/]\.git[\\/]' }
+          foreach ($file in $files) {
+            php -l $file.FullName | Out-Null
+            if ($LASTEXITCODE -ne 0) { $failed += $file.FullName }
+          }
+          if ($failed.Count -gt 0) { throw "PHP lint failed: $($failed -join ', ')" }
+          Write-Host "PHP lint PASS: $($files.Count) files"
+      - name: JavaScript syntax
+        if: steps.source.outputs.ready == 'true'
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem assets -Recurse -File -Filter *.js
+          foreach ($file in $files) {
+            node --check $file.FullName
+            if ($LASTEXITCODE -ne 0) { throw "JS syntax failed: $($file.FullName)" }
+          }
+          node --check service-worker.js
+          if ($LASTEXITCODE -ne 0) { throw 'service-worker.js syntax failed' }
+          Write-Host "JS syntax PASS: $($files.Count + 1) files"
+      - name: Core unit and Phase 1 contracts
+        if: steps.source.outputs.ready == 'true'
+        shell: pwsh
+        run: |
+          php tests/unit.php
+          if ($LASTEXITCODE -ne 0) { throw 'PHP unit checks failed' }
+          python tests/v1360-ui-language-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'UI language contract failed' }
+          python tests/v1360-module-ownership-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Module ownership contract failed' }
+          python tests/v1360-final-invariants.py
+          if ($LASTEXITCODE -ne 0) { throw 'Final invariants failed' }
+          python tests/updater-current-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Updater contract failed' }
+          python tests/recovery-current-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Recovery contract failed' }
+      - name: Local Runtime self-check
+        if: steps.source.outputs.ready == 'true'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:SOKNA_DATA_DIR | Out-Null
+          php runtime/sokna-runtime.php --self-check
+          if ($LASTEXITCODE -ne 0) { throw 'Runtime self-check failed' }
+          php runtime/sokna-runtime.php --health-json
+          if ($LASTEXITCODE -ne 0) { throw 'Runtime health-json failed' }
+      - name: Provision and validate sokna.local TLS
+        if: steps.source.outputs.ready == 'true'
+        shell: pwsh
+        run: |
+          $openssl = (Get-Command openssl -ErrorAction SilentlyContinue).Source
+          if (-not $openssl) {
+            $candidate = 'C:\Program Files\Git\usr\bin\openssl.exe'
+            if (Test-Path $candidate) { $openssl = $candidate }
+          }
+          if (-not $openssl) { throw 'OpenSSL executable not found on Windows runner' }
+          $tlsRoot = Join-Path $env:RUNNER_TEMP 'sokna-tls-uat'
+          ./runtime/windows/provision-local-https.ps1 -OpenSslExe $openssl -DataRoot $tlsRoot -Hostname 'sokna.local'
+          $cert = Join-Path $tlsRoot 'secrets\tls\server.crt.pem'
+          $key = Join-Path $tlsRoot 'secrets\tls\server.key.pem'
+          if (-not (Test-Path $cert)) { throw 'Server certificate was not created' }
+          if (-not (Test-Path $key)) { throw 'Server private key was not created' }
+          $certText = (& $openssl x509 -in $cert -noout -text | Out-String)
+          if ($certText -notmatch 'DNS:sokna\.local') { throw 'sokna.local SAN missing from certificate' }
+          $hosts = Get-Content "$env:SystemRoot\System32\drivers\etc\hosts" -Raw
+          if ($hosts -notmatch '(?m)^127\.0\.0\.1\s+sokna\.local(?:\s|$)') { throw 'sokna.local hosts mapping missing' }
+          Write-Host 'Windows TLS/trust/hosts provisioning PASS'
