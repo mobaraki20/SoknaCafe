@@ -38,7 +38,9 @@ for required in ['assets/css/app.css','assets/css/guest-menu.css','assets/css/pa
     assert (ROOT / required).is_file()
 retired_css = list((ROOT / 'assets/css').glob('v*.css')) + [ROOT/'assets/css/guest-order-refinement.css']
 assert not [p for p in retired_css if p.exists()], 'historical CSS layers remain: ' + ', '.join(p.name for p in retired_css if p.exists())
-index = read('menu/index.php')
+index_route = read('menu/index.php')
+index_view = read('includes/guest_menu_view.php')
+index = index_route + '\n' + index_view
 panel_layout = read('includes/panel_layout.php')
 assert 'assets/css/guest-menu.css' in index and not re.search(r'assets/css/v\d+\.css', index)
 assert 'assets/css/panel.css' in panel_layout and not re.search(r'assets/css/v\d+\.css', panel_layout)
