@@ -56,7 +56,7 @@ need(pcss.count('.invoice-receipt-line{')<=2 and pcss.count('.invoice-receipt-me
 need('.invoice-receipt-meta dl>div:last-child:nth-child(odd){grid-column:1/-1}' in pcss,'odd receipt metadata full-width')
 
 # Notification routing/one-tap claim integrity.
-push=txt('includes/push.php'); call=txt('api/waiter_call.php'); action=txt('api/push_action.php'); shell=txt('includes/panel_layout.php'); pushapi=txt('waiter/api_push.php'); worker=txt('tools/push-worker.php')
+push=txt('includes/push.php'); call=tx(t('api/waiter_call.php') + '\n' + t('includes/waiter_call_service.php')); action=txt('api/push_action.php'); shell=txt('includes/panel_layout.php'); pushapi=txt('waiter/api_push.php'); worker=txt('tools/push-worker.php')
 need('attention_filter=calls' in call and 'operator/index.php' in call,'waiter-call push URL must open floor/operator workflow')
 need("push.admin_live_operations" in push and "role']==='admin'" in push,'admin live push opt-in policy')
 need("$requestId!==''" in push and "$eventType==='order'" in push,'event idempotency key separated from display tag')
