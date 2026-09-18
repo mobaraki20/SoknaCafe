@@ -60,6 +60,10 @@ jobs:
           sudo ln -sf "$CHROMIUM" /usr/bin/chromium
           /usr/bin/chromium --version
 
+      - name: PharData compatibility diagnostic
+        shell: bash
+        run: php tests/phar-compat-diagnostic.php
+
       - name: Full environment-independent dev gate
         shell: bash
         run: bash tests/run-1360-dev-gate.sh
