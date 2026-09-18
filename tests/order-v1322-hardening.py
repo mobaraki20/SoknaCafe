@@ -4,8 +4,8 @@ ROOT=Path(__file__).resolve().parents[1]
 read=lambda p:(ROOT/p).read_text(encoding='utf-8')
 
 func=read('includes/functions.php')
-guest=read('api/guest_orders.php')
-create=read('api/create_order.php')
+guest=(read('api/guest_orders.php') + '\n' + read('includes/guest_order_manage_service.php'))
+create=(read('api/create_order.php') + '\n' + read('includes/guest_order_service.php'))
 menu=read('assets/js/menu.js')
 bill=read('operator/api_bill.php')
 op=read('assets/js/operator.js')
