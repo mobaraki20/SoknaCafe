@@ -24,3 +24,16 @@
 | R20 | historical finance rows با tax/service migration rewrite شوند | High | Low | additive snapshots; no historical semantic rewrite | 6 |
 | R21 | module disable history را حذف/غیرقابل خواندن کند | Blocker | Low | module lifecycle contract tests; no destructive disable | 6/9 |
 | R22 | old routes/workers بعد از migration owner دوم باقی بمانند | High | Medium | route/mutation matrix + Phase 9 dead-path removal | 9 |
+
+
+## Phase 5 Mitigation Evidence — 1.36.4-dev.31
+- Queue merge / semantic bleed: mitigated by separate `deferred_work` table, separate endpoints and separate Runtime worker; static contract rejects Realtime/local-only kinds.
+- Duplicate commit / lost ACK: mitigated by Local `deferred_work_receipts` unique installation+request identity and persisted terminal result before Public ACK.
+- Closed-period silent mutation: mitigated by period lookup on `occurred_at`; closed period creates `late_correction` review before any domain mutation.
+- Duplicate late correction: unique review per receipt + unique receipt request identity.
+- Financial close with unknown remote state: normal close blocks when paired Public status is unknown/unreachable; explicit override stores actor/reason/status snapshot.
+- Permission drift: Public capability is first gate only; Local active user/current capability is revalidated at dispatch/review.
+- Stale stock/count/supply state: expected version/state conflicts route to `needs_review`; no blind overwrite.
+- Inventory count authority drift: Local UI and Deferred-safe both use `inventory_count_update_line_locked()`; finalize remains separate Local-only owner.
+- Expense double counting: general Expenses owner is separate; Supply/Inventory purchase receipt is not auto-created as Expense.
+- Public becoming second DB: no canonical business tables added; only Deferred envelope/result state and bounded read models.
