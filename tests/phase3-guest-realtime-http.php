@@ -147,4 +147,23 @@ $waitAck=rt_signed('/api/v1/local/ack.php',['request_id'=>$waitReq,'lease_token'
 if((int)$local->query('SELECT COUNT(*) FROM waiter_calls')->fetchColumn()!==1)rt_fail('waiter call count');
 rt_pass('waiter call commits through canonical Local owner');
 
+// Published content remains readable when Local becomes stale, but no new
+// mutation may enter the durable queue in degraded mode.
+$page=rt_http('GET',$publicBase.'/guest/?installation_id='.rawurlencode($installation).'&table='.rawurlencode($tableToken));
+if($page['status']!==200||!str_contains($page['raw'],'CI Latte'))rt_fail('fresh Public guest renderer',$page);
+rt_pass('published guest menu renders from Public snapshot');
+
+$public->prepare("UPDATE installation_heartbeats SET last_seen_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 2 MINUTE) WHERE installation_id=?")->execute([$installation]);
+$public->prepare("UPDATE guest_availability_state SET last_sync_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 2 MINUTE) WHERE installation_id=?")->execute([$installation]);
+$degradedPage=rt_http('GET',$publicBase.'/guest/?installation_id='.rawurlencode($installation).'&table='.rawurlencode($tableToken));
+if($degradedPage['status']!==200||!str_contains($degradedPage['raw'],'CI Latte')||!str_contains($degradedPage['raw'],'ارتباط زنده'))rt_fail('degraded Public guest renderer',$degradedPage);
+rt_pass('stale Local keeps published menu readable with degraded notice');
+
+$beforeBlocked=(int)$public->query("SELECT COUNT(*) FROM realtime_requests WHERE installation_id=".$public->quote($installation))->fetchColumn();
+$blocked=rt_guest_enqueue('guest-order:ci-stale','guest_order.submit','client-token-stale-12345','device-token-stale-12345',$tableToken,$orderPayload);
+if($blocked['status']!==503||($blocked['json']['error']??'')!=='local_unavailable')rt_fail('stale mutation must be blocked',$blocked);
+$afterBlocked=(int)$public->query("SELECT COUNT(*) FROM realtime_requests WHERE installation_id=".$public->quote($installation))->fetchColumn();
+if($afterBlocked!==$beforeBlocked)rt_fail('stale mutation entered queue',[$beforeBlocked,$afterBlocked]);
+rt_pass('degraded mode rejects new mutation before queue insertion');
+
 echo "Phase 3 guest realtime dual-DB integration PASS\n";
