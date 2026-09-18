@@ -45,7 +45,25 @@ $GLOBALS['soknaPublicGuestContext']=[
 ];
 
 $isPublic=$table===null;
+$tableState=[];
 $session=null;
+$pendingSession=null;
+if($table&&$actionState['enabled']){
+    $tableStates=is_array($availability['tables']??null)?$availability['tables']:[];
+    $tableState=is_array($tableStates[(string)(int)($table['id']??0)]??null)?$tableStates[(string)(int)($table['id']??0)]:[];
+    $projectedSession=is_array($tableState['session']??null)?$tableState['session']:null;
+    $projectedPending=is_array($tableState['pending_session']??null)?$tableState['pending_session']:null;
+    if($projectedSession)$session=[
+        'public_token'=>(string)($projectedSession['token']??''),
+        'started_at'=>(string)($projectedSession['started_at']??''),
+        'status'=>(string)($projectedSession['status']??'active'),
+    ];
+    if($projectedPending)$pendingSession=[
+        'public_token'=>(string)($projectedPending['token']??''),
+        'started_at'=>(string)($projectedPending['started_at']??''),
+        'status'=>(string)($projectedPending['status']??'pending'),
+    ];
+}
 $requestedMenuKey=trim((string)($_GET['menu']??''));
 $rawMenus=is_array($snapshot['menus']??null)?$snapshot['menus']:[];
 $catalogs=is_array($snapshot['catalogs']??null)?$snapshot['catalogs']:[];
@@ -129,7 +147,7 @@ $accommodationUrl=setting_bool('accommodation_enabled',true)?safe_external_url(s
 
 $orderingEnabled=(bool)$orderAcceptance['cafe']&&$actionState['enabled'];
 $sessionsEnabled=!empty($features['table_sessions_enabled']);
-$canOrder=(bool)$table&&$orderingEnabled;
+$canOrder=(bool)$table&&$orderingEnabled&&(!$sessionsEnabled||($session&&((string)($session['status']??''))==='active'));
 $publicWaiterEnabled=$table===null&&$actionState['enabled']&&!empty($availability['waiter_enabled_public']);
 $publicWaiterTables=[];
 if($publicWaiterEnabled){
