@@ -151,7 +151,11 @@ rt_pass('waiter call commits through canonical Local owner');
 // mutation may enter the durable queue in degraded mode.
 $page=rt_http('GET',$publicBase.'/guest/?installation_id='.rawurlencode($installation).'&table='.rawurlencode($tableToken));
 if($page['status']!==200||!str_contains($page['raw'],'CI Latte'))rt_fail('fresh Public guest renderer',$page);
-rt_pass('published guest menu renders from Public snapshot');
+if(!str_contains($page['raw'],'path=assets%2Fcss%2Fguest-menu.css'))rt_fail('Public renderer missing canonical guest stylesheet',$page);
+if(!str_contains($page['raw'],'path=assets%2Fjs%2Fmenu.js'))rt_fail('Public renderer missing canonical menu runtime',$page);
+if(str_contains($page['raw'],'guest/app.js'))rt_fail('Public renderer still references forked guest runtime',$page);
+if(!str_contains($page['raw'],'api/v1/guest/compat/create_order.php?installation_id='.rawurlencode($installation)))rt_fail('Public runtime API is not installation-bound',$page);
+rt_pass('published guest menu renders through canonical shared CSS/JS and installation-bound APIs');
 
 $public->prepare("UPDATE installation_heartbeats SET last_seen_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 2 MINUTE) WHERE installation_id=?")->execute([$installation]);
 $public->prepare("UPDATE guest_availability_state SET last_sync_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 2 MINUTE) WHERE installation_id=?")->execute([$installation]);
