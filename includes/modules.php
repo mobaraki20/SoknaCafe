@@ -38,7 +38,7 @@ function sokna_module_registry(): array
             'type' => 'core',
             'required' => true,
             'depends_on' => ['platform'],
-            'reads_from' => ['orders','finance'],
+            'reads_from' => ['orders','finance','inventory','reporting'],
             'owner' => 'includes/relay_*.php + tools/relay-worker.php + tools/relay-projection-worker.php',
             'owns_tables' => ['relay_processed_requests'],
             'entrypoints' => [],
