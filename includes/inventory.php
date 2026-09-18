@@ -225,6 +225,15 @@ function inventory_major_to_base(string|int|float|null $value, string $baseUnit)
     return (int)round($number * 1000);
 }
 
+function inventory_normalize_occurred_at(string $value,string $label='عملیات'): string
+{
+    $value=trim($value);
+    $ts=strtotime($value);
+    if($value===''||$ts===false)throw new RuntimeException('زمان '.$label.' معتبر نیست.');
+    if($ts>time()+300)throw new RuntimeException('زمان '.$label.' نمی‌تواند در آینده باشد.');
+    return date('Y-m-d H:i:s',$ts);
+}
+
 function inventory_optional_occurred_at(string $dateJ, string $time, string $label = 'وقوع عملیات'): ?string
 {
     $dateJ = trim($dateJ);
@@ -1278,6 +1287,63 @@ function inventory_count_start(PDO $pdo, string $title, string $sessionType, int
         if ($ownsTransaction && $pdo->inTransaction()) $pdo->rollBack();
         throw $e;
     }
+}
+
+/**
+ * Canonical draft-line mutation for both Local UI and Deferred-safe ingress.
+ * Finalization remains a separate Local-only command.
+ */
+function inventory_count_update_line_locked(
+    PDO $pdo,
+    int $sessionId,
+    int $lineId,
+    ?string $actualMajor,
+    ?string $openingCostInput,
+    string $note,
+    int $actorUserId,
+    ?string $expectedVersion=null
+): array {
+    $sessionStmt=$pdo->prepare('SELECT id,status,session_type FROM inventory_count_sessions WHERE id=? FOR UPDATE');
+    $sessionStmt->execute([$sessionId]);$session=$sessionStmt->fetch();
+    if(!$session||(string)$session['status']!=='draft')throw new RuntimeException('این شمارش دیگر قابل تغییر نیست.');
+    $lineStmt=$pdo->prepare('SELECT l.*,i.base_unit FROM inventory_count_lines l JOIN inventory_items i ON i.id=l.inventory_item_id WHERE l.id=? AND l.session_id=? FOR UPDATE');
+    $lineStmt->execute([$lineId,$sessionId]);$line=$lineStmt->fetch();
+    if(!$line)throw new RuntimeException('قلم شمارش پیدا نشد.');
+
+    $currentVersion=(string)$line['updated_at'];
+    if($expectedVersion!==null&&$expectedVersion!==''&&!hash_equals($currentVersion,$expectedVersion)){
+        throw new SoknaDeferredStateConflict('این قلم شمارش از زمان ثبت راه‌دور تغییر کرده است.');
+    }
+
+    $isOpening=(string)$session['session_type']==='opening';
+    $raw=trim((string)$actualMajor);
+    $actual=$raw===''?null:inventory_major_to_base($raw,(string)$line['base_unit']);
+    $costRaw=trim((string)$openingCostInput);
+    $openingCost=$isOpening&&$costRaw!==''?inventory_money_value($costRaw):null;
+    $note=text_substr(trim($note),0,500);
+
+    if($actual===null){
+        if($isOpening){
+            $pdo->prepare('UPDATE inventory_count_lines SET actual_quantity=NULL,actual_total_cost=NULL,note=?,difference_base=NULL,counted_by_user_id=NULL,counted_at=NULL WHERE id=? AND session_id=?')
+                ->execute([$note?:null,$lineId,$sessionId]);
+        }else{
+            $pdo->prepare('UPDATE inventory_count_lines SET system_quantity_snapshot=0,unit_cost_snapshot=NULL,actual_quantity=NULL,actual_total_cost=NULL,note=?,difference_base=NULL,counted_by_user_id=NULL,counted_at=NULL WHERE id=? AND session_id=?')
+                ->execute([$note?:null,$lineId,$sessionId]);
+        }
+    }elseif(!$isOpening&&$line['counted_at']===null){
+        $balance=inventory_balance_locked($pdo,(int)$line['inventory_item_id']);
+        $pdo->prepare('UPDATE inventory_count_lines SET system_quantity_snapshot=?,unit_cost_snapshot=?,actual_quantity=?,actual_total_cost=NULL,note=?,difference_base=NULL,counted_by_user_id=?,counted_at=NOW() WHERE id=? AND session_id=?')
+            ->execute([(int)$balance['quantity_base'],$balance['average_unit_cost']!==null?(float)$balance['average_unit_cost']:null,$actual,$note?:null,$actorUserId,$lineId,$sessionId]);
+    }else{
+        $pdo->prepare('UPDATE inventory_count_lines SET actual_quantity=?,actual_total_cost=?,note=?,counted_by_user_id=?,counted_at=COALESCE(counted_at,NOW()) WHERE id=? AND session_id=?')
+            ->execute([$actual,$openingCost,$note?:null,$actorUserId,$lineId,$sessionId]);
+    }
+    $fresh=$pdo->prepare('SELECT id,session_id,inventory_item_id,actual_quantity,system_quantity_snapshot,updated_at FROM inventory_count_lines WHERE id=?');
+    $fresh->execute([$lineId]);$row=$fresh->fetch()?:[];
+    return [
+        'line_id'=>$lineId,'session_id'=>$sessionId,'actual_quantity'=>$row['actual_quantity']===null?null:(int)$row['actual_quantity'],
+        'system_quantity_snapshot'=>(int)($row['system_quantity_snapshot']??0),'version'=>(string)($row['updated_at']??''),
+    ];
 }
 
 function inventory_count_cancel_locked(PDO $pdo, int $sessionId, int $actorUserId): void
