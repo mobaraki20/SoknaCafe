@@ -2,9 +2,29 @@
 declare(strict_types=1);
 require_once __DIR__ . '/relay_protocol.php';
 
+final class SoknaRelayBusinessRejection extends RuntimeException
+{
+    public function __construct(
+        public string $errorCode,
+        public array $result = []
+    ) { parent::__construct($errorCode); }
+}
+
 function sokna_relay_dispatch_registry(): array
 {
-    return [];
+    require_once __DIR__ . '/guest_order_service.php';
+    return [
+        'guest_order.submit' => static function(PDO $pdo, array $envelope): array {
+            try {
+                return guest_order_commit_tx($pdo, is_array($envelope['payload'] ?? null) ? $envelope['payload'] : []);
+            } catch (GuestOrderException $e) {
+                throw new SoknaRelayBusinessRejection(
+                    $e->errorCode,
+                    array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details)
+                );
+            }
+        },
+    ];
 }
 
 function sokna_relay_processed_row(PDO $pdo, string $requestId, bool $forUpdate = false): ?array
@@ -61,14 +81,24 @@ function sokna_relay_process_claim(PDO $pdo, array $claim, ?array $registry = nu
 
         $insert = $pdo->prepare('INSERT INTO relay_processed_requests(request_id,request_hash,kind,status,created_at,updated_at) VALUES(?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)');
         $insert->execute([$requestId,$requestHash,(string)$envelope['kind'],'processing']);
-        $result = $handler($pdo, $envelope);
-        if (!is_array($result)) $result = ['ok'=>true];
-        $encoded = json_encode($result, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
-        if (!is_string($encoded)) throw new RuntimeException('Relay result encoding failed.');
-        $update = $pdo->prepare('UPDATE relay_processed_requests SET status=?,result_json=?,error_code=NULL,updated_at=CURRENT_TIMESTAMP WHERE request_id=?');
-        $update->execute(['committed',$encoded,$requestId]);
-        $pdo->commit();
-        return ['state'=>'committed','error_code'=>'','result'=>$result,'deduplicated'=>false];
+
+        try {
+            $result = $handler($pdo, $envelope);
+            if (!is_array($result)) $result = ['ok'=>true];
+            $encoded = json_encode($result, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+            if (!is_string($encoded)) throw new RuntimeException('Relay result encoding failed.');
+            $update = $pdo->prepare('UPDATE relay_processed_requests SET status=?,result_json=?,error_code=NULL,updated_at=CURRENT_TIMESTAMP WHERE request_id=?');
+            $update->execute(['committed',$encoded,$requestId]);
+            $pdo->commit();
+            return ['state'=>'committed','error_code'=>'','result'=>$result,'deduplicated'=>false];
+        } catch (SoknaRelayBusinessRejection $e) {
+            $encoded = json_encode($e->result, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+            if (!is_string($encoded)) throw new RuntimeException('Relay rejection result encoding failed.');
+            $update = $pdo->prepare('UPDATE relay_processed_requests SET status=?,result_json=?,error_code=?,updated_at=CURRENT_TIMESTAMP WHERE request_id=?');
+            $update->execute(['rejected',$encoded,$e->errorCode,$requestId]);
+            $pdo->commit();
+            return ['state'=>'rejected','error_code'=>$e->errorCode,'result'=>$e->result,'deduplicated'=>false];
+        }
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         throw $e;
