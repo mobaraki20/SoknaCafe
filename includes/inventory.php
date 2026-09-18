@@ -1293,6 +1293,8 @@ function inventory_count_start(PDO $pdo, string $title, string $sessionType, int
  * Canonical draft-line mutation for both Local UI and Deferred-safe ingress.
  * Finalization remains a separate Local-only command.
  */
+final class InventoryCountStateConflict extends RuntimeException {}
+
 function inventory_count_update_line_locked(
     PDO $pdo,
     int $sessionId,
@@ -1312,7 +1314,7 @@ function inventory_count_update_line_locked(
 
     $currentVersion=(string)$line['updated_at'];
     if($expectedVersion!==null&&$expectedVersion!==''&&!hash_equals($currentVersion,$expectedVersion)){
-        throw new SoknaDeferredStateConflict('این قلم شمارش از زمان ثبت راه‌دور تغییر کرده است.');
+        throw new InventoryCountStateConflict('این قلم شمارش از زمان ثبت راه‌دور تغییر کرده است.');
     }
 
     $isOpening=(string)$session['session_type']==='opening';
