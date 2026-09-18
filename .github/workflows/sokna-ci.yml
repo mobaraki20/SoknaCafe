@@ -119,7 +119,12 @@ jobs:
           }
           node --check service-worker.js
           if ($LASTEXITCODE -ne 0) { throw 'service-worker.js syntax failed' }
-          Write-Host "JS syntax PASS: $($files.Count + 1) files"
+          $publicFiles = Get-ChildItem public_edge -Recurse -File -Filter *.js
+          foreach ($file in $publicFiles) {
+            node --check $file.FullName
+            if ($LASTEXITCODE -ne 0) { throw "Public JS syntax failed: $($file.FullName)" }
+          }
+          Write-Host "JS syntax PASS: $($files.Count + $publicFiles.Count + 1) files"
 
       - name: Core unit and Phase 1 contracts
         shell: pwsh
