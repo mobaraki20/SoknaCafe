@@ -21,6 +21,7 @@ on:
       - 'tests/**'
       - 'schema/**'
       - 'scripts/**'
+      - '.github/workflows/sokna-ci.yml'
   pull_request:
   workflow_dispatch:
 
