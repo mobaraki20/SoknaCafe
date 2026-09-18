@@ -8,7 +8,7 @@ $clientToken=trim((string)($_GET['client_token']??''));
 if($installationId===''||$requestId===''||strlen($clientToken)<16) public_json(['ok'=>false,'error'=>'invalid_result_lookup'],400);
 
 $pdo=public_db();
-$pdo->prepare("UPDATE realtime_requests SET state='expired',lease_token_hash=NULL,lease_expires_at=NULL WHERE installation_id=? AND request_id=? AND state IN ('queued','claimed') AND expires_at<=UTC_TIMESTAMP()")->execute([$installationId,$requestId]);
+$pdo->prepare("UPDATE realtime_requests SET state='expired',lease_token_hash=NULL,lease_expires_at=NULL WHERE installation_id=? AND request_id=? AND state='queued' AND expires_at<=UTC_TIMESTAMP()")->execute([$installationId,$requestId]);
 $stmt=$pdo->prepare('SELECT state,envelope_json,result_json,error_code,updated_at FROM realtime_requests WHERE installation_id=? AND request_id=? LIMIT 1');
 $stmt->execute([$installationId,$requestId]);
 $row=$stmt->fetch();
