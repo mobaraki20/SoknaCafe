@@ -169,6 +169,7 @@ function guest_publish_build_snapshot(PDO $pdo): array
         'messages'=>public_customer_messages(),'marketing'=>$marketing,
         'features'=>[
             'public_waiter_call_enabled'=>setting_bool('public_waiter_call_enabled',false),
+            'table_sessions_enabled'=>table_sessions_enabled(),
             'events_enabled'=>setting_bool('events_enabled',true),
             'campaigns_enabled'=>setting_bool('campaigns_enabled',true),
             'marketing_module'=>function_exists('sokna_module_enabled') ? sokna_module_enabled('marketing') : false,
