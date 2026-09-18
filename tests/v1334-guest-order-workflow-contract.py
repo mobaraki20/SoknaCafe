@@ -3,8 +3,8 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 read=lambda p:(ROOT/p).read_text(encoding='utf-8')
 menu=read('assets/js/menu.js')
-api=read('api/guest_orders.php')
-markup=read('menu/index.php')
+api=(read('api/guest_orders.php') + '\n' + read('includes/guest_order_manage_service.php'))
+markup=(read('menu/index.php') + '\n' + read('includes/guest_menu_view.php'))
 css=read('assets/css/guest-menu.css')
 
 checks={
