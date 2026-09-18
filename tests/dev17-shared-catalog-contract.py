@@ -2,7 +2,7 @@
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 read=lambda p:(ROOT/p).read_text(encoding='utf-8')
-owner=read('includes/menu_catalog.php'); guest=read('menu/index.php'); quick=read('staff/api_quick_order.php'); funcs=read('includes/functions.php'); create=read('api/create_order.php'); edit=read('api/guest_orders.php')
+owner=read('includes/menu_catalog.php'); guest=read('menu/index.php'); quick=read('staff/api_quick_order.php'); funcs=read('includes/functions.php'); create=(read('api/create_order.php') + '\n' + read('includes/guest_order_service.php')); edit=(read('api/guest_orders.php') + '\n' + read('includes/guest_order_manage_service.php'))
 assert 'function menu_catalog_snapshot' in owner
 assert 'menu_items mi' in owner and 'menu_categories mc' in owner
 assert "c.audience='guest_staff'" in owner and 'COALESCE(i.staff_only,0)=0' in owner
