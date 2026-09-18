@@ -364,6 +364,12 @@ function canonical_asset(string $path): string
     return rtrim(app_canonical_url(), '/') . '/' . ltrim($path, '/');
 }
 
+function guest_page_url(string $path, array $params = []): string
+{
+    $base = asset($path);
+    return $params ? $base . (str_contains($base, '?') ? '&' : '?') . http_build_query($params) : $base;
+}
+
 function public_guest_base_url(): string
 {
     global $config;
