@@ -13,6 +13,7 @@ $stmt->execute([(string)$session['installation_id'],$key]);$row=$stmt->fetch();
 if(!$row)public_json(['ok'=>false,'error'=>'model_unavailable'],404);
 $payload=json_decode((string)$row['payload_json'],true);$payload=is_array($payload)?$payload:[];
 if($key==='preparation')$payload=public_remote_filter_preparation($payload,$session);
+if($key==='deferred_context')$payload=public_remote_filter_deferred_context($payload,$session);
 
 $lastSync=strtotime((string)$row['last_sync_at'])?:0;
 $heartbeat=public_remote_connectivity((string)$session['installation_id']);
