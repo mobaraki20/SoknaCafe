@@ -134,7 +134,7 @@ with sync_playwright() as p:
         assert not errors,errors
         assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth + 1')
         if width==390:
-            page.screenshot(path=str(Path(os.getenv('SOKNA_SCREENSHOT_DIR','/mnt/data'))/'sokna-itemized-settlement-v17-390.png'),full_page=True)
+            page.screenshot(path=str(Path(os.getenv('SOKNA_SCREENSHOT_DIR','/tmp'))/'sokna-itemized-settlement-v17-390.png'),full_page=True)
         page.close()
     browser.close()
 print('Itemized settlement browser PASS: one-click reviewed payment, partial modal continuity, direct re-entry, missed-item action, final remaining payment, mobile/desktop overflow.')
