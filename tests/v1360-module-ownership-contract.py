@@ -20,7 +20,7 @@ def php_registry() -> dict:
         "echo json_encode(['registry'=>sokna_module_registry(),'errors'=>sokna_module_dependency_errors()],"
         "JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);"
     )
-    raw = subprocess.check_output(['php', '-r', code], text=True)
+    raw = subprocess.check_output(['php', '-r', code], text=True, encoding='utf-8')
     return json.loads(raw)
 
 
