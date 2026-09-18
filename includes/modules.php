@@ -38,7 +38,7 @@ function sokna_module_registry(): array
             'type' => 'core',
             'required' => true,
             'depends_on' => ['platform'],
-            'reads_from' => ['orders','finance','inventory','reporting'],
+            'reads_from' => ['orders','finance','inventory','supply','subscribers','expenses','reporting'],
             'owner' => 'includes/relay_*.php + includes/deferred.php + tools/relay-worker.php + tools/relay-projection-worker.php + tools/deferred-worker.php',
             'owns_tables' => ['relay_processed_requests','deferred_work_receipts','deferred_review_items'],
             'entrypoints' => [],
@@ -120,7 +120,7 @@ function sokna_module_registry(): array
             ],
             'capabilities' => ['inventory_view','inventory_cost_view','inventory_operations','inventory_finalize','inventory_manage'],
             'background_jobs' => ['tools/inventory-worker.php'],
-            'public_contracts' => ['inventory_record_movement_locked()','inventory_create_unreviewed_item_locked()','inventory_process_pending_order_events()','inventory_* quantity/unit helpers'],
+            'public_contracts' => ['inventory_record_movement_locked()','inventory_create_unreviewed_item_locked()','inventory_count_update_line_locked()','inventory_process_pending_order_events()','inventory_* quantity/unit helpers'],
             'manager' => [
                 'icon' => 'archive',
                 'context' => 'عملیات و موجودی',
@@ -157,7 +157,7 @@ function sokna_module_registry(): array
             'capabilities' => ['preparation','inventory_operations','shift_supervision'],
             'background_jobs' => [],
             'public_contracts' => [
-                'supply_request_upsert_locked()','supply_mark_group_preparing_locked()','supply_return_group_from_preparing_locked()',
+                'supply_request_upsert_locked()','supply_request_add_locked()','supply_mark_group_preparing_locked()','supply_return_group_from_preparing_locked()',
                 'supply_receive_preparing_locked()','supply_purchase_groups()','supply_purchase_attention_count()',
             ],
             'manager' => [
