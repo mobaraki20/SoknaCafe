@@ -4,10 +4,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 read = lambda path: (ROOT / path).read_text(encoding='utf-8')
 
-menu = read('menu/index.php')
+menu = (read('menu/index.php') + '\n' + read('includes/guest_menu_view.php'))
 index = read('index.php')
 functions = read('includes/functions.php')
-waiter = read('api/waiter_call.php')
+waiter = (read('api/waiter_call.php') + '\n' + read('includes/waiter_call_service.php'))
 settings = read('admin/settings.php')
 htaccess = read('.htaccess')
 sitemap = read('sitemap.php')
