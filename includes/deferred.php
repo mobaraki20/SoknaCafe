@@ -122,7 +122,7 @@ function sokna_deferred_apply_locked(PDO $pdo,array $envelope,array $user,?array
 
     if($kind==='supply.status.prepare'){
         try{
-            return supply_mark_group_preparing_locked($pdo,trim((string)($payload['group_key']??'')),$actor,(int)($payload['expected_quantity_base']??-1));
+            return supply_mark_group_preparing_locked($pdo,trim((string)($payload['group_key']??'')),$actor,$allowConflict?null:(int)($payload['expected_quantity_base']??-1));
         }catch(RuntimeException $e){
             if(!$allowConflict)throw new SoknaDeferredNeedsReview('conflict','supply_state_changed',$e->getMessage());
             throw $e;
@@ -133,7 +133,7 @@ function sokna_deferred_apply_locked(PDO $pdo,array $envelope,array $user,?array
         $outcome=(string)($payload['outcome']??'returned');
         if(!in_array($outcome,['returned','unavailable'],true))throw new RuntimeException('وضعیت خرید معتبر نیست.');
         try{
-            return supply_return_group_from_preparing_locked($pdo,trim((string)($payload['group_key']??'')),$actor,$outcome,(int)($payload['expected_preparing_quantity_base']??-1));
+            return supply_return_group_from_preparing_locked($pdo,trim((string)($payload['group_key']??'')),$actor,$outcome,$allowConflict?null:(int)($payload['expected_preparing_quantity_base']??-1));
         }catch(RuntimeException $e){
             if(!$allowConflict)throw new SoknaDeferredNeedsReview('conflict','supply_state_changed',$e->getMessage());
             throw $e;
@@ -144,6 +144,7 @@ function sokna_deferred_apply_locked(PDO $pdo,array $envelope,array $user,?array
         $data=$payload;
         $data['request_token']=substr(hash('sha256','deferred:'.(string)$envelope['request_id']),0,32);
         $data['occurred_at']=$occurredAt;
+        if($allowConflict)unset($data['expected_preparing_quantity_base']);
         try{
             return supply_receive_preparing_locked($pdo,trim((string)($payload['group_key']??'')),$data,$actor);
         }catch(RuntimeException $e){
