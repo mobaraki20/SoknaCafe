@@ -245,6 +245,29 @@ function guest_availability_payload(PDO $pdo): array
             'blocked_scope'=>!$acceptance['cafe'] ? 'cafe' : ($blocked ? $scope : null),
         ];
     }
+    $tableStates = [];
+    $tableRows=$pdo->query("SELECT id FROM cafe_tables WHERE active=1 ORDER BY id")->fetchAll(PDO::FETCH_COLUMN);
+    foreach($tableRows as $tableIdRaw){
+        $tableId=(int)$tableIdRaw;
+        $session=null;$pendingSession=null;
+        if(table_sessions_enabled()){
+            $s=$pdo->prepare("SELECT public_token,started_at,status FROM table_sessions WHERE table_id=? AND status IN('active','pending') ORDER BY FIELD(status,'active','pending'),started_at DESC,id DESC LIMIT 1");
+            $s->execute([$tableId]);$sessionRow=$s->fetch(PDO::FETCH_ASSOC)?:null;
+            if($sessionRow){
+                $project=['token'=>(string)$sessionRow['public_token'],'started_at'=>(string)$sessionRow['started_at'],'status'=>(string)$sessionRow['status']];
+                if((string)$sessionRow['status']==='active')$session=$project;else $pendingSession=$project;
+            }
+        }
+        $call=$pdo->prepare("SELECT public_code,status,created_at FROM waiter_calls WHERE table_id=? AND status IN('new','accepted') ORDER BY created_at DESC,id DESC LIMIT 1");
+        $call->execute([$tableId]);$activeCall=$call->fetch(PDO::FETCH_ASSOC)?:null;
+        $tableStates[(string)$tableId]=[
+            'session'=>$session,'pending_session'=>$pendingSession,
+            'active_call'=>$activeCall?[
+                'public_code'=>(string)$activeCall['public_code'],'status'=>(string)$activeCall['status'],'created_at'=>(string)$activeCall['created_at'],
+            ]:null,
+        ];
+    }
+
     $payload = [
         'generated_at'=>gmdate('c'),'order_acceptance'=>$acceptance,
         'waiter_enabled_table'=>setting_bool('waiter_call_enabled',true),
@@ -256,6 +279,7 @@ function guest_availability_payload(PDO $pdo): array
             'kitchen'=>order_acceptance_message('kitchen'),
             'bar'=>order_acceptance_message('bar'),
         ],
+        'tables'=>$tableStates,
         'items'=>$items,
     ];
     $payload['version']=hash('sha256', sokna_relay_canonical_json($payload));
