@@ -1,4 +1,4 @@
-const RELEASE='1.36.4-dev.27';
+const RELEASE='1.36.4-dev.28';
 const CACHE='cafe-staff-v1.36.4-dev.27';
 const STATIC_BASE=['./offline.html','./assets/css/tokens.css','./assets/css/app.css','./assets/css/responsive.css','./assets/css/panel.css','./assets/css/public-page.css','./assets/css/guest-menu.css',
 
