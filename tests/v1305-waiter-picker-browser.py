@@ -41,7 +41,7 @@ with sync_playwright() as p:
         assert not errors,(width,errors)
         page.close()
     b.close()
-index=(ROOT/'menu/index.php').read_text(encoding='utf-8')
+index=((ROOT/'menu/index.php').read_text(encoding='utf-8') + '\n' + (ROOT/'includes/guest_menu_view.php').read_text(encoding='utf-8'))
 preview_contract=index[index.find('window.CAFE_PUBLIC_WAITER_TABLES='):index.find('window.CAFE_MESSAGES=',index.find('window.CAFE_PUBLIC_WAITER_TABLES='))]
 assert "'code'" not in preview_contract and "'table_number'" in preview_contract
 print('1.30.5 public waiter picker passed: numeric order, no internal codes, no horizontal overflow, fixed footer and selected-table reveal at 320/360/390/412.')
