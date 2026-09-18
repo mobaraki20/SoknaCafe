@@ -32,6 +32,7 @@ function sokna_relay_projection_capabilities(PDO $pdo, array $user): array
     if(in_array('inventory_cost_view',$local,true)){
         array_push($public,'inventory.read','inventory.cost.read');
     }
+    if(array_filter($public,static fn(string $cap):bool=>str_ends_with($cap,'.defer')))$public[]='deferred.context';
     return array_values(array_unique($public));
 }
 function sokna_relay_projection_areas(PDO $pdo, int $userId): array
