@@ -159,6 +159,51 @@ function sokna_remote_reports_model(PDO $pdo):array
     ];
 }
 
+function sokna_remote_deferred_context_model(PDO $pdo): array
+{
+    $items=$pdo->query("SELECT i.id,i.name,i.base_unit,i.default_department,COALESCE(b.quantity_base,0) quantity_base,b.updated_at balance_version
+        FROM inventory_items i LEFT JOIN inventory_balances b ON b.inventory_item_id=i.id
+        WHERE i.active=1 ORDER BY i.name,i.id LIMIT 500")->fetchAll(PDO::FETCH_ASSOC);
+    $unitsBy=[];
+    $units=$pdo->query("SELECT id,inventory_item_id,name,conversion_mode,base_quantity,review_status FROM inventory_purchase_units WHERE active=1 ORDER BY inventory_item_id,id")->fetchAll(PDO::FETCH_ASSOC);
+    foreach($units as $unit){
+        $unit['id']=(int)$unit['id'];$unit['inventory_item_id']=(int)$unit['inventory_item_id'];
+        $unit['base_quantity']=$unit['base_quantity']===null?null:(int)$unit['base_quantity'];
+        $unitsBy[(int)$unit['inventory_item_id']][]=$unit;
+    }
+    foreach($items as &$item){
+        $item['id']=(int)$item['id'];$item['quantity_base']=(int)$item['quantity_base'];
+        $item['purchase_units']=$unitsBy[(int)$item['id']]??[];
+    }unset($item);
+
+    $supply=sokna_module_enabled('supply')?supply_purchase_groups($pdo):[];
+    foreach($supply as &$group){
+        $group=array_intersect_key($group,array_flip(['group_key','item_id','name','base_unit','quantity_base','unknown','uncommitted_quantity_base','preparing_quantity_base','departments','uncommitted_departments','preparing_departments','preparing_at','last_outcome']));
+    }unset($group);
+
+    $counts=$pdo->query("SELECT id,title,scope_type,scope_category_key,snapshot_at,updated_at FROM inventory_count_sessions WHERE status='draft' AND session_type='periodic' ORDER BY created_at DESC,id DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
+    foreach($counts as &$count){
+        $count['id']=(int)$count['id'];
+        $stmt=$pdo->prepare("SELECT l.id,l.inventory_item_id,l.actual_quantity,l.updated_at,i.name,i.base_unit FROM inventory_count_lines l JOIN inventory_items i ON i.id=l.inventory_item_id WHERE l.session_id=? ORDER BY i.name,i.id");
+        $stmt->execute([(int)$count['id']]);$lines=$stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach($lines as &$line){$line['id']=(int)$line['id'];$line['inventory_item_id']=(int)$line['inventory_item_id'];$line['actual_quantity']=$line['actual_quantity']===null?null:(int)$line['actual_quantity'];}unset($line);
+        $count['lines']=$lines;
+    }unset($count);
+
+    $subscribers=$pdo->query("SELECT s.id,s.name,(SELECT COALESCE(sl.balance_after,0) FROM subscriber_ledger sl WHERE sl.subscriber_id=s.id ORDER BY sl.id DESC LIMIT 1) balance FROM subscribers s WHERE s.active=1 ORDER BY s.name,s.id LIMIT 500")->fetchAll(PDO::FETCH_ASSOC);
+    foreach($subscribers as &$subscriber){$subscriber['id']=(int)$subscriber['id'];$subscriber['balance']=(int)$subscriber['balance'];}unset($subscriber);
+
+    return [
+        'inventory_enabled'=>sokna_module_enabled('inventory'),
+        'supply_enabled'=>sokna_module_enabled('supply'),
+        'inventory_items'=>$items,
+        'supply_groups'=>$supply,
+        'count_drafts'=>$counts,
+        'subscribers'=>$subscribers,
+        'expense_categories'=>expense_categories($pdo,true),
+    ];
+}
+
 function sokna_remote_read_models(PDO $pdo):array
 {
     $inventory=sokna_remote_inventory_models($pdo);
@@ -168,5 +213,6 @@ function sokna_remote_read_models(PDO $pdo):array
         sokna_remote_read_wrap('inventory',$inventory['inventory']),
         sokna_remote_read_wrap('inventory_cost',$inventory['inventory_cost']),
         sokna_remote_read_wrap('reports',sokna_remote_reports_model($pdo)),
+        sokna_remote_read_wrap('deferred_context',sokna_remote_deferred_context_model($pdo)),
     ];
 }
