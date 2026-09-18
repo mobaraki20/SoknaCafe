@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import os
 try:
     from playwright.sync_api import sync_playwright
 except Exception:
@@ -7,6 +8,8 @@ except Exception:
     raise SystemExit(0)
 
 ROOT=Path(__file__).resolve().parents[1]
+SCREENSHOT_DIR=Path(os.environ.get('SOKNA_SCREENSHOT_DIR','/tmp'))
+SCREENSHOT_DIR.mkdir(parents=True,exist_ok=True)
 CSS=[ROOT/'assets/css/tokens.css',ROOT/'assets/css/app.css',ROOT/'assets/css/responsive.css',ROOT/'assets/css/panel.css',ROOT/'assets/css/panel-layout.css',ROOT/'assets/css/panel-components.css',ROOT/'assets/css/operator-live.css']
 rows=''.join(f'<tr><td>{i}</td><td><strong>آیتم نمونه شماره {i}</strong><small>توضیح کوتاه سفارش</small></td><td>۱</td><td>۲۵۰٬۰۰۰</td><td>۲۵۰٬۰۰۰</td><td><button class="icon-action-button" aria-label="اصلاح">✎</button></td></tr>' for i in range(1,9))
 html=f'''<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body class="panel-body panel-section-operator operator-detail-open"><main class="panel-content">
@@ -39,7 +42,7 @@ with sync_playwright() as p:
         row_heights=page.locator('.bill-table tbody tr').evaluate_all('els=>els.map(e=>e.getBoundingClientRect().height)')
         assert row_heights and max(row_heights)<=40,(width,row_heights)
         assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth + 2')
-        page.screenshot(path=f'/mnt/data/sokna-desktop-invoice-density-{width}.png',full_page=False)
+        page.screenshot(path=str(SCREENSHOT_DIR/f'sokna-desktop-invoice-density-{width}.png'),full_page=False)
         page.close()
     browser.close()
 print('Desktop invoice density passed: an 8-line, two-batch table bill fits without inner scrolling at 1366x768 and 1440x900, while settlement actions remain visible.')
