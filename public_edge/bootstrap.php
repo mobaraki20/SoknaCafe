@@ -43,9 +43,9 @@ function public_session(): array
     $token=public_bearer_token();
     if($token==='')public_json(['ok'=>false,'error'=>'unauthorized'],401);
     $hash=hash('sha256',$token);
-    $stmt=public_db()->prepare('SELECT s.id,s.installation_id,s.projection_id,s.expires_at,p.display_name,p.role,p.capabilities_json,p.preparation_areas_json,p.projection_version,p.active,i.remote_enabled,i.order_intake_enabled FROM public_sessions s JOIN auth_projections p ON p.installation_id=s.installation_id AND p.projection_id=s.projection_id JOIN installations i ON i.installation_id=s.installation_id WHERE s.token_hash=? LIMIT 1');
+    $stmt=public_db()->prepare('SELECT s.id,s.installation_id,s.projection_id,s.expires_at,p.display_name,p.role,p.capabilities_json,p.preparation_areas_json,p.projection_version,p.active,i.active installation_active,i.remote_enabled,i.order_intake_enabled FROM public_sessions s JOIN auth_projections p ON p.installation_id=s.installation_id AND p.projection_id=s.projection_id JOIN installations i ON i.installation_id=s.installation_id WHERE s.token_hash=? LIMIT 1');
     $stmt->execute([$hash]);$row=$stmt->fetch();
-    if(!$row||!(int)$row['active']||!(int)$row['remote_enabled']||strtotime((string)$row['expires_at'])<=time())public_json(['ok'=>false,'error'=>'unauthorized'],401);
+    if(!$row||!(int)$row['active']||!(int)$row['installation_active']||!(int)$row['remote_enabled']||strtotime((string)$row['expires_at'])<=time())public_json(['ok'=>false,'error'=>'unauthorized'],401);
     $caps=json_decode((string)$row['capabilities_json'],true);
     $areas=json_decode((string)($row['preparation_areas_json']??'[]'),true);
     $row['capabilities']=is_array($caps)?array_values(array_map('strval',$caps)):[];
