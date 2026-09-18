@@ -1177,7 +1177,8 @@ function maintenance_health_check(?PDO $pdo = null): array
         'print_agents', 'print_destinations', 'print_templates', 'print_jobs', 'push_event_queue', 'user_preparation_areas',
         'inventory_categories', 'inventory_items', 'inventory_purchase_units', 'inventory_balances', 'inventory_movements',
         'inventory_recipe_versions', 'inventory_recipe_components', 'inventory_count_sessions', 'inventory_count_lines', 'inventory_order_events',
-        'inventory_supply_needs', 'inventory_supply_receipts',
+        'inventory_supply_needs', 'inventory_supply_receipts', 'inventory_supply_receipt_allocations',
+        'expense_categories', 'expenses', 'deferred_work_receipts', 'deferred_review_items', 'financial_period_close_overrides',
     ];
     $tables = array_map(static fn(array $row): string => (string)array_values($row)[0], $pdo->query('SHOW TABLES')->fetchAll());
     foreach ($required as $table) $checks['table_' . $table] = in_array($table, $tables, true);
