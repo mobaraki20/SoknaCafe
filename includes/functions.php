@@ -364,8 +364,21 @@ function canonical_asset(string $path): string
     return rtrim(app_canonical_url(), '/') . '/' . ltrim($path, '/');
 }
 
+function public_guest_base_url(): string
+{
+    global $config;
+    $relay=is_array($config['relay']??null)?$config['relay']:[];
+    if(empty($relay['enabled'])) return '';
+    $base=normalize_app_url((string)($relay['public_base_url']??''));
+    $installation=trim((string)($relay['installation_id']??''));
+    if($base===''||$installation==='') return '';
+    return rtrim($base,'/').'/guest/?installation_id='.rawurlencode($installation);
+}
+
 function table_menu_url(string $token): string
 {
+    $public=public_guest_base_url();
+    if($public!=='') return $public . '&table=' . rawurlencode($token);
     return canonical_asset('menu/') . '?table=' . rawurlencode($token);
 }
 
