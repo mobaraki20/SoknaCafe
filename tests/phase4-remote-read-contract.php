@@ -26,7 +26,7 @@ p4check(str_contains($projection,"'inventory.cost.read'"),'inventory cost visibi
 p4check(str_contains($bootstrap,'public_remote_filter_preparation'),'Public filters preparation read by projected areas');
 p4check(str_contains($bootstrap,'preparation.monitor'),'monitor capability participates only in read visibility');
 p4check(str_contains($read,'public_session_has_capability'),'remote read endpoint rechecks projected capability');
-p4check(str_contains($read,"'stale'=>$stale"),'remote read response carries explicit stale state');
+p4check(str_contains($read,'\'stale\'=>$stale'),'remote read response carries explicit stale state');
 p4check(str_contains($runtime,'tools/remote-read-worker.php'),'Runtime supervises read-model sync');
 p4check(!str_contains($staff,'/api/v1/realtime/enqueue.php'),'Phase 4 staff UI stays read-only');
 p4check(!str_contains($staff,'settlement.commit'),'Phase 4 staff UI does not expose finance mutations');
