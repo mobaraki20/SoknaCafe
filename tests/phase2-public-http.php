@@ -141,4 +141,12 @@ $blocked=local_signed('POST','/api/v1/local/claim.php',['lease_seconds'=>20]);
 if($blocked['status']!==409 || ($blocked['json']['error']??'')!=='remote_disabled') fail_test('disabled remote blocks claim',$blocked);
 pass_test('disabled remote blocks claim');
 
+$reactivate=http_json('POST',$base.'/api/v1/emergency/control.php',['installation_id'=>$installation,'action'=>'enable_remote','reason'=>'CI projection cleanup test','actor'=>'ci'],['X-Sokna-Emergency-Key: '.$emergency]);
+if($reactivate['status']!==200) fail_test('remote re-enable for projection cleanup',$reactivate);
+$emptyProjection=local_signed('POST','/api/v1/local/projection_sync.php',['projections'=>[]]);
+if($emptyProjection['status']!==200 || (int)($emptyProjection['json']['synced']??-1)!==0) fail_test('empty projection sync',$emptyProjection);
+$staleLogin=http_json('POST',$base.'/api/v1/auth/login.php',['installation_id'=>$installation,'username'=>'ci-user','password'=>$password]);
+if($staleLogin['status']!==401) fail_test('stale projected user is deactivated',$staleLogin);
+pass_test('stale projected user is deactivated');
+
 echo "Phase 2 Public HTTP/MariaDB integration PASS\n";
