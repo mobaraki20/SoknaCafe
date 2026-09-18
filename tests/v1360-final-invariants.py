@@ -75,7 +75,7 @@ assert 'cart-currency-note' in menu and 'guest-orders-currency' in menu
 assert "customer_message('search_placeholder')" in index and "'default'=>'چی دوست داری بخوری؟'" in message_owner
 assert 'input::-webkit-search-cancel-button' in guest_css
 assert 'operational_note' not in index and 'item-operational-note' not in guest_css and 'item-operational-note' not in menu
-assert "guest_order_status_is_mutable((string)$order['status'])" in read('api/guest_orders.php')
+assert "guest_order_status_is_mutable((string)$order['status'])" in read('includes/guest_order_manage_service.php')
 assert "['pending_approval', 'new']" in read('includes/functions.php')
 assert 'Canonical Sokna 1.29.1 guest interface' in guest_css
 
