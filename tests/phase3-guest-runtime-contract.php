@@ -28,14 +28,14 @@ foreach(['settlement.commit','preparation.mutate','order.edit','order.cancel','t
 }
 p3need(str_contains($enqueue,'$now+45'),'guest realtime TTL is server-owned and short');
 p3need(str_contains($enqueue,'public_guest_action_state'),'guest mutation requires fresh Public/Local action state');
-p3need(str_contains($result,"hash_equals((string)$payload['client_token'],$clientToken)"),'guest result lookup is bound to client token');
+p3need(str_contains($result,'hash_equals((string)$payload[\'client_token\'],$clientToken)'),'guest result lookup is bound to client token');
 p3need(str_contains($result,"state='queued'"),'result lookup expires only never-claimed queued work');
 p3need(!str_contains($result,"state IN ('queued','claimed')"),'result lookup cannot erase claimed ambiguity');
 
 p3need(str_contains($guest,'public_guest_action_state'),'Public renderer computes degraded action state');
 p3need(str_contains($guest,'$degraded='),'Public renderer has degraded read state');
 p3need(str_contains($functions,'function public_guest_base_url()'),'QR owner has Public guest route');
-p3need(str_contains($functions,"if($public!=='') return $public"),'QR uses Public when pairing is configured');
+p3need(str_contains($functions,'if($public!==\'\') return $public'),'QR uses Public when pairing is configured');
 p3need(str_contains($functions,"return canonical_asset('menu/')"),'QR retains safe Local fallback before Public pairing');
 
 p3need(str_contains($claim,"state='queued' AND expires_at<=UTC_TIMESTAMP()"),'only queued requests expire without reconciliation');
