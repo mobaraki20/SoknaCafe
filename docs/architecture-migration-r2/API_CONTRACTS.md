@@ -41,23 +41,45 @@ Realtime kinds حداقل:
 - preparation mutation
 - Table Draft create/edit/finalize/cancel
 
-## 4) Deferred-safe
-State model Frozen:
+## 4) Deferred-safe — Implemented in 1.36.4-dev.31
+State model:
 `pending_sync | committed | needs_review | rejected`
 
-Allowed kinds:
-- purchase need/statusهای safe
-- purchase/receipt
-- waste
-- inventory count draft (finalize ممنوع)
-- pending customer payment (reversal Local)
-- general expense
+Public store مستقل: `deferred_work`. این store هیچ `expires_at` و هیچ claim path مشترکی با `realtime_requests` ندارد.
 
-قواعد:
-- `occurred_at` جدا از commit time.
-- Local expected version/state و current financial period را revalidate می‌کند.
-- closed-period event به correction/review می‌رود، نه silent mutation.
-- duplicate request همان result canonical را برمی‌گرداند.
+Kinds پیاده‌شده:
+- `supply.need.create`
+- `supply.status.prepare`
+- `supply.status.return`
+- `supply.receipt`
+- `inventory.waste`
+- `inventory.count_draft`
+- `subscriber.payment`
+- `expense.create`
+
+Lifecycle:
+1. Remote Staff با همان Public session و capability projection enqueue می‌کند.
+2. Public فقط `pending_sync` را durable ثبت می‌کند؛ enqueue هرگز success نهایی Business نیست.
+3. Local Runtime از path مستقل `/api/v1/local/deferred/claim.php` claim/lease می‌گیرد.
+4. Local user active/capability، expected state/version، module readiness و financial period را دوباره validate می‌کند.
+5. Business commit فقط از owner canonical Domain انجام می‌شود.
+6. Local receipt نتیجه را قبل از ACK persist می‌کند؛ lost ACK/reclaim duplicate Business effect ایجاد نمی‌کند.
+7. conflict یا closed-period event → `needs_review`.
+8. review فقط با تصمیم صریح Admin + reason resolve می‌شود؛ نتیجه resolved با `reconcile.php` به Public برمی‌گردد.
+
+Financial integrity:
+- `occurred_at` از commit time جداست.
+- رخداد مالی متعلق به period بسته قبل از review هیچ mutation Business ایجاد نمی‌کند.
+- duplicate late event فقط یک receipt/review candidate می‌سازد.
+- explicit approval silent reopen نمی‌کند و `close_summary_json` دوره بسته را rewrite نمی‌کند.
+- normal close وقتی Public paired ولی unknown/unreachable باشد یا در period `pending_sync/needs_review` وجود داشته باشد block می‌شود.
+- override فقط Admin با reason و `financial_period_close_overrides` + audit.
+
+Local receipt/review owner:
+- `deferred_work_receipts`
+- `deferred_review_items`
+
+Realtime-only/local-required operations همچنان از Deferred ممنوع‌اند: settlement، committed-order mutation، preparation mutation، count finalize، inventory correction، payment/expense reversal، catalog/users/theme.
 
 ## 5) Auth Projection
 Public فقط minimal user projection را نگه می‌دارد:
