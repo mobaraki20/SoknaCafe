@@ -157,6 +157,12 @@ function guest_publish_build_snapshot(PDO $pdo): array
         'whatsapp_number'=>function_exists('whatsapp_number') ? whatsapp_number(setting('whatsapp_number','')) : '',
         'post_order_instagram_enabled'=>setting_bool('post_order_instagram_enabled',true),
         'public_about_enabled'=>setting_bool('public_about_enabled',true),
+        'about_title'=>setting('about_title','درباره سکنا'),
+        'about_intro'=>setting('about_intro','سکنا جایی برای قهوه، گفت‌وگو و تجربه‌های نزدیکه.'),
+        'public_phone'=>setting('public_phone',''),
+        'public_address'=>setting('public_address',''),
+        'accommodation_rooms_url'=>setting('accommodation_rooms_url',''),
+        'accommodation_tours_url'=>setting('accommodation_tours_url',''),
         'analytics_enabled'=>false,
     ];
 
