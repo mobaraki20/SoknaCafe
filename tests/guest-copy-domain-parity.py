@@ -2,7 +2,7 @@
 from pathlib import Path
 R=Path(__file__).resolve().parents[1]
 read=lambda p:(R/p).read_text(encoding='utf-8')
-fn=read('includes/functions.php') + read('includes/function_domains/messages.php'); index=read('menu/index.php'); menu=read('assets/js/menu.js')
+fn=read('includes/functions.php') + read('includes/function_domains/messages.php'); index=(read('menu/index.php') + '\n' + read('includes/guest_menu_view.php')); menu=read('assets/js/menu.js')
 checks=[]
 def ok(c,m): checks.append((bool(c),m)); print('FAIL:',m) if not c else None
 for key in ['fulfillment_takeaway']:
