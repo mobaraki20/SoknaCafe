@@ -446,3 +446,14 @@ Core/Finance/Orders/Platform/Menu و Printing نباید Casual Toggle داشت�
 - Local persistent owner: relay_processed_requests
 - Boundary: Public فقط Relay/Auth Projection/Heartbeat/Emergency Audit را نگه می‌دارد؛ Order/Settlement/Inventory و سایر Business Stateهای canonical فقط Local هستند.
 - Runtime: Local outbound polling/claim/ACK؛ هیچ inbound اینترنتی به Local لازم نیست.
+
+
+## Relay Remote Read Models (Phase 4)
+- Release checkpoint: `1.36.4-dev.30`.
+- Local owner: `includes/remote_read_models.php` + `tools/remote-read-worker.php`.
+- Public projection owner: `remote_read_models`; این Table فقط آخرین Snapshot محدود و versioned را نگه می‌دارد و Business Authority نیست.
+- مدل‌های مجاز: `operations`, `preparation`, `inventory`, `inventory_cost`, `reports`.
+- Read authority از همان Local account/capability projection می‌آید؛ Permission system دوم ساخته نشده است.
+- `shift_supervision` فقط `preparation.monitor` و read visibility سراسری دارد؛ mutation آماده‌سازی همچنان نیازمند authority اصلی و area assignment Local است.
+- Remote Staff surface فقط read-only است. Stale snapshot با زمان آخرین sync نمایش داده می‌شود و unavailable بودن Local باعث حذف snapshot کش‌شده نمی‌شود.
+- Public هیچ Table canonical مربوط به Orders/Finance/Inventory را مالک نمی‌شود.
