@@ -4,7 +4,7 @@ import re
 ROOT=Path(__file__).resolve().parents[1]
 functions=(ROOT/'includes/functions.php').read_text(encoding='utf-8')
 message_owner=(ROOT/'includes/function_domains/messages.php').read_text(encoding='utf-8')
-index=((ROOT/'menu/index.php').read_text(encoding='utf-8') + '\n' + (ROOT/'includes/guest_menu_view.php').read_text(encoding='utf-8'))
+index=(((ROOT/'menu/index.php').read_text(encoding='utf-8') + '\n' + (ROOT/'includes/guest_menu_view.php').read_text(encoding='utf-8')) + '\n' + (ROOT/'includes/guest_menu_view.php').read_text(encoding='utf-8'))
 menu=(ROOT/'assets/js/menu.js').read_text(encoding='utf-8')
 messages=(ROOT/'admin/messages.php').read_text(encoding='utf-8')
 region=message_owner[message_owner.index('function message_definitions'):message_owner.index('function message_definition_map')]
