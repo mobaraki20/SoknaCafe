@@ -101,7 +101,8 @@ function guest_publish_build_snapshot(PDO $pdo): array
             return [
                 'id'=>(int)$category['id'],'category_key'=>(string)$category['category_key'],
                 'name'=>(string)$category['name'],'image_path'=>(string)($category['image_path'] ?? ''),
-                'icon_key'=>(string)($category['icon_key'] ?? ''),'sort_order'=>(int)$category['sort_order'],
+                'icon_key'=>category_visual_icon((string)($category['icon_key'] ?? ''),(string)$category['name']),
+                'sort_order'=>(int)$category['sort_order'],
             ];
         }, $catalog['categories']);
         $catalogs[(string)$menu['menu_key']] = [
@@ -153,6 +154,7 @@ function guest_publish_build_snapshot(PDO $pdo): array
         'accommodation_card_title'=>setting('accommodation_card_title','خانه سکنا رو هم می‌شناسی؟'),
         'accommodation_card_text'=>setting('accommodation_card_text','اقامت، گشت‌وگذار و تجربه غرب هرمزگان'),
         'instagram_cafe_url'=>setting('instagram_cafe_url',''),
+        'whatsapp_number'=>function_exists('whatsapp_number') ? whatsapp_number(setting('whatsapp_number','')) : '',
         'post_order_instagram_enabled'=>setting_bool('post_order_instagram_enabled',true),
         'public_about_enabled'=>setting_bool('public_about_enabled',true),
         'analytics_enabled'=>false,
