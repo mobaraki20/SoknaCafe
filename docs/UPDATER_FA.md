@@ -33,10 +33,18 @@
 
 زنجیره نسخه‌های پیش‌عملیاتی تا checkpoint جاری در تاریخچه Git و Release Notes نگهداری می‌شود؛ سند عملیاتی نباید با فهرست‌کردن دستی تمام نسخه‌های قدیمی منسوخ شود.
 
-checkpoint جاری Web/PWA: `1.36.4-dev.27`
+checkpoint جاری Web/PWA: `1.36.4-dev.31`
 
-مسیر Upgrade رسمی این checkpoint فقط از آخرین نسخه‌ای است که واقعاً برای تست تحویل شده است:
+مسیر Upgrade رسمی این checkpoint از predecessor پذیرفته‌شده:
 
-`1.36.4-dev.26 → 1.36.4-dev.27`
+`1.36.4-dev.30 → 1.36.4-dev.31`
 
-Clean Install کامل `1.36.4-dev.27` از همین Source تولید می‌شود. این checkpoint Migration دیتابیس Business ندارد؛ تغییرهای آن Foundation/Runtime و پاک‌سازی Baseline هستند. هر Gate دیتابیسی یا Windows/Printer که محیط اجرای لازم را ندارد باید صریحاً `BLOCKED_ENVIRONMENT` ثبت شود و PASS محسوب نمی‌شود.
+این checkpoint **Migration دیتابیس دارد**:
+- Local: جداول Expenses، Deferred receipt/review و Financial Close Override.
+- Public: جدول مستقل `deferred_work`.
+- migration source فعلی Local برای ساخت Update Package در `docs/architecture-migration-r2/PHASE5_LOCAL_MIGRATION.sql` نگه‌داری می‌شود؛ آرشیو migration تاریخی در Source فعال ساخته نمی‌شود.
+- Public schema migration: `public_edge/database/migrations/005_phase5_deferred_work.sql`.
+
+قانون نصب: Update Package باید قبل از activation Restore Point بسازد و Local schema migration را اتمیک اجرا کند. Public component باید schema/edge سازگار Phase 5 داشته باشد؛ در صورت عدم دسترسی Public، Local core بالا می‌ماند اما normal financial-period close تا شناخته‌شدن وضعیت Public طبق قرارداد Phase 5 مسدود می‌شود.
+
+Open table/order/account به‌تنهایی blocker Update نیست؛ فقط commit درحال‌پرواز باید برای cutover کوتاه quiesce شود.
