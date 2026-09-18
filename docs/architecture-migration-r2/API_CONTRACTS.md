@@ -76,7 +76,16 @@ Permission decision نهایی mutation در Local دوباره اجرا می‌
 Availability sync یک channel سریع و جدا از content publish است.
 
 ## 7) Remote Read Models
-هر snapshot دارای `revision/version`, `generated_at`, `last_sync_at`, scope/capability markers است. UI در stale mode زمان آخرین sync را نشان می‌دهد و actionهای unsafe را disable می‌کند.
+هر snapshot دارای `source_version`, `generated_at`, `last_sync_at` است. Local Runtime snapshotها را outbound به Public می‌فرستد و Public فقط آخرین projection محدود را نگه می‌دارد.
+
+Phase 4 در `1.36.4-dev.30` این مدل‌های read-only را پیاده می‌کند:
+- `operations`: سفارش/فراخوان/میزهای فعال برای مسئولیت‌های عملیاتی مجاز.
+- `preparation`: صف و اصلاح‌های آماده‌سازی؛ برای `preparation` بر اساس areaهای Local فیلتر می‌شود و `shift_supervision` فقط global monitor read دارد.
+- `inventory`: مقدار/هشدار موجودی بدون cost.
+- `inventory_cost`: cost/value فقط با authority جداگانه `inventory_cost_view`.
+- `reports`: summary کش‌شده مدیریتی؛ در semantics فعلی فقط Admin از wildcard authority می‌بیند.
+
+Remote Staff UI هیچ mutation عادی ندارد. وقتی heartbeat یا snapshot قدیمی است، read همچنان در دسترس می‌ماند ولی پاسخ `stale=true` و زمان آخرین sync/connectivity را صریح برمی‌گرداند. Public هنگام هر read دوباره capability و preparation-area projection را enforce می‌کند؛ این filtering جای Permission نهایی Local برای mutation را نمی‌گیرد.
 
 ## 8) Public Emergency Console
 فقط break-glass: connectivity/status، disable remote access/order intake، revoke binding/token، limited recovery controls. Routine admin ممنوع. همه actions audit + reason + actor + timestamp دارند.
