@@ -7,8 +7,8 @@ def need(p,t,m):
 def forbid(p,t,m):
     if t in read(p): errors.append(m)
 need("admin/settings.php","public_waiter_call_enabled","Public waiter-call setting is missing.")
-need("menu/index.php","CAFE_PUBLIC_WAITER_TABLES","Public waiter-call state is not exposed safely.")
-need('menu/index.php','id="publicWaiterTable"','Public waiter call does not require table selection.')
+need("includes/guest_menu_view.php","CAFE_PUBLIC_WAITER_TABLES","Public waiter-call state is not exposed safely.")
+need('includes/guest_menu_view.php','id="publicWaiterTable"','Public waiter call does not require table selection.')
 need("api/waiter_call.php","public_table_id","Public waiter call does not identify the selected table safely.")
 forbid("assets/js/operator.js","ثبت حضور بدون سفارش","Manual presence still appears in operator UI.")
 forbid("operator/index.php","billDiscountReason","Discount reason field still exists.")
