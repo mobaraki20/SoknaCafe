@@ -40,12 +40,59 @@ function public_bearer_token(): string
 }
 function public_session(): array
 {
-    $token = public_bearer_token(); if ($token === '') public_json(['ok'=>false,'error'=>'unauthorized'],401);
-    $hash = hash('sha256',$token);
-    $stmt=public_db()->prepare('SELECT s.id,s.installation_id,s.projection_id,s.expires_at,p.capabilities_json,p.active,i.remote_enabled,i.order_intake_enabled FROM public_sessions s JOIN auth_projections p ON p.installation_id=s.installation_id AND p.projection_id=s.projection_id JOIN installations i ON i.installation_id=s.installation_id WHERE s.token_hash=? LIMIT 1');
-    $stmt->execute([$hash]); $row=$stmt->fetch();
-    if (!$row || !(int)$row['active'] || !(int)$row['remote_enabled'] || strtotime((string)$row['expires_at']) <= time()) public_json(['ok'=>false,'error'=>'unauthorized'],401);
-    $caps=json_decode((string)$row['capabilities_json'],true); $row['capabilities']=is_array($caps)?$caps:[]; return $row;
+    $token=public_bearer_token();
+    if($token==='')public_json(['ok'=>false,'error'=>'unauthorized'],401);
+    $hash=hash('sha256',$token);
+    $stmt=public_db()->prepare('SELECT s.id,s.installation_id,s.projection_id,s.expires_at,p.display_name,p.role,p.capabilities_json,p.preparation_areas_json,p.projection_version,p.active,i.active installation_active,i.remote_enabled,i.order_intake_enabled FROM public_sessions s JOIN auth_projections p ON p.installation_id=s.installation_id AND p.projection_id=s.projection_id JOIN installations i ON i.installation_id=s.installation_id WHERE s.token_hash=? LIMIT 1');
+    $stmt->execute([$hash]);$row=$stmt->fetch();
+    if(!$row||!(int)$row['active']||!(int)$row['installation_active']||!(int)$row['remote_enabled']||strtotime((string)$row['expires_at'])<=time())public_json(['ok'=>false,'error'=>'unauthorized'],401);
+    $caps=json_decode((string)$row['capabilities_json'],true);
+    $areas=json_decode((string)($row['preparation_areas_json']??'[]'),true);
+    $row['capabilities']=is_array($caps)?array_values(array_map('strval',$caps)):[];
+    $row['preparation_areas']=is_array($areas)?array_values(array_intersect(['kitchen','bar'],array_map('strval',$areas))):[];
+    return $row;
+}
+
+function public_session_has_capability(array $session,string $capability):bool
+{
+    $caps=is_array($session['capabilities']??null)?$session['capabilities']:[];
+    if(in_array('*',$caps,true)||in_array($capability,$caps,true))return true;
+    if($capability==='preparation.read'&&in_array('preparation.monitor',$caps,true))return true;
+    return false;
+}
+
+function public_remote_model_capability(string $modelKey):?string
+{
+    return match($modelKey){
+        'operations'=>'operations.read',
+        'preparation'=>'preparation.read',
+        'inventory'=>'inventory.read',
+        'inventory_cost'=>'inventory.cost.read',
+        'reports'=>'reports.read',
+        default=>null,
+    };
+}
+
+function public_remote_connectivity(string $installationId,int $freshSeconds=45):array
+{
+    $stmt=public_db()->prepare('SELECT i.remote_enabled,h.last_seen_at FROM installations i LEFT JOIN installation_heartbeats h ON h.installation_id=i.installation_id WHERE i.installation_id=? LIMIT 1');
+    $stmt->execute([$installationId]);$row=$stmt->fetch()?:[];
+    $last=(string)($row['last_seen_at']??'');$ts=strtotime($last)?:0;
+    return [
+        'remote_enabled'=>(bool)($row['remote_enabled']??false),
+        'local_fresh'=>$ts>=time()-max(10,$freshSeconds),
+        'last_seen_at'=>$last,
+    ];
+}
+
+function public_remote_filter_preparation(array $payload,array $session):array
+{
+    if(public_session_has_capability($session,'preparation.monitor')||in_array('*',$session['capabilities']??[],true))return $payload;
+    $areas=is_array($session['preparation_areas']??null)?$session['preparation_areas']:[];
+    $allow=static fn(array $row):bool=>in_array((string)($row['area']??$row['area_key']??''),$areas,true);
+    $payload['tasks']=array_values(array_filter(is_array($payload['tasks']??null)?$payload['tasks']:[],$allow));
+    $payload['adjustments']=array_values(array_filter(is_array($payload['adjustments']??null)?$payload['adjustments']:[],$allow));
+    return $payload;
 }
 function public_verify_local_signature(): string
 {

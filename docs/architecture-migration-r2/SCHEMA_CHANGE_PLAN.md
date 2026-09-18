@@ -46,8 +46,15 @@ Local:
 
 ## Phase 4 — Remote Read Models
 Public:
-- versioned read-model snapshots با `source_version`, `generated_at`, `last_sync_at`
-- projectionها فقط داده لازم برای role/capability؛ no full admin DB.
+- `remote_read_models` با کلید `(installation_id, model_key)` و `source_version`, `payload_json`, `generated_at`, `last_sync_at`.
+- `auth_projections` فقط با metadata حداقلی `display_name` و `role` غنی می‌شود؛ capability/area همچنان projection همان Local authority است.
+- مدل‌های مجاز فعلی: `operations`, `preparation`, `inventory`, `inventory_cost`, `reports`.
+- هیچ `orders`، `settlement_records`، `inventory_items` یا Business table canonical روی Public ساخته نمی‌شود.
+- Migration فعال این Phase: `public_edge/database/migrations/004_phase4_remote_read_models.sql`.
+
+Local:
+- Business schema جدیدی برای Phase 4 ندارد؛ `tools/remote-read-worker.php` از ownerهای Local فقط read می‌کند و snapshot projection می‌سازد.
+- sync توسط Runtime به‌صورت outbound انجام می‌شود؛ inbound اینترنتی به Local اضافه نمی‌شود.
 
 ## Phase 5 — Deferred-safe
 Public:

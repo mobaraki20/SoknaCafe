@@ -52,6 +52,11 @@ function sokna_runtime_worker_registry(): array
             'command' => [PHP_BINARY, $root . '/tools/relay-projection-worker.php', '--once'],
             'required' => false,
         ],
+        'remote_read_models' => [
+            'interval_seconds' => 30,
+            'command' => [PHP_BINARY, $root . '/tools/remote-read-worker.php', '--once'],
+            'required' => false,
+        ],
         'guest_availability' => [
             'interval_seconds' => 2,
             'command' => [PHP_BINARY, $root . '/tools/guest-availability-worker.php', '--once'],
