@@ -17,7 +17,7 @@ inv=read('includes/inventory.php')
 invhome=read('admin/inventory.php')
 waitfeed=read('waiter/api_feed.php')
 waitaction=read('waiter/api_action.php')
-publicstatus=read('api/order_status.php')
+publicstatus=read('api/order_status.php') + '\n' + read('includes/guest_order_status_service.php')
 schema=read('database/schema.sql')
 helptext=read('includes/help_topics.php')
 
@@ -31,7 +31,7 @@ assert "status IN('pending_approval','new')" in create
 assert "if ($action === 'append')" not in guest and "client_refresh_required" not in guest
 assert "expected_signature" in guest and "order_changed" in guest
 assert 'function guest_order_payload_matches_current' in guest and 'این تغییرات قبلاً ذخیره شده‌اند.' in guest
-assert "close_table_session((int)$session['id'], null, 'guest_cancelled')" in guest
+assert "close_table_session((int)$session['id'],null,'guest_cancelled')" in guest.replace(' ','')
 assert "if (!$increase && $old)" in guest
 assert "order_acceptance_blocked_scope_for_station" in guest
 assert "action: 'update'" in menu and "action: 'append'" not in menu
