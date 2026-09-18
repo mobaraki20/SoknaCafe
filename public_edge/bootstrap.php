@@ -69,6 +69,7 @@ function public_remote_model_capability(string $modelKey):?string
         'inventory'=>'inventory.read',
         'inventory_cost'=>'inventory.cost.read',
         'reports'=>'reports.read',
+        'deferred_context'=>'deferred.context',
         default=>null,
     };
 }
@@ -94,6 +95,20 @@ function public_remote_filter_preparation(array $payload,array $session):array
     $payload['adjustments']=array_values(array_filter(is_array($payload['adjustments']??null)?$payload['adjustments']:[],$allow));
     return $payload;
 }
+
+function public_remote_filter_deferred_context(array $payload,array $session): array
+{
+    $caps=is_array($session['capabilities']??null)?$session['capabilities']:[];
+    if(in_array('*',$caps,true))return $payload;
+    $has=static fn(string $cap):bool=>in_array($cap,$caps,true);
+    if(!$has('supply.need.defer')&&!$has('supply.manage.defer'))$payload['supply_groups']=[];
+    if(!$has('supply.need.defer')&&!$has('supply.manage.defer')&&!$has('inventory.waste.defer')&&!$has('inventory.count_draft.defer'))$payload['inventory_items']=[];
+    if(!$has('inventory.count_draft.defer'))$payload['count_drafts']=[];
+    if(!$has('subscriber.payment.defer'))$payload['subscribers']=[];
+    if(!$has('expense.create.defer'))$payload['expense_categories']=[];
+    return $payload;
+}
+
 function public_verify_local_signature(): string
 {
     global $publicConfig;
