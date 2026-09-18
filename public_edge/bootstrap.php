@@ -146,11 +146,22 @@ function public_guest_enqueue(string $installationId,array $envelope): array
     $expires=date('Y-m-d H:i:s',(int)$validation['expires_ts']);
     $pdo->beginTransaction();
     try{
-        $q=$pdo->prepare('SELECT request_hash,state,result_json,error_code FROM realtime_requests WHERE installation_id=? AND request_id=? FOR UPDATE');
+        $q=$pdo->prepare('SELECT request_hash,state,result_json,error_code,envelope_json FROM realtime_requests WHERE installation_id=? AND request_id=? FOR UPDATE');
         $q->execute([$installationId,(string)$envelope['request_id']]);
         $existing=$q->fetch();
         if($existing){
-            if(!hash_equals((string)$existing['request_hash'],$hash)){
+            $oldEnvelope=json_decode((string)($existing['envelope_json']??''),true);
+            $oldLogical=is_array($oldEnvelope)?[
+                'kind'=>(string)($oldEnvelope['kind']??''),
+                'actor_projection_id'=>(string)($oldEnvelope['actor_projection_id']??''),
+                'payload'=>is_array($oldEnvelope['payload']??null)?$oldEnvelope['payload']:[],
+            ]:[];
+            $newLogical=[
+                'kind'=>(string)($envelope['kind']??''),
+                'actor_projection_id'=>(string)($envelope['actor_projection_id']??''),
+                'payload'=>is_array($envelope['payload']??null)?$envelope['payload']:[],
+            ];
+            if(!hash_equals(hash('sha256',sokna_relay_canonical_json($oldLogical)),hash('sha256',sokna_relay_canonical_json($newLogical)))){
                 $pdo->rollBack();
                 return ['ok'=>false,'error'=>'request_id_conflict','status'=>409];
             }
