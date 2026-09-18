@@ -23,6 +23,7 @@ echo "JS syntax PASS: ${js_count} files"
 
 echo '== Unit =='
 php tests/unit.php
+php tests/phase2-relay-contract.php
 
 echo '== Supply / modular contracts =='
 python tests/v1360-supply-module-contract.py
