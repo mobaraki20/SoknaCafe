@@ -4,7 +4,7 @@ import re
 ROOT=Path(__file__).resolve().parents[1]
 functions=(ROOT/'includes/functions.php').read_text(encoding='utf-8')
 message_owner=(ROOT/'includes/function_domains/messages.php').read_text(encoding='utf-8')
-index=(((ROOT/'menu/index.php').read_text(encoding='utf-8') + '\n' + (ROOT/'includes/guest_menu_view.php').read_text(encoding='utf-8')) + '\n' + (ROOT/'includes/guest_menu_view.php').read_text(encoding='utf-8'))
+index=((ROOT/'menu/index.php').read_text(encoding='utf-8') + '\n' + (ROOT/'includes/guest_menu_view.php').read_text(encoding='utf-8'))
 menu=(ROOT/'assets/js/menu.js').read_text(encoding='utf-8')
 messages=(ROOT/'admin/messages.php').read_text(encoding='utf-8')
 region=message_owner[message_owner.index('function message_definitions'):message_owner.index('function message_definition_map')]
@@ -16,7 +16,13 @@ for key in ('invalid_qr','page_expired','visit_duration'):
     assert "'editable'=>false" in row, key
 # Every editable key must have a real current consumer, not merely a hidden/dead editor node.
 noneditable={'invalid_qr','page_expired','visit_duration'}
-runtime='\n'.join([index,menu]+[(ROOT/p).read_text(encoding='utf-8') for p in ['api/create_order.php','api/guest_orders.php','api/waiter_call.php','api/table_context.php','api/order_status.php','admin/settings.php','includes/push.php']])
+runtime='\n'.join([index,menu]+[(ROOT/p).read_text(encoding='utf-8') for p in [
+    'api/create_order.php','includes/guest_order_service.php',
+    'api/guest_orders.php','includes/guest_order_manage_service.php',
+    'api/waiter_call.php','includes/waiter_call_service.php',
+    'api/table_context.php','api/order_status.php','includes/guest_order_status_service.php',
+    'admin/settings.php','includes/push.php'
+]])
 unused=[k for k in keys if k not in noneditable and k not in runtime and f"order_acceptance_message('{k.removeprefix('ordering_pause_')}')" not in index]
 assert not unused, 'Editable message definitions without a real runtime consumer: '+', '.join(unused)
 # Previously broken editors now have explicit consumers.
