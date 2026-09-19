@@ -7,6 +7,7 @@ using System.Threading;
 
 public sealed class SoknaRuntimeService : ServiceBase
 {
+    private readonly object lifecycle = new object();
     private Process child;
     private Timer monitor;
     private volatile bool stopping;
@@ -87,50 +88,73 @@ public sealed class SoknaRuntimeService : ServiceBase
 
     private void Monitor(object state)
     {
-        if (stopping) return;
-        try
+        lock (lifecycle)
         {
-            var current = child;
-            if (current == null || current.HasExited)
+            if (stopping) return;
+            try
             {
-                if (current != null) Log("runtime child exited code=" + current.ExitCode);
-                StartChild();
+                var current = child;
+                if (current == null || current.HasExited)
+                {
+                    if (current != null)
+                    {
+                        Log("runtime child exited code=" + current.ExitCode);
+                        current.Dispose();
+                        child = null;
+                    }
+                    StartChild();
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            Log("runtime restart failed: " + ex.GetType().Name + ": " + ex.Message);
+            catch (Exception ex)
+            {
+                Log("runtime restart failed: " + ex.GetType().Name + ": " + ex.Message);
+            }
         }
     }
 
     protected override void OnStart(string[] args)
     {
-        stopping = false;
-        StartChild();
-        monitor = new Timer(Monitor, null, 5000, 5000);
+        lock (lifecycle)
+        {
+            stopping = false;
+            StartChild();
+            monitor = new Timer(Monitor, null, 5000, 5000);
+        }
     }
 
     protected override void OnStop()
     {
         stopping = true;
-        if (monitor != null)
+        // Serialize against a timer callback already starting a replacement child.
+        lock (lifecycle)
         {
-            monitor.Dispose();
-            monitor = null;
-        }
-
-        var current = child;
-        if (current != null && !current.HasExited)
-        {
-            try
+            if (monitor != null)
             {
-                current.Kill();
-                current.WaitForExit(5000);
+                monitor.Dispose();
+                monitor = null;
             }
-            catch { }
+            var current = child;
+            if (current != null)
+            {
+                if (!current.HasExited)
+                {
+                    RequestAdditionalTime(15000);
+                    var info = new ProcessStartInfo();
+                    info.FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "taskkill.exe");
+                    info.Arguments = "/PID " + current.Id + " /T /F";
+                    info.UseShellExecute = false;
+                    info.CreateNoWindow = true;
+                    using (var killer = Process.Start(info))
+                    {
+                        if (killer == null || !killer.WaitForExit(10000) || !current.WaitForExit(3000))
+                            throw new InvalidOperationException("Runtime process tree did not stop; repair must not continue.");
+                    }
+                }
+                current.Dispose();
+            }
+            child = null;
+            Log("service stopped");
         }
-        child = null;
-        Log("service stopped");
     }
 
     protected override void OnShutdown()

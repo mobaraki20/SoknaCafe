@@ -46,7 +46,7 @@ try {
     $app = Join-Path $root 'app'
     $data = Join-Path $root 'data'
     New-Item -ItemType Directory -Force (Join-Path $app 'runtime') | Out-Null
-    [IO.File]::WriteAllText((Join-Path $app 'runtime/sokna-runtime.php'), '<?php if(in_array("--self-check",$argv,true)){exit(0);} while(true){sleep(1);}')
+    [IO.File]::WriteAllText((Join-Path $app 'runtime/sokna-runtime.php'), '<?php if(in_array("--self-check",$argv,true)){exit(0);} if(!in_array("--child",$argv,true)){$child=proc_open([PHP_BINARY,__FILE__,"--child"],[], $pipes);} while(true){sleep(1);}')
     [IO.File]::WriteAllText((Join-Path $app 'config.php'), '<?php /* secret-canary-123 */')
     [IO.File]::WriteAllText((Join-Path $app 'install.lock'), 'preserve-lock')
     [IO.File]::WriteAllText((Join-Path $app 'VERSION.txt'), 'fixture')
@@ -59,6 +59,12 @@ try {
     $s = Run-Setup $repairArguments
     Assert ((Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\SoknaRuntime').ImagePath -eq $before) 'Repair changed service configuration'
     Assert ((Get-FileHash (Join-Path $app 'config.php')).Hash -eq $configHash) 'Repair changed config/secret'
+    for ($attempt=0; $attempt -lt 20; $attempt++) {
+        $children = @(Get-CimInstance Win32_Process -Filter "Name='php.exe'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains($app) })
+        if ($children.Count -eq 2) { break }
+        Start-Sleep -Milliseconds 100
+    }
+    Assert ($children.Count -eq 2) 'Repair left orphan runtime processes'
 
     # Inject an SCM start failure AFTER replacing the installed binary.
     $badSource = Join-Path $root 'FailService.cs'
