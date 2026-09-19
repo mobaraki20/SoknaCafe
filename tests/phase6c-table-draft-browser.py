@@ -140,13 +140,13 @@ with sync_playwright() as p:
     assert '۱' in qty_text(second), qty_text(second)
     assert 'نسخه' in second.locator('#quickOrderDraftStatusText').inner_text()
 
-    plus_first=first.locator('[data-qo-delta="1"][data-id="101"]')
+    plus_first=first.locator('#quickOrderItems [data-qo-delta="1"][data-id="101"]')
     plus_first.click(); plus_first.click()
     first.wait_for_timeout(500)
     assert server['draft']['version']==2, server['draft']
     assert server['draft']['items'][0]['quantity']==3, server['draft']
 
-    second.locator('[data-qo-delta="1"][data-id="101"]').click()
+    second.locator('#quickOrderItems [data-qo-delta="1"][data-id="101"]').click()
     second.wait_for_timeout(650)
     assert server['draft']['version']==2, 'stale editor must not advance server version'
     assert server['draft']['items'][0]['quantity']==3, 'stale editor must not overwrite newer quantity'
