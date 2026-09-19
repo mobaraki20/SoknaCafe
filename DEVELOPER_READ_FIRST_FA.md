@@ -118,3 +118,14 @@ Supply/Purchasing اولین Pilot مرزبندی Domain است و Owner آن `m
 - normal close با Pending/Needs-review یا Public paired-but-unknown مسدود است؛ override فقط Admin با reason + immutable audit.
 - Public هیچ canonical Orders/Finance/Inventory/Expenses ledger authority ندارد.
 - Remote Staff باید `pending_sync`, `needs_review`, `committed`, `rejected` را برای کاربر قابل تشخیص نگه دارد.
+
+
+### Phase 6A Preparation permission boundary
+از `1.36.4-dev.32`، visibility و mutation آماده‌سازی جدا هستند و فقط `includes/preparation_permissions.php` owner این تصمیم است.
+
+قواعد:
+- Supervisor و Admin می‌توانند Kitchen/Bar را سراسری monitor کنند اما از role خود حق claim/ack آماده‌سازی نمی‌گیرند.
+- Preparation worker فقط areaهای assign‌شده را می‌تواند mutate کند.
+- Supervisor+Preparation دید سراسری دارد ولی actionable scope همچنان فقط areaهای assign‌شده است.
+- feed آماده‌سازی read-only است؛ هیچ تغییر status نباید صرفاً با بازکردن/refresh صفحه رخ دهد.
+- UI فقط scopeهای server-authored را مصرف می‌کند و حق mutation را از role label حدس نمی‌زند.
