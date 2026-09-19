@@ -2,7 +2,7 @@
 
 Updated: 2026-09-19
 Repository: `mobaraki20/SoknaCafe`
-Current completed release checkpoint: `1.36.4-dev.33`
+Current completed release checkpoint: `1.36.4-dev.34`
 
 ## Completed architecture migration
 - Phase 0 — Source Audit.
@@ -13,13 +13,17 @@ Current completed release checkpoint: `1.36.4-dev.33`
 - Phase 5 — Deferred-safe + Financial Reconciliation. PR #4.
 - Phase 6A — Preparation Permission Split. PR #5.
 - Phase 6B — Explicit Sellable Kind. PR #7.
+- Phase 6C — Server-persistent Table Draft. PR #10.
 
-## Latest verified checkpoint
-Phase 6B merged to `main`:
-`afa84a333ca34d8405af58f2bb3287e6aebfca39`
+## Latest verified product checkpoint
+Phase 6C merged to `main`:
+`ccf0656655702a0b175a7cb9d7521fcb808745b1`
 
-Post-merge GitHub Actions:
-`35424762946` — SUCCESS
+Phase 6C final branch head:
+`ea46ecf6209ff14329438684fb94720445ce2403`
+
+Product post-merge GitHub Actions:
+`35438494232` — SUCCESS
 
 All three jobs PASS:
 - Windows runtime/TLS.
@@ -27,65 +31,36 @@ All three jobs PASS:
 - Linux full regression + browser gates.
 
 Read latest handoff:
-`docs/handoffs/PHASE6B_HANDOFF_FA.md`
+`docs/handoffs/PHASE6C_HANDOFF_FA.md`
 
 ## Frozen behavior now
-- Sellables are explicitly `menu_item | service_item`.
-- Service classification is never inferred from category/station/name/fulfillment.
-- Kind changes are auditable.
-- New order lines snapshot sellable kind.
-- Known internal services are explicitly classified.
-- No automatic takeaway packaging fee.
-- Historical committed order rows are not rewritten.
+- exactly one active Table Draft per table.
+- Table Draft is persisted on Local and shared between authorized staff.
+- browser normal-draft state is server-authoritative; stale versions cannot overwrite newer drafts.
+- Draft Save creates no canonical order, business number, preparation work, inventory/finance side effect or receipt.
+- Draft lifecycle has explicit Finalize/Cancel and no auto-expiry.
+- Finalize revalidates current Local state and delegates to `includes/staff_order_service.php`.
+- remote Table Draft operations require reachable Local Realtime and are never Deferred-safe.
+- Public does not become Table Draft business authority.
 
-## Active in-progress work
-Phase 6C — Server-persistent Table Draft.
+## Active next work
+Phase 7 — Printing / Notifications / Integrations.
 
-Active branch:
-`phase/6c-table-draft`
+Frozen direction:
+- internalize Print Worker under Runtime without replacing the mature printing state machine.
+- move Notification processing under Runtime while preserving outbox/retry semantics.
+- adapt Accommodation transport while preserving its business contract.
+- refactor Center integration toward outbound Local-authoritative transport.
 
-Active branch head:
-`756d805912351d6dd539f9922e9bd97144369b63`
-
-Branch position at this handoff:
-- 30 commits ahead of `main`
-- 0 behind
-
-Latest Phase 6C CI:
-`35426707212`
-
-Status:
-- Windows runtime/TLS: PASS
-- Public + Local MariaDB: PASS
-- Linux full regression: FAIL
-
-The Phase 6C boundary contract itself PASSes. The current first failing regression is:
-`tests/itemized-settlement-contract.py`
-
-Read the exact in-progress handoff before touching code:
-`docs/handoffs/PHASE6C_IN_PROGRESS_HANDOFF_FA.md`
-
-Do **not** recreate Phase 6C from main. Continue the existing branch.
-
-Frozen target:
-- exactly one active draft per table.
-- server-persistent and visible/editable to authorized staff.
-- no order row, business order number, preparation work, inventory movement, finance posting, or receipt before finalize.
-- no auto-expiry; explicit finalize/cancel.
-- finalize revalidates current catalog, price, availability, table/session and permissions.
-- finalize uses canonical Staff Order owner; no duplicated order transaction.
-- remote draft operations are realtime/local-required only while Local is reachable.
-- Table Draft is never Deferred-safe.
+Do not start Phase 7 by rewriting printing. Audit canonical owners/state machine first and add preservation contracts before moving worker ownership.
 
 ## New-agent startup
 1. Fetch current `main`.
-2. Read `docs/handoffs/START_HERE_NEXT_AGENT_FA.md`.
+2. Read `NEXT_AGENT_START_HERE.md`.
 3. Read `docs/handoffs/MASTER_HANDOFF_FA.md`.
 4. Read this file.
-5. Read `docs/handoffs/PHASE6B_HANDOFF_FA.md`.
-6. Read R2 Implementation Plan/API/Schema/Risk contracts.
-7. Check latest GitHub Actions state.
-8. Checkout existing `phase/6c-table-draft` at `756d805912351d6dd539f9922e9bd97144369b63`.
-9. Read `docs/handoffs/PHASE6C_IN_PROGRESS_HANDOFF_FA.md`.
-10. Resolve current Linux regression without recreating existing Table Draft work.
-11. Update this file + final Phase 6C handoff + Master source map in the same Phase 6C PR.
+5. Read `docs/handoffs/PHASE6C_HANDOFF_FA.md`.
+6. Read R2 Implementation Plan / Schema / Risk Phase 7 sections.
+7. Check latest GitHub Actions.
+8. Create a new Phase 7 branch from current `main`; do not reuse `phase/6c-table-draft`.
+9. Audit printing/notification/accommodation/center owners before changing code.
