@@ -205,7 +205,7 @@ function table_draft_save_tx(PDO $pdo,array $data,array $user): array
 
     $snapshot=table_draft_snapshot_rows_locked($pdo,$rows);
     $next=$currentVersion+1;
-    $stmt=$pdo->prepare('UPDATE table_drafts SET version=?,note=?,updated_by_user_id=? WHERE id=? AND state='active' AND version=?');
+    $stmt=$pdo->prepare("UPDATE table_drafts SET version=?,note=?,updated_by_user_id=? WHERE id=? AND state='active' AND version=?");
     $stmt->execute([$next,$note!==''?$note:null,$userId,(int)$draft['id'],$currentVersion]);
     if($stmt->rowCount()!==1)throw new TableDraftException('version_conflict','پیش‌نویس هم‌زمان تغییر کرده است؛ دوباره بارگذاری کنید.',409);
     table_draft_replace_items_locked($pdo,(int)$draft['id'],$snapshot);
