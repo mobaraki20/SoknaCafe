@@ -69,6 +69,7 @@ function public_remote_model_capability(string $modelKey):?string
         'inventory'=>'inventory.read',
         'inventory_cost'=>'inventory.cost.read',
         'reports'=>'reports.read',
+        'deferred_context'=>'deferred.context',
         default=>null,
     };
 }
@@ -94,6 +95,20 @@ function public_remote_filter_preparation(array $payload,array $session):array
     $payload['adjustments']=array_values(array_filter(is_array($payload['adjustments']??null)?$payload['adjustments']:[],$allow));
     return $payload;
 }
+
+function public_remote_filter_deferred_context(array $payload,array $session): array
+{
+    $caps=is_array($session['capabilities']??null)?$session['capabilities']:[];
+    if(in_array('*',$caps,true))return $payload;
+    $has=static fn(string $cap):bool=>in_array($cap,$caps,true);
+    if(!$has('supply.need.defer')&&!$has('supply.manage.defer'))$payload['supply_groups']=[];
+    if(!$has('supply.need.defer')&&!$has('supply.manage.defer')&&!$has('inventory.waste.defer')&&!$has('inventory.count_draft.defer'))$payload['inventory_items']=[];
+    if(!$has('inventory.count_draft.defer'))$payload['count_drafts']=[];
+    if(!$has('subscriber.payment.defer'))$payload['subscribers']=[];
+    if(!$has('expense.create.defer'))$payload['expense_categories']=[];
+    return $payload;
+}
+
 function public_verify_local_signature(): string
 {
     global $publicConfig;
@@ -132,6 +147,25 @@ function public_capability_for_kind(string $kind): string
         'order.edit','order.cancel'=>'orders.mutate','table_draft.create','table_draft.edit','table_draft.finalize','table_draft.cancel'=>'orders.table_draft',default=>'relay.denied',
     };
 }
+
+function public_deferred_capability_for_kind(string $kind): string
+{
+    return match($kind){
+        'supply.need.create'=>'supply.need.defer',
+        'supply.status.prepare','supply.status.return','supply.receipt'=>'supply.manage.defer',
+        'inventory.waste'=>'inventory.waste.defer',
+        'inventory.count_draft'=>'inventory.count_draft.defer',
+        'subscriber.payment'=>'subscriber.payment.defer',
+        'expense.create'=>'expense.create.defer',
+        default=>'deferred.denied',
+    };
+}
+
+function public_deferred_actor_can_access(array $session,string $actorProjectionId): bool
+{
+    return in_array('*',$session['capabilities']??[],true) || hash_equals((string)$session['projection_id'],$actorProjectionId);
+}
+
 
 
 function public_guest_bundle(string $installationId): array

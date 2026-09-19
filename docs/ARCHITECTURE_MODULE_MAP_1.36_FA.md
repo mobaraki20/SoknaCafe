@@ -429,8 +429,8 @@ Core/Finance/Orders/Platform/Menu و Printing نباید Casual Toggle داشت�
 
 در 1.36.0 فعلی:
 
-- **13 Module**
-- **55 Current Table mapped**
+- **15 Module**
+- **67 Current Table mapped**
 - **96 PHP Route/API mapped**
 - **Missing owner = 0**
 - **Duplicate owner = 0**
@@ -457,3 +457,16 @@ Core/Finance/Orders/Platform/Menu و Printing نباید Casual Toggle داشت�
 - `shift_supervision` فقط `preparation.monitor` و read visibility سراسری دارد؛ mutation آماده‌سازی همچنان نیازمند authority اصلی و area assignment Local است.
 - Remote Staff surface فقط read-only است. Stale snapshot با زمان آخرین sync نمایش داده می‌شود و unavailable بودن Local باعث حذف snapshot کش‌شده نمی‌شود.
 - Public هیچ Table canonical مربوط به Orders/Finance/Inventory را مالک نمی‌شود.
+
+
+## Deferred-safe / Expenses (Phase 5)
+- Release checkpoint: `1.36.4-dev.31`.
+- Relay Local ownership: `includes/deferred.php` + `tools/deferred-worker.php`; tables `deferred_work_receipts`, `deferred_review_items`.
+- Public ownership: `deferred_work` فقط Pending/Review/Result محدود را نگه می‌دارد؛ Realtime queue همچنان جداست.
+- Finance owns `financial_period_close_overrides`; normal close روی Pending/Needs-review یا Public paired-but-unknown متوقف می‌شود.
+- Expenses یک Business Module مستقل با `expense_categories` و `expenses` است؛ خرید Inventory/Supply به عنوان Expense دوباره شمرده نمی‌شود.
+- Inventory draft-count mutation owner: `inventory_count_update_line_locked()`; finalize همچنان Local-only است.
+- Supply deferred need از additive contract `supply_request_add_locked()` استفاده می‌کند و receipt از owner موجود Supply/Inventory.
+- Subscriber payment Deferred فقط پس از Local ledger commit رسمی می‌شود؛ reversal Deferred نیست.
+- `deferred_context` یک Read Model محدود برای فرم‌های 4G است و Public آن را بر اساس capability filter می‌کند.
+- Late event مربوط به period بسته فقط یک review candidate می‌سازد و هیچ silent back-post/reopen انجام نمی‌دهد.

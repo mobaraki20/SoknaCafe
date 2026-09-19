@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS deferred_work (
+  installation_id VARCHAR(96) NOT NULL,
+  request_id VARCHAR(96) NOT NULL,
+  request_hash CHAR(64) NOT NULL,
+  kind VARCHAR(64) NOT NULL,
+  actor_projection_id VARCHAR(96) NOT NULL,
+  envelope_json JSON NOT NULL,
+  state VARCHAR(20) NOT NULL DEFAULT 'pending_sync',
+  occurred_at DATETIME NOT NULL,
+  lease_token CHAR(64) NULL,
+  lease_expires_at DATETIME NULL,
+  claimed_at DATETIME NULL,
+  attempt_count INT UNSIGNED NOT NULL DEFAULT 0,
+  result_json JSON NULL,
+  error_code VARCHAR(80) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY(installation_id,request_id),
+  INDEX idx_deferred_claim(installation_id,state,lease_expires_at,created_at),
+  INDEX idx_deferred_period(installation_id,occurred_at,state),
+  INDEX idx_deferred_actor(installation_id,actor_projection_id,created_at),
+  CONSTRAINT fk_deferred_installation FOREIGN KEY(installation_id) REFERENCES installations(installation_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

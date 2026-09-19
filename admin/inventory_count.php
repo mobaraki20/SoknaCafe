@@ -41,48 +41,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $notes = (array)($_POST['note'] ?? []);
 
             $pdo->beginTransaction();
-            $sessionLock = $pdo->prepare('SELECT status,session_type FROM inventory_count_sessions WHERE id=? FOR UPDATE');
-            $sessionLock->execute([$id]);
-            $lockedSession = $sessionLock->fetch();
-            if (!$lockedSession || (string)$lockedSession['status'] !== 'draft') throw new RuntimeException('این شمارش دیگر قابل تغییر نیست.');
-
-            $linesStmt = $pdo->prepare('SELECT l.id,l.inventory_item_id,l.counted_at,i.base_unit FROM inventory_count_lines l JOIN inventory_items i ON i.id=l.inventory_item_id WHERE l.session_id=? ORDER BY l.id FOR UPDATE');
-            $linesStmt->execute([$id]);
-            $valid = [];
-            foreach ($linesStmt->fetchAll() as $line) $valid[(int)$line['id']] = $line;
-
-            $upd = $pdo->prepare('UPDATE inventory_count_lines SET actual_quantity=?,actual_total_cost=?,note=?,counted_by_user_id=?,counted_at=COALESCE(counted_at,NOW()) WHERE id=? AND session_id=?');
-            $updFirstPeriodic = $pdo->prepare('UPDATE inventory_count_lines SET system_quantity_snapshot=?,unit_cost_snapshot=?,actual_quantity=?,actual_total_cost=NULL,note=?,difference_base=NULL,counted_by_user_id=?,counted_at=NOW() WHERE id=? AND session_id=?');
-            $clearPeriodic = $pdo->prepare('UPDATE inventory_count_lines SET system_quantity_snapshot=0,unit_cost_snapshot=NULL,actual_quantity=NULL,actual_total_cost=NULL,note=?,difference_base=NULL,counted_by_user_id=NULL,counted_at=NULL WHERE id=? AND session_id=?');
-            $clearOpening = $pdo->prepare('UPDATE inventory_count_lines SET actual_quantity=NULL,actual_total_cost=NULL,note=?,difference_base=NULL,counted_by_user_id=NULL,counted_at=NULL WHERE id=? AND session_id=?');
-
-            foreach ($valid as $lineId => $line) {
-                if (!array_key_exists((string)$lineId,$actuals) && !array_key_exists($lineId,$actuals)) continue;
-                $raw = trim((string)($actuals[$lineId] ?? ''));
-                $actual = $raw === '' ? null : inventory_major_to_base($raw,(string)$line['base_unit']);
-                if ($isOpening && $action === 'review' && $actual === null) $actual = 0;
-                $costRaw = trim((string)($costs[$lineId] ?? ''));
-                $openingCost = $isOpening && $costRaw !== '' ? inventory_money_value($costRaw) : null;
-                $note = text_substr(trim((string)($notes[$lineId] ?? '')),0,500);
-
-                if ($isOpening && $actual === null) {
-                    $clearOpening->execute([$note ?: null,$lineId,$id]);
-                    continue;
-                }
-                if (!$isOpening && $actual === null) {
-                    $clearPeriodic->execute([$note ?: null,$lineId,$id]);
-                    continue;
-                }
-                if (!$isOpening && $line['counted_at'] === null) {
-                    $balance = inventory_balance_locked($pdo,(int)$line['inventory_item_id']);
-                    $updFirstPeriodic->execute([
-                        (int)$balance['quantity_base'],
-                        $balance['average_unit_cost'] !== null ? (float)$balance['average_unit_cost'] : null,
-                        $actual,$note ?: null,$userId,$lineId,$id
-                    ]);
-                    continue;
-                }
-                $upd->execute([$actual,$openingCost,$note ?: null,$userId,$lineId,$id]);
+            $sessionLock=$pdo->prepare('SELECT status,session_type FROM inventory_count_sessions WHERE id=? FOR UPDATE');
+            $sessionLock->execute([$id]);$lockedSession=$sessionLock->fetch();
+            if(!$lockedSession||(string)$lockedSession['status']!=='draft')throw new RuntimeException('این شمارش دیگر قابل تغییر نیست.');
+            $linesStmt=$pdo->prepare('SELECT l.id,l.updated_at FROM inventory_count_lines l WHERE l.session_id=? ORDER BY l.id FOR UPDATE');
+            $linesStmt->execute([$id]);$valid=[];
+            foreach($linesStmt->fetchAll() as $line)$valid[(int)$line['id']]=$line;
+            foreach($valid as $lineId=>$line){
+                if(!array_key_exists((string)$lineId,$actuals)&&!array_key_exists($lineId,$actuals))continue;
+                $raw=trim((string)($actuals[$lineId]??''));
+                if($isOpening&&$action==='review'&&$raw==='')$raw='0';
+                inventory_count_update_line_locked(
+                    $pdo,$id,$lineId,$raw,
+                    $isOpening?(string)($costs[$lineId]??''):null,
+                    (string)($notes[$lineId]??''),$userId,null
+                );
             }
             $pdo->commit();
             if ($action === 'review') redirect('inventory_count.php?id='.$id.'&review=1');

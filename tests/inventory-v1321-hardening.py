@@ -7,9 +7,9 @@ read=lambda p:(ROOT/p).read_text(encoding='utf-8')
 count=read('admin/inventory_count.php')
 inv=read('includes/inventory.php')
 schema=read('database/schema.sql')
-assert "if (!$isOpening && $line['counted_at'] === null)" in count
-assert 'inventory_balance_locked($pdo,(int)$line[\'inventory_item_id\'])' in count
-assert 'system_quantity_snapshot=0,unit_cost_snapshot=NULL,actual_quantity=NULL' in count
+assert "if(!$isOpening&&$line['counted_at']===null)" in inv.replace(' ','')
+assert 'inventory_balance_locked($pdo,(int)$line[\'inventory_item_id\'])' in inv
+assert 'system_quantity_snapshot=0,unit_cost_snapshot=NULL,actual_quantity=NULL' in inv
 assert 'هنوز شمارش نشده' in count
 assert "$systemSnapshot = $sessionType === 'opening'" in inv
 assert "$unitCostSnapshot = $sessionType === 'opening'" in inv

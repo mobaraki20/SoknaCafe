@@ -75,6 +75,8 @@ require_once __DIR__ . '/includes/subscribers.php';
 require_once __DIR__ . '/includes/inventory.php';
 require_once __DIR__ . '/modules/Supply/domain.php';
 require_once __DIR__ . '/modules/Supply/queries.php';
+require_once __DIR__ . '/includes/expenses.php';
+require_once __DIR__ . '/includes/deferred.php';
 require_once __DIR__ . '/includes/font_runtime.php';
 if (PHP_SAPI !== 'cli') font_runtime_ensure_vazirmatn(false);
 require_once __DIR__ . '/includes/auth.php';

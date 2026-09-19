@@ -1,5 +1,5 @@
 {
-  "version": "1.36.4-dev.30",
+  "version": "1.36.4-dev.31",
   "rule": "Every escaped production defect must add or strengthen a defect-class gate.",
   "classes": [
     {
