@@ -1,5 +1,5 @@
 {
-  "version": "1.36.4-dev.31",
+  "version": "1.36.4-dev.32",
   "rule": "Every escaped production defect must add or strengthen a defect-class gate.",
   "classes": [
     {
@@ -517,6 +517,12 @@
       "severity": "blocker",
       "owner": "Print API v4 accept + supported Windows Agent local receipt contract",
       "evidence": "Accept validates the actual Agent 6.0/6.1 local receipt format r-<32 hex>; local receipt syntax and content SHA mismatch have distinct error codes and a runtime validator test."
+    },
+    {
+      "id": "preparation_visibility_action_split",
+      "severity": "blocker",
+      "owner": "includes/preparation_permissions.php + waiter feed/action",
+      "evidence": "Preparation visibility and actionability are separate; shift supervision/admin monitor globally, preparation mutations remain limited to assigned operational areas."
     }
   ]
 }
