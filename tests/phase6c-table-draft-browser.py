@@ -115,6 +115,7 @@ window.QUICK_ORDER_USER_KEY={json.dumps(str(user_key))};
 window.SOKNA_ICON_SPRITE='/sprite.svg';
 window.CafeUI={{confirm:()=>Promise.resolve(false),toast:()=>{{}}}};
 </script></body></html>''')
+    page.evaluate("Object.defineProperty(window,'sessionStorage',{value:(()=>{const m=new Map();return {get length(){return m.size},getItem:k=>m.has(k)?m.get(k):null,setItem:(k,v)=>m.set(k,String(v)),removeItem:k=>m.delete(k),clear:()=>m.clear()}})()})")
     page.add_script_tag(content=policy)
     page.add_script_tag(content=quick_js)
     page.wait_for_selector('[data-qo-add="101"]')
