@@ -25,8 +25,11 @@ try {
     [IO.File]::WriteAllText($probe, '<?php echo json_encode(array_slice($argv,1));')
     $values = @('two words','فارسی','embedded"quote','C:\space dir\')
     $r = Invoke-SoknaProcess $PhpExe (@($probe) + $values)
-    $actual = @($r.Output | ConvertFrom-Json)
-    Assert (($actual | ConvertTo-Json -Compress) -eq ($values | ConvertTo-Json -Compress)) ('Native argument quoting corrupted values; expected=' + ($values | ConvertTo-Json -Compress) + '; actual=' + ($actual | ConvertTo-Json -Compress))
+    $actual = ConvertFrom-Json -InputObject $r.Output
+    Assert ($actual.Count -eq $values.Count) 'Native argument count changed'
+    for ($i=0; $i -lt $values.Count; $i++) {
+        Assert ([string]$actual[$i] -ceq $values[$i]) ('Native argument mismatch at index ' + $i)
+    }
 
     Add-SoknaSecret 'secret-canary-123'
     Assert ((Protect-SoknaLog 'failed secret-canary-123 token=other-secret') -notmatch 'secret-canary|other-secret') 'Secret redaction failed'
