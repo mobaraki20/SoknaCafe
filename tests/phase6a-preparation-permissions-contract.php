@@ -18,7 +18,7 @@ p6a(str_contains($feed,"require_any_capability(['orders_floor','preparation','sh
 p6a(!preg_match('/UPDATE\s+preparation_adjustments/i',$feed),'Preparation feed is side-effect free');
 p6a(str_contains($feed,"'visible_preparation_areas'")&&str_contains($feed,"'actionable_preparation_areas'"),'Feed exposes server-authored visibility/action scopes');
 p6a(str_contains($feed,"'preparation_visible'")&&str_contains($feed,"'preparation_actionable'"),'Feed does not overload legacy preparation capability flag');
-p6a(str_contains($action,'preparation_access_context($user)')&&str_contains($action,"$actionableAreas"),'Mutation route consumes canonical actionable areas');
+p6a(str_contains($action,'preparation_access_context($user)')&&str_contains($action,'$actionableAreas'),'Mutation route consumes canonical actionable areas');
 p6a(!str_contains($action,'user_preparation_areas($userId)'), 'Mutation route does not re-infer Preparation scope independently');
 p6a(str_contains($page,'WAITER_ACTIONABLE_AREAS')&&str_contains($page,'WAITER_VISIBLE_AREAS'),'Page receives explicit area scopes');
 p6a(str_contains($js,'canActTask')&&str_contains($js,'actionable_preparation_areas'),'Browser gates each Preparation action by actionable area');
