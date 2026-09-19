@@ -44,6 +44,8 @@ p6c(str_contains($quickPage,'window.STAFF_TABLE_DRAFT_API'),'Quick Order page ex
 p6c(str_contains($quickJs,'sharedDraftEnabled')&&str_contains($quickJs,'saveDraftNow')&&str_contains($quickJs,"action:'finalize'"),'Quick Order normal mode consumes server-persistent Table Draft lifecycle');
 p6c(str_contains($quickJs,'const draftKey = (tableId')&&str_contains($quickJs,'late_accounting.${Number(tableId || 0)}')&&!str_contains($quickJs,'lateAccounting ? `sokna.quick-order.v2.${userKey}.'),'browser draft key is reserved for late-accounting/recovery, not normal Table Draft authority');
 p6c(str_contains($gate,'python tests/phase6c-table-draft-browser.py'),'multi-context Table Draft browser test is part of the Linux gate');
+$workflow=(string)file_get_contents($root.'/.github/workflows/sokna-ci.yml');
+p6c(str_contains($workflow,'php tests/phase6c-table-draft-http.php'),'Realtime Table Draft HTTP/actor-permission test is part of the Public MariaDB gate');
 
 foreach(['table_draft.create','table_draft.edit','table_draft.finalize','table_draft.cancel'] as $kind){
     p6c(str_contains($relay,"'".$kind."'"),'Realtime protocol reserves '.$kind);
