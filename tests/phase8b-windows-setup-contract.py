@@ -54,7 +54,8 @@ checks={
     'setup CLI reads sensitive values from files rather than secret arguments':
         "'config-file'" in cli
         and "'passphrase-file'" in cli
-        and "$prefix = '--' . $name . '=';" in cli
+        and 'file_get_contents($configFile)' in cli
+        and 'file_get_contents($passphraseFile)' in cli
         and '--db-pass=' not in cli
         and '--password=' not in cli,
 
