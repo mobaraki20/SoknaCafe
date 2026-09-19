@@ -13,6 +13,7 @@ function menu_item_audit_snapshot(array $row): array
         'available'=>(int)($row['available'] ?? 0),
         'active'=>(int)($row['active'] ?? 0),
         'featured'=>(int)($row['featured'] ?? 0),
+        'sellable_kind'=>normalize_sellable_kind($row['sellable_kind'] ?? null),
         'takeaway_allowed'=>(int)($row['takeaway_allowed'] ?? 1),
         'preparation_station'=>normalize_preparation_station((string)($row['preparation_station'] ?? 'other')),
     ];

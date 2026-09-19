@@ -67,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = text_substr(trim((string)($_POST['description'] ?? '')), 0, 4000);
         $price = (int)str_replace([',','٬',' '], '', en_digits((string)($_POST['price'] ?? '0')));
         $preparationStation = normalize_preparation_station((string)($_POST['preparation_station'] ?? 'other'));
+        $sellableKind = require_sellable_kind($_POST['sellable_kind'] ?? ($item['sellable_kind'] ?? SOKNA_SELLABLE_MENU_ITEM));
         $suggested = (int)($_POST['suggested_item_id'] ?? 0);
         if ($suggested === $id) $suggested = 0;
         if ($categoryId < 1 || $name === '' || $price < 0) throw new RuntimeException('نام، دسته‌بندی و قیمت معتبر لازمه.');
@@ -145,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($inventoryEnabled && $active === 1) inventory_validate_recipe_components_locked($pdo,$normalizedRecipeRows);
         $params = [
             $itemCode !== '' ? $itemCode : null, $categoryId, $name, $description, $price, $image,
-            $available, $active, $featured, $staffOnly, $takeawayAllowed, $preparationStation,
+            $available, $active, $featured, $staffOnly, $sellableKind, $takeawayAllowed, $preparationStation,
             $scheduleStart,
             $scheduleEnd,
             $days ? implode(',', $days) : null, $dailyStart ?: null, $dailyEnd ?: null,
@@ -153,10 +154,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
         if ($id) {
             $params[] = $id;
-            $pdo->prepare('UPDATE items SET item_code=?,category_id=?,name=?,description=?,price=?,image_path=?,available=?,active=?,featured=?,staff_only=?,takeaway_allowed=?,preparation_station=?,schedule_start=?,schedule_end=?,schedule_days=?,daily_start=?,daily_end=?,suggested_item_id=?,sort_order=? WHERE id=?')->execute($params);
+            $pdo->prepare('UPDATE items SET item_code=?,category_id=?,name=?,description=?,price=?,image_path=?,available=?,active=?,featured=?,staff_only=?,sellable_kind=?,takeaway_allowed=?,preparation_station=?,schedule_start=?,schedule_end=?,schedule_days=?,daily_start=?,daily_end=?,suggested_item_id=?,sort_order=? WHERE id=?')->execute($params);
             $itemId = $id;
         } else {
-            $pdo->prepare('INSERT INTO items(item_code,category_id,name,description,price,image_path,available,active,featured,staff_only,takeaway_allowed,preparation_station,schedule_start,schedule_end,schedule_days,daily_start,daily_end,suggested_item_id,sort_order) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')->execute($params);
+            $pdo->prepare('INSERT INTO items(item_code,category_id,name,description,price,image_path,available,active,featured,staff_only,sellable_kind,takeaway_allowed,preparation_station,schedule_start,schedule_end,schedule_days,daily_start,daily_end,suggested_item_id,sort_order) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')->execute($params);
             $itemId = (int)$pdo->lastInsertId();
             if ($itemCode === '') $pdo->prepare('UPDATE items SET item_code=? WHERE id=?')->execute(['ITEM-' . $itemId, $itemId]);
         }
@@ -165,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tagStmt = $pdo->prepare('INSERT INTO item_tags(item_id,tag_id) VALUES(?,?)');
         foreach ($tagIds as $tagId) $tagStmt->execute([$itemId, $tagId]);
         if ($inventoryEnabled) inventory_save_recipe_locked($pdo, $itemId, $recipeRows, (int)(current_user()['id'] ?? 0));
-        $afterImportant=['name'=>$name,'price'=>$price,'available'=>$available,'active'=>$active,'featured'=>$featured,'staff_only'=>$staffOnly,'takeaway_allowed'=>$takeawayAllowed,'preparation_station'=>$preparationStation];
+        $afterImportant=['name'=>$name,'price'=>$price,'available'=>$available,'active'=>$active,'featured'=>$featured,'staff_only'=>$staffOnly,'sellable_kind'=>$sellableKind,'takeaway_allowed'=>$takeawayAllowed,'preparation_station'=>$preparationStation];
         $actorUserId=(int)(current_user()['id']??0);
         if($id>0){
             $importantChanges=menu_item_important_changes((array)$item,$afterImportant);
@@ -231,6 +232,7 @@ panel_subnav(['items'=>['items.php','مدیریت منو'],'order'=>['items.php?
 <div class="form-group"><label for="itemCategory">دسته‌بندی</label><select class="form-control" id="itemCategory" name="category_id" data-choice-mode="adaptive" data-choice-search="true" required><option value="">انتخاب</option><?php foreach($categories as $cat): ?><option value="<?= (int)$cat['id'] ?>" <?= (int)($item['category_id'] ?? 0) === (int)$cat['id'] ? 'selected' : '' ?>><?= e($cat['name']) ?></option><?php endforeach; ?></select></div>
 <fieldset class="form-group full item-menu-memberships"><legend>نمایش در منوها</legend><input type="hidden" name="menu_membership_present" value="1"><div class="check-grid" id="itemMenuMemberships"><?php foreach($menuOptions as $menu): $menuId=(int)$menu['id']; $allowed=in_array($menuId,$currentAllowedMenuIds,true); ?><label class="<?= $allowed?'':'is-disabled' ?>"><input type="checkbox" name="menu_ids[]" value="<?= $menuId ?>" <?= in_array($menuId,$selectedMenuIds,true)?'checked':'' ?> <?= $allowed?'':'disabled' ?>> <span><?= e((string)$menu['name']) ?></span><small class="muted"><?= e((string)$menu['status']) ?></small></label><?php endforeach; ?></div><small class="muted">دسته‌بندی تعیین می‌کند کدام منوها مجازند؛ خود آیتم می‌تواند در یک یا چند منوی مجاز نمایش داده شود.</small></fieldset>
 <div class="form-group"><label for="itemPrice">قیمت، تومان</label><input class="form-control" id="itemPrice" type="text" inputmode="numeric" enterkeyhint="done" name="price" value="<?= e(money_input_display_value((string)($item['price'] ?? 0))) ?>" data-money-input required></div>
+<div class="form-group"><label for="itemSellableKind">نوع مورد</label><select class="form-control" id="itemSellableKind" name="sellable_kind" data-choice-mode="compact"><?php foreach(sellable_kinds() as $kindKey=>$kindLabel): ?><option value="<?= e($kindKey) ?>" <?= normalize_sellable_kind((string)($item['sellable_kind'] ?? 'menu_item'))===$kindKey?'selected':'' ?>><?= e($kindLabel) ?></option><?php endforeach; ?></select><small class="muted">آیتم منو یا خدمت؛ رفتار از دسته‌بندی یا محل آماده‌سازی حدس زده نمی‌شود.</small></div>
 <div class="form-group"><label for="itemPreparationStation">محل آماده‌سازی</label><select class="form-control" id="itemPreparationStation" name="preparation_station" data-choice-mode="compact"><?php foreach(preparation_stations() as $stationKey=>$stationLabel): ?><option value="<?= e($stationKey) ?>" <?= normalize_preparation_station((string)($item['preparation_station'] ?? 'other')) === $stationKey ? 'selected' : '' ?>><?= e($stationLabel) ?></option><?php endforeach; ?></select><small class="muted">برای گروه‌بندی سفارش و اعلام شلوغی استفاده می‌شود.</small></div>
 <div class="form-group full"><label for="itemDescription">توضیحات</label><textarea class="form-control" id="itemDescription" name="description"><?= e($item['description'] ?? '') ?></textarea></div>
 <?= image_picker_html($item['image_path'] ?? null, 'تصویر آیتم', 'تصویر باید مربع ۱:۱ باشد؛ اندازه پیشنهادی ۱۲۰۰×۱۲۰۰ پیکسل است. تصاویر عمودی یا افقی ذخیره نمی‌شوند.', 'image/jpeg,image/png,image/webp', true, 'square') ?>

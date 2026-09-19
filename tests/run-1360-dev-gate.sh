@@ -35,6 +35,7 @@ php tests/phase3-guest-runtime-contract.php
 php tests/phase4-remote-read-contract.php
 php tests/phase5-deferred-boundary-contract.php
 php tests/phase6a-preparation-permissions-contract.php
+php tests/phase6b-sellable-kind-contract.php
 
 echo '== Supply / modular contracts =='
 python tests/v1360-supply-module-contract.py

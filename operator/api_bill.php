@@ -96,8 +96,8 @@ try {
         $insert->execute([$publicCode,$clientToken,(int)$item['table_id'],(int)$item['session_id'],$lineTotal,$userId,$userId,$businessOrderNumber,(string)$business['business_date'],(string)$business['shift_key'],(string)$business['shift_label'],(string)$business['cutoff']]);$orderId=(int)$pdo->lastInsertId();
         $station=normalize_preparation_station((string)($current['preparation_station']??'cold_bar'));
         $fulfillmentMode=normalize_fulfillment_mode((string)($item['fulfillment_mode']??'dine_in'));
-        $pdo->prepare('INSERT INTO order_items(order_id,item_id,item_name,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total) VALUES(?,?,?,?,?,?,?,?,?,?)')
-            ->execute([$orderId,(int)$current['id'],(string)$current['name'],$unitPrice,$addQuantity,$addQuantity,$item['item_note']?:null,$fulfillmentMode,$station,$lineTotal]);
+        $pdo->prepare('INSERT INTO order_items(order_id,item_id,item_name,sellable_kind_snapshot,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
+            ->execute([$orderId,(int)$current['id'],(string)$current['name'],normalize_sellable_kind($current['sellable_kind']??null),$unitPrice,$addQuantity,$addQuantity,$item['item_note']?:null,$fulfillmentMode,$station,$lineTotal]);
         $pdo->prepare("INSERT INTO order_status_history(order_id,from_status,to_status,actor_user_id) VALUES(?,NULL,'accounted',?)")->execute([$orderId,$userId]);
         if(preparation_station_requires_work($station)){
             print_enqueue_prep_order($pdo,$orderId,$userId);

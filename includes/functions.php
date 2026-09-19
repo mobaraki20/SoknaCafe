@@ -1032,7 +1032,7 @@ function order_catalog_items_locked(PDO $pdo, array $itemIds): array
     $placeholders = implode(',', array_fill(0, count($itemIds), '?'));
     $scheduleSql = item_schedule_sql('i');
     $menuMembershipSql = menu_catalog_orderable_membership_sql('i');
-    $stmt = $pdo->prepare("SELECT i.id,i.name,i.price,i.preparation_station,i.available,i.active,i.staff_only,i.takeaway_allowed,
+    $stmt = $pdo->prepare("SELECT i.id,i.name,i.price,i.preparation_station,i.sellable_kind,i.available,i.active,i.staff_only,i.takeaway_allowed,
         COALESCE(c.active,0) category_active,COALESCE(c.audience,'guest_staff') category_audience,
         ($scheduleSql) schedule_active,($menuMembershipSql) menu_active
         FROM items i LEFT JOIN categories c ON c.id=i.category_id

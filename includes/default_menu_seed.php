@@ -128,8 +128,8 @@ function sync_default_menu_seed(PDO $pdo, bool $forceImages = true, bool $retire
         }
 
         $selectItem = $pdo->prepare('SELECT id,image_path,available FROM items WHERE item_code=? LIMIT 1');
-        $insertItem = $pdo->prepare('INSERT INTO items(item_code,category_id,name,description,price,image_path,available,active,featured,staff_only,preparation_station,sort_order) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');
-        $updateItem = $pdo->prepare('UPDATE items SET category_id=?,name=?,description=?,price=?,image_path=?,active=?,featured=?,staff_only=?,preparation_station=?,sort_order=? WHERE id=?');
+        $insertItem = $pdo->prepare('INSERT INTO items(item_code,category_id,name,description,price,image_path,available,active,featured,staff_only,sellable_kind,preparation_station,sort_order) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)');
+        $updateItem = $pdo->prepare('UPDATE items SET category_id=?,name=?,description=?,price=?,image_path=?,active=?,featured=?,staff_only=?,sellable_kind=?,preparation_station=?,sort_order=? WHERE id=?');
         $itemMap = [];
         foreach ($seed['items'] as $item) {
             $code = trim((string)($item['item_code'] ?? ''));
@@ -144,14 +144,14 @@ function sync_default_menu_seed(PDO $pdo, bool $forceImages = true, bool $retire
                 $id = (int)$row['id'];
                 $updateItem->execute([
                     $categoryId,(string)$item['name'],(string)($item['description'] ?? ''),(int)$item['price'],$imagePath,
-                    (int)($item['active'] ?? 1),(int)($item['featured'] ?? 0),(int)($item['staff_only'] ?? 0),
+                    (int)($item['active'] ?? 1),(int)($item['featured'] ?? 0),(int)($item['staff_only'] ?? 0),normalize_sellable_kind($item['sellable_kind'] ?? null),
                     default_menu_station((string)($item['preparation_station'] ?? 'other')),(int)($item['sort_order'] ?? 0),$id,
                 ]);
                 $stats['items_updated']++;
             } else {
                 $insertItem->execute([
                     $code,$categoryId,(string)$item['name'],(string)($item['description'] ?? ''),(int)$item['price'],$item['image_path'] ?? null,
-                    (int)($item['available'] ?? 1),(int)($item['active'] ?? 1),(int)($item['featured'] ?? 0),(int)($item['staff_only'] ?? 0),
+                    (int)($item['available'] ?? 1),(int)($item['active'] ?? 1),(int)($item['featured'] ?? 0),(int)($item['staff_only'] ?? 0),normalize_sellable_kind($item['sellable_kind'] ?? null),
                     default_menu_station((string)($item['preparation_station'] ?? 'other')),(int)($item['sort_order'] ?? 0),
                 ]);
                 $id = (int)$pdo->lastInsertId();

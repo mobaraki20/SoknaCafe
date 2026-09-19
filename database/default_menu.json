@@ -2649,7 +2649,8 @@
         "main",
         "breakfast",
         "lunch"
-      ]
+      ],
+      "sellable_kind": "service_item"
     },
     {
       "item_code": "SERVICE-CAKE",
@@ -2669,7 +2670,8 @@
         "main",
         "breakfast",
         "lunch"
-      ]
+      ],
+      "sellable_kind": "service_item"
     }
   ],
   "retired_item_codes": [
