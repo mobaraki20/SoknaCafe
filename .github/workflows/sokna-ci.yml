@@ -56,7 +56,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, pdo_mysql, pdo_sqlite, openssl, sodium
+          extensions: mbstring, pdo_mysql, pdo_sqlite, openssl, sodium, fileinfo
           coverage: none
 
       - name: Setup Chromium for browser gates
@@ -90,7 +90,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, pdo_mysql, pdo_sqlite, openssl, sodium
+          extensions: mbstring, pdo_mysql, pdo_sqlite, openssl, sodium, fileinfo
           coverage: none
 
       - name: Tool versions
@@ -236,7 +236,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, pdo_mysql, openssl, sodium
+          extensions: mbstring, pdo_mysql, openssl, sodium, fileinfo
           coverage: none
       - name: Install MariaDB client
         shell: bash
