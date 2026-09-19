@@ -38,8 +38,34 @@ Read latest handoff:
 - No automatic takeaway packaging fee.
 - Historical committed order rows are not rewritten.
 
-## Active next work
+## Active in-progress work
 Phase 6C — Server-persistent Table Draft.
+
+Active branch:
+`phase/6c-table-draft`
+
+Active branch head:
+`756d805912351d6dd539f9922e9bd97144369b63`
+
+Branch position at this handoff:
+- 30 commits ahead of `main`
+- 0 behind
+
+Latest Phase 6C CI:
+`35426707212`
+
+Status:
+- Windows runtime/TLS: PASS
+- Public + Local MariaDB: PASS
+- Linux full regression: FAIL
+
+The Phase 6C boundary contract itself PASSes. The current first failing regression is:
+`tests/itemized-settlement-contract.py`
+
+Read the exact in-progress handoff before touching code:
+`docs/handoffs/PHASE6C_IN_PROGRESS_HANDOFF_FA.md`
+
+Do **not** recreate Phase 6C from main. Continue the existing branch.
 
 Frozen target:
 - exactly one active draft per table.
@@ -59,5 +85,7 @@ Frozen target:
 5. Read `docs/handoffs/PHASE6B_HANDOFF_FA.md`.
 6. Read R2 Implementation Plan/API/Schema/Risk contracts.
 7. Check latest GitHub Actions state.
-8. Create/use `phase/6c-table-draft` from current main.
-9. Update this file + Phase 6C handoff + Master source map if ownership changes in the same Phase 6C PR.
+8. Checkout existing `phase/6c-table-draft` at `756d805912351d6dd539f9922e9bd97144369b63`.
+9. Read `docs/handoffs/PHASE6C_IN_PROGRESS_HANDOFF_FA.md`.
+10. Resolve current Linux regression without recreating existing Table Draft work.
+11. Update this file + final Phase 6C handoff + Master source map in the same Phase 6C PR.
