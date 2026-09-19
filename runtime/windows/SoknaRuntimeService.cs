@@ -50,7 +50,7 @@ public sealed class SoknaRuntimeService : ServiceBase
 
     private static string Quote(string value)
     {
-        return """ + value.Replace(""", "\"") + """;
+        return "\"" + value.Replace("\"", "\\\"") + "\"";
     }
 
     private void Log(string message)
