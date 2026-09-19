@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = text_substr(trim((string)($_POST['description'] ?? '')), 0, 4000);
         $price = (int)str_replace([',','٬',' '], '', en_digits((string)($_POST['price'] ?? '0')));
         $preparationStation = normalize_preparation_station((string)($_POST['preparation_station'] ?? 'other'));
-        $sellableKind = normalize_sellable_kind($_POST['sellable_kind'] ?? ($item['sellable_kind'] ?? null));
+        $sellableKind = require_sellable_kind($_POST['sellable_kind'] ?? ($item['sellable_kind'] ?? SOKNA_SELLABLE_MENU_ITEM));
         $suggested = (int)($_POST['suggested_item_id'] ?? 0);
         if ($suggested === $id) $suggested = 0;
         if ($categoryId < 1 || $name === '' || $price < 0) throw new RuntimeException('نام، دسته‌بندی و قیمت معتبر لازمه.');
