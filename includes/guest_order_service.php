@@ -116,7 +116,7 @@ function guest_order_commit_tx(PDO $pdo, array $data): array
         $mode=normalize_fulfillment_mode((string)($line['fulfillment_mode']??'dine_in'));
         if(!order_catalog_item_allows_fulfillment($item,$mode)) throw new GuestOrderException('takeaway_not_allowed','«'.(string)$item['name'].'» فقط داخل کافه قابل سرو است.',409,['item_id'=>(int)$item['id'],'item_name'=>(string)$item['name']]);
         $unit=(int)$item['price'];$lineTotal=$unit*(int)$line['quantity'];$total+=$lineTotal;
-        $orderItems[]=['item_id'=>(int)$item['id'],'item_name'=>(string)$item['name'],'unit_price'=>$unit,'quantity'=>(int)$line['quantity'],'item_note'=>(string)$line['note'],'fulfillment_mode'=>$mode,'line_total'=>$lineTotal,'station'=>normalize_preparation_station((string)($item['preparation_station']??'cold_bar'))];
+        $orderItems[]=['item_id'=>(int)$item['id'],'item_name'=>(string)$item['name'],'unit_price'=>$unit,'quantity'=>(int)$line['quantity'],'item_note'=>(string)$line['note'],'fulfillment_mode'=>$mode,'line_total'=>$lineTotal,'station'=>normalize_preparation_station((string)($item['preparation_station']??'cold_bar')),'sellable_kind'=>normalize_sellable_kind($item['sellable_kind']??null)];
     }
 
     $publicCode=strtoupper(bin2hex(random_bytes(8)));$business=business_assignment();
@@ -125,8 +125,8 @@ function guest_order_commit_tx(PDO $pdo, array $data): array
     $insert->execute([$publicCode,$payload['client_token'],$payload['device_token']!==''?$payload['device_token']:null,$tableId,$sessionId,$orderStatus,$payload['customer_note'],$total,$number,(string)$business['business_date'],(string)$business['shift_key'],(string)$business['shift_label'],(string)$business['cutoff']]);
     $orderId=(int)$pdo->lastInsertId();
 
-    $lineStmt=$pdo->prepare('INSERT INTO order_items(order_id,item_id,item_name,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total) VALUES(?,?,?,?,?,?,?,?,?,?)');
-    foreach($orderItems as $line)$lineStmt->execute([$orderId,$line['item_id'],$line['item_name'],$line['unit_price'],$line['quantity'],$line['quantity'],$line['item_note'],$line['fulfillment_mode'],$line['station'],$line['line_total']]);
+    $lineStmt=$pdo->prepare('INSERT INTO order_items(order_id,item_id,item_name,sellable_kind_snapshot,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total) VALUES(?,?,?,?,?,?,?,?,?,?,?)');
+    foreach($orderItems as $line)$lineStmt->execute([$orderId,$line['item_id'],$line['item_name'],$line['sellable_kind'],$line['unit_price'],$line['quantity'],$line['quantity'],$line['item_note'],$line['fulfillment_mode'],$line['station'],$line['line_total']]);
     $pdo->prepare('INSERT INTO order_status_history(order_id,from_status,to_status,actor_user_id) VALUES(?,NULL,?,NULL)')->execute([$orderId,$orderStatus]);
 
     $created=['id'=>$orderId,'public_code'=>$publicCode,'client_token'=>$payload['client_token'],'table_id'=>$tableId,'status'=>$orderStatus,'created_at'=>date('Y-m-d H:i:s')];
