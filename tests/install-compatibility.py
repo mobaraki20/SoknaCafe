@@ -25,7 +25,7 @@ assert "'sodium'=>'Sodium'" in setup and "'fileinfo'=>'Fileinfo'" in setup
 assert 'sokna_setup_assert_empty_database' in setup
 assert 'sokna_setup_probe_privileges' in setup
 assert 'sokna_setup_drop_created_tables' in setup
-assert "MySQL 5.7.8 یا MariaDB 10.2" in setup
+assert "'10.2.0'" in setup and "'5.7.8'" in setup and 'sokna_setup_database_engine_info' in setup
 assert "live_table_guard,continued_from_session_id" in functions
 assert "status='closed',live_table_guard=NULL" in functions
 assert "active_table_guard,business_date,business_shift_key,business_shift_label,business_cutoff_snapshot) VALUES" in waiter_service
