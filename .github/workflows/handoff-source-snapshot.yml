@@ -1,0 +1,35 @@
+name: Handoff Source Snapshot
+
+on:
+  push:
+    branches:
+      - handoff/package-dev31
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Build source snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="$(git rev-parse HEAD)"
+          mkdir -p handoff-artifact
+          git archive --format=zip --output="handoff-artifact/SoknaCafe-${SHA}-source.zip" HEAD
+          sha256sum "handoff-artifact/SoknaCafe-${SHA}-source.zip" > "handoff-artifact/SoknaCafe-${SHA}-source.zip.sha256"
+          printf '%s\n' "$SHA" > handoff-artifact/COMMIT_SHA.txt
+      - name: Upload handoff source artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sokna-handoff-source-dev31
+          path: handoff-artifact/
+          if-no-files-found: error
+          retention-days: 7
