@@ -13,8 +13,9 @@ $pdo=db();
 
 if($_SERVER['REQUEST_METHOD']==='GET'){
     $tableId=(int)($_GET['table_id']??0);
+    $draftId=(int)($_GET['draft_id']??0);
     try{
-        json_response(table_draft_get($pdo,$tableId,$user));
+        json_response($draftId>0?table_draft_get_by_id($pdo,$draftId,$user):table_draft_get($pdo,$tableId,$user));
     }catch(TableDraftException $e){
         json_response(array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details),$e->httpStatus);
     }catch(Throwable $e){
