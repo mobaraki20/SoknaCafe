@@ -76,7 +76,7 @@ function sokna_relay_dispatch_registry(): array
                 return table_draft_get($pdo,(int)($payload['table_id']??0),$actor);
             } catch (TableDraftException $e) {
                 throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
-            } catch (RuntimeException $e) {
+            } catch (SoknaRelayActorException $e) {
                 throw new SoknaRelayBusinessRejection('actor_invalid',['success'=>false,'code'=>'actor_invalid','message'=>$e->getMessage()]);
             }
         },
@@ -88,7 +88,7 @@ function sokna_relay_dispatch_registry(): array
                 return table_draft_save_tx($pdo,$payload,$actor);
             } catch (TableDraftException $e) {
                 throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
-            } catch (RuntimeException $e) {
+            } catch (SoknaRelayActorException $e) {
                 throw new SoknaRelayBusinessRejection('actor_invalid',['success'=>false,'code'=>'actor_invalid','message'=>$e->getMessage()]);
             }
         },
@@ -98,7 +98,7 @@ function sokna_relay_dispatch_registry(): array
                 return table_draft_save_tx($pdo,is_array($envelope['payload']??null)?$envelope['payload']:[],$actor);
             } catch (TableDraftException $e) {
                 throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
-            } catch (RuntimeException $e) {
+            } catch (SoknaRelayActorException $e) {
                 throw new SoknaRelayBusinessRejection('actor_invalid',['success'=>false,'code'=>'actor_invalid','message'=>$e->getMessage()]);
             }
         },
@@ -108,7 +108,7 @@ function sokna_relay_dispatch_registry(): array
                 return table_draft_cancel_tx($pdo,is_array($envelope['payload']??null)?$envelope['payload']:[],$actor);
             } catch (TableDraftException $e) {
                 throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
-            } catch (RuntimeException $e) {
+            } catch (SoknaRelayActorException $e) {
                 throw new SoknaRelayBusinessRejection('actor_invalid',['success'=>false,'code'=>'actor_invalid','message'=>$e->getMessage()]);
             }
         },
@@ -120,7 +120,7 @@ function sokna_relay_dispatch_registry(): array
                 return $result;
             } catch (TableDraftException $e) {
                 throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
-            } catch (RuntimeException $e) {
+            } catch (SoknaRelayActorException $e) {
                 throw new SoknaRelayBusinessRejection('actor_invalid',['success'=>false,'code'=>'actor_invalid','message'=>$e->getMessage()]);
             }
         },
