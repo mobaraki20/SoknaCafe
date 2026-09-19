@@ -1,4 +1,5 @@
 <?php
+// Final promotion anchor: dev.32 — exact branch head must pass all CI gates before merge.
 declare(strict_types=1);
 $root=dirname(__DIR__);
 $owner=(string)file_get_contents($root.'/includes/preparation_permissions.php');
