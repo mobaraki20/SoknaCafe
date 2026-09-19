@@ -175,7 +175,7 @@ jobs:
           ./runtime/windows/build-service-host.ps1 -OutputPath (Join-Path $PWD 'runtime/windows/bin/SoknaRuntimeService.exe')
 
       - name: Windows setup repair and diagnostics runtime
-        shell: pwsh
+        shell: powershell
         run: |
           $openssl = (Get-Command openssl -ErrorAction SilentlyContinue).Source
           if (-not $openssl) { $openssl = 'C:\Program Files\Git\usr\bin\openssl.exe' }

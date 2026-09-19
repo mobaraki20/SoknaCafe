@@ -58,6 +58,8 @@ function Invoke-SoknaProcess {
     $info.CreateNoWindow = $true
     $info.RedirectStandardOutput = $true
     $info.RedirectStandardError = $true
+    $info.StandardOutputEncoding = New-Object Text.UTF8Encoding($false)
+    $info.StandardErrorEncoding = New-Object Text.UTF8Encoding($false)
     $process = New-Object Diagnostics.Process
     $process.StartInfo = $info
     try {

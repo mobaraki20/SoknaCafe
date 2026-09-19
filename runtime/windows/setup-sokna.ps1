@@ -15,6 +15,7 @@
     [switch]$SkipService
 )
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = New-Object Text.UTF8Encoding($false)
 Import-Module (Join-Path $PSScriptRoot 'setup-support.psm1') -DisableNameChecking -Force
 $ServiceName = 'SoknaRuntime'
 $sessionId = [guid]::NewGuid().ToString('N')
