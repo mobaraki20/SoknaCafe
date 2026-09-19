@@ -339,7 +339,7 @@
     if (state.draftSavePromise) await state.draftSavePromise;
     const table = selectedTable();
     const tableId = Number(table?.id || els.tableInput.value || 0);
-    if (!tableId || state.submitting || state.uncertain) return null;
+    if (!tableId || (state.submitting && !options.allowSubmitting) || state.uncertain) return null;
     const items = requestLines();
     const note = String(els.note?.value || '').trim();
     if (!items.length && !note && state.serverDraftId < 1) { renderDraftStatus(); return null; }
@@ -1190,14 +1190,14 @@
       if (recovery?.kind === 'draft_save') {
         state.uncertain = false;
         await restoreDraft(table.id);
-        await flushDraftSave({force:true});
+        await flushDraftSave({force:true,allowSubmitting:true});
         recovery = readUncertain(table.id);
       }
 
       let draftId = Number(recovery?.kind === 'draft_finalize' ? recovery.draftId : state.serverDraftId || 0);
       let draftVersion = Number(recovery?.kind === 'draft_finalize' ? recovery.draftVersion : state.serverDraftVersion || 0);
       if (!(recovery?.kind === 'draft_finalize')) {
-        await flushDraftSave({force:true});
+        await flushDraftSave({force:true,allowSubmitting:true});
         draftId = Number(state.serverDraftId || 0);
         draftVersion = Number(state.serverDraftVersion || 0);
       }
