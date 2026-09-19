@@ -4,8 +4,11 @@ require dirname(__DIR__) . '/bootstrap.php';
 require_any_capability(['preparation','shift_supervision']);
 require dirname(__DIR__) . '/includes/panel_layout.php';
 $user=current_user();
-$assignedAreas=user_preparation_areas((int)$user['id']);
-$canPrepare=!is_admin() && user_has_capability('preparation',$user) && !empty($assignedAreas);
+$preparationAccess=preparation_access_context($user);
+$assignedAreas=$preparationAccess['assigned_areas'];
+$visibleAreas=$preparationAccess['visible_areas'];
+$actionableAreas=$preparationAccess['actionable_areas'];
+$canPrepare=(bool)$preparationAccess['can_mutate'];
 $monitorOnly=!$canPrepare;
 panel_header('آماده‌سازی','waiter');
 ?>
