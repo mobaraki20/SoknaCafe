@@ -16,6 +16,6 @@
 - `php runtime/sokna-runtime.php`
 - `php runtime/sokna-runtime.php --once`
 
-Windows Service host و packaging نهایی در Installer Phase 8 به این entrypoint متصل می‌شود. Phase 1 قرارداد process/health/logging را قفل می‌کند؛ نصب سرویس ناقص یا جعلی با `sc.exe` روی `php.exe` مجاز نیست.
+Phase 8B Windows setup اکنون `runtime/windows/SoknaRuntimeService.cs` را به‌عنوان ServiceBase host واقعی به این entrypoint متصل می‌کند. SCM هرگز مستقیماً `php.exe` را به‌عنوان سرویس ثبت نمی‌کند.
 
-TLS محلی: `runtime/windows/provision-local-https.ps1` CA و certificate محلی را برای `sokna.local` می‌سازد و CA را در trust store سیستم نصب می‌کند. Apache template فقط از مسیر data/secrets استفاده می‌کند. Setup Phase 8 مسئول wiring و renewal/takeover خواهد بود.
+TLS محلی: `runtime/windows/provision-local-https.ps1` CA و certificate محلی را برای `sokna.local` می‌سازد و CA را در trust store سیستم نصب می‌کند. Apache template فقط از مسیر data/secrets استفاده می‌کند. Phase 8B wiring اولیه را از طریق `runtime/windows/setup-sokna.ps1` انجام می‌دهد؛ takeover هویت/Public در Phase 8C باقی می‌ماند.
