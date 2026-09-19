@@ -112,16 +112,14 @@ try {
         [PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]
     );
 
+    // Exercise the full production schema but keep fixture rows intentionally tiny.
+    // The recovery contract is about whole-schema dump/restore, identity and health;
+    // default catalog seeding is already covered by the setup-owner runtime tests.
     sokna_setup_apply_schema($source, $repo);
-    $source->beginTransaction();
-    sokna_setup_seed_new($source, [
-        'app_url'=>'https://old.example.test',
-        'cafe_name'=>'Recovered Cafe',
-        'admin_user'=>'admin',
-        'admin_password'=>'recover-pass-123',
-        'table_count'=>3,
-    ]);
-    $source->commit();
+    $source->prepare('INSERT INTO settings(setting_key,setting_value) VALUES(?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)')
+        ->execute(['cafe_name','Recovered Cafe']);
+    $source->prepare('INSERT IGNORE INTO schema_migrations(version) VALUES(?)')
+        ->execute(['1.30.1-rc2-baseline']);
 
     $databaseFile = $tmp . '/storage/tmp/source.sql';
     $dump = maintenance_database_dump_file($source, $databaseFile);
