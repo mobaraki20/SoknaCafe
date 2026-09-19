@@ -17,6 +17,7 @@ for path in ('api/create_order.php','staff/api_quick_order.php','operator/api_bi
     text=read(path)
     if path=='api/create_order.php': text += '\n' + read('includes/guest_order_service.php')
     if path=='api/waiter_call.php': text += '\n' + read('includes/waiter_call_service.php')
+    if path=='staff/api_quick_order.php': text += '\n' + read('includes/staff_order_service.php')
     assert 'business_date' in text and 'business_shift_key' in text and "['cutoff']" in text, path
 
 for path in ('admin/index.php','waiter/api_feed.php','includes/invoices_page.php','admin/analytics.php','admin/operations_report.php'):
