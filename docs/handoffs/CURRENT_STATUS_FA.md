@@ -3,6 +3,7 @@
 Updated: 2026-09-19
 Repository: mobaraki20/SoknaCafe
 Current completed release checkpoint: 1.36.4-dev.37
+Active validation target: 1.36.4-dev.38 / Phase 8A
 
 ## Completed architecture migration
 - Phase 0 — Source Audit.
@@ -41,8 +42,22 @@ docs/handoffs/PHASE7_HANDOFF_FA.md
 - legacy Center inbound directory remains compatibility fallback.
 - Cafe remains user authority; Center remains HR/payroll authority; Public is not personnel authority.
 
-## Active next work
-Phase 8 — Setup / Recovery / Backup / Takeover.
+## Active work
+Phase 8A — Installation Identity + Recovery Set Metadata.
+
+Branch: phase/8a-recovery-identity
+
+Current scope:
+- create a separate non-clonable installation identity under private data root.
+- enrich mature Backup v3 manifest with safe recovery metadata only.
+- preserve app.key portability for encrypted integration secrets while never archiving the new installation private key.
+
+Design: docs/architecture-migration-r2/PHASE8_DESIGN_NOTES_FA.md
+Checkpoint: docs/architecture-migration-r2/PHASE8A_CHECKPOINT_FA.md
+
+After 8A post-merge PASS, continue Phase 8B Windows new/recover setup orchestration.
+
+## Phase 8 frozen scope
 
 Frozen Phase 8 scope:
 - Windows install new/recover flows.
