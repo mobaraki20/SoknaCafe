@@ -19,6 +19,13 @@ function normalize_sellable_kind(mixed $value): string
     return $kind;
 }
 
+function require_sellable_kind(mixed $value): string
+{
+    $kind=trim((string)$value);
+    if(!array_key_exists($kind,sellable_kinds()))throw new InvalidArgumentException('نوع مورد معتبر نیست.');
+    return $kind;
+}
+
 function sellable_kind_label(mixed $value): string
 {
     $kind=normalize_sellable_kind($value);
