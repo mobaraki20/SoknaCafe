@@ -178,3 +178,10 @@
 
 .quick-order-menu-switcher{width:min(calc(100% - 20px),1540px);margin:0 auto 8px;display:flex;gap:6px;padding:5px;border:1px solid var(--line,#e5dfd6);border-radius:13px;background:#fff;overflow-x:auto;scrollbar-width:none}.quick-order-menu-switcher::-webkit-scrollbar{display:none}.quick-order-menu-switcher.hidden{display:none!important}.quick-order-menu-switcher button{min-height:38px;min-width:max-content;padding:7px 15px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--muted,#6f746f);font:inherit;font-size:.72rem;font-weight:850;cursor:pointer}.quick-order-menu-switcher button.is-active{border-color:color-mix(in srgb,var(--primary,#365b4c) 30%,var(--line,#e5dfd6));background:color-mix(in srgb,var(--primary,#365b4c) 8%,#fff);color:var(--primary,#365b4c)}.quick-order-menu-context{min-height:38px;display:flex;align-items:center;gap:5px;padding:6px 10px;color:var(--muted,#6f746f);font-size:.72rem}.quick-order-menu-context strong{color:var(--primary,#365b4c);font-size:.76rem}
 @media(max-width:1023px){.quick-order-menu-switcher{position:sticky;top:50px;z-index:24;width:100%;margin:6px 0 4px;border-radius:11px}.quick-order-menu-switcher button{min-height:42px;flex:1}}
+
+/* Phase 6C — shared server Table Draft status. */
+.quick-order-draft-status{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding:10px 12px;border:1px solid var(--line,#d8d2c8);border-radius:14px;background:var(--surface,#fff)}
+.quick-order-draft-status>span{display:grid;gap:2px;min-width:0}.quick-order-draft-status strong{font-size:.9rem}.quick-order-draft-status small{color:var(--text-muted,#6b655f);line-height:1.6}
+.quick-order-draft-status.is-saving{border-color:color-mix(in srgb,var(--primary,#365b4c) 35%,var(--line,#d8d2c8))}
+.quick-order-draft-status.is-conflict{border-color:#d8a13b;background:#fff8e7}
+@media (max-width:640px),(pointer:coarse){.quick-order-draft-status .btn{min-height:44px}}

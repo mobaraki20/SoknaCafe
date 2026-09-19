@@ -67,19 +67,19 @@ function sokna_module_registry(): array
             'reads_from' => ['finance','inventory','printing','notifications'],
             'owner' => 'api/create_order.php + staff/api_quick_order.php + operator/ + waiter/',
             'owns_tables' => [
-                'cafe_tables','table_sessions','table_session_clients','orders','order_business_sequences','order_items','order_status_history',
+                'cafe_tables','table_sessions','table_session_clients','table_drafts','table_draft_items','orders','order_business_sequences','order_items','order_status_history',
                 'waiter_calls','order_preparation_claims','preparation_adjustments','order_item_adjustments',
                 'user_preparation_areas',
             ],
             'entrypoints' => [
                 'api/create_order.php','api/guest_orders.php','api/order_status.php','api/table_context.php','api/waiter_call.php',
-                'staff/quick-order.php','staff/api_quick_order.php','operator/index.php','operator/api_orders.php','operator/api_status.php',
+                'staff/quick-order.php','staff/api_quick_order.php','staff/api_table_draft.php','operator/index.php','operator/api_orders.php','operator/api_status.php',
                 'operator/api_table_session.php','operator/api_waiter.php','operator/api_controls.php','waiter/index.php','waiter/api_feed.php','waiter/api_action.php',
                 'admin/tables.php','admin/qr.php',
             ],
             'capabilities' => ['orders_floor','preparation','shift_supervision'],
             'background_jobs' => [],
-            'public_contracts' => ['order/session state machine','preparation adjustment contract','staff quick-order idempotency'],
+            'public_contracts' => ['order/session state machine','table draft lifecycle/finalize contract','preparation adjustment contract','staff quick-order idempotency'],
         ],
         'finance' => [
             'label' => 'مالی و تسویه',

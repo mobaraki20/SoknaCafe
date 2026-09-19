@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__.'/relay_protocol.php';
 require_once __DIR__.'/relay_client.php';
 require_once __DIR__.'/expenses.php';
+require_once __DIR__.'/relay_actor.php';
 
 final class SoknaDeferredNeedsReview extends RuntimeException
 {
@@ -22,17 +23,12 @@ function sokna_deferred_financial_kinds(): array
 
 function sokna_deferred_actor_id(string $projectionId): int
 {
-    return preg_match('/^user:(\d+)$/',$projectionId,$m) ? (int)$m[1] : 0;
+    return sokna_relay_actor_id($projectionId);
 }
 
 function sokna_deferred_actor_locked(PDO $pdo,string $projectionId): array
 {
-    $id=sokna_deferred_actor_id($projectionId);
-    if($id<1)throw new RuntimeException('هویت کاربر راه‌دور معتبر نیست.');
-    $stmt=$pdo->prepare('SELECT id,username,display_name,role,active FROM users WHERE id=? FOR UPDATE');
-    $stmt->execute([$id]);$user=$stmt->fetch();
-    if(!$user||(int)$user['active']!==1)throw new RuntimeException('حساب کاربری دیگر فعال نیست.');
-    return $user;
+    return sokna_relay_actor_locked($pdo,$projectionId);
 }
 
 function sokna_deferred_assert_permission(array $user,string $kind,array $payload): void

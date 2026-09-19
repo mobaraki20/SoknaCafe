@@ -12,6 +12,8 @@ op=read('assets/js/operator.js')
 opmarkup=read('includes/operator_page.php')
 status=read('operator/api_status.php')
 qapi=read('staff/api_quick_order.php')
+qservice=read('includes/staff_order_service.php')
+qowner=qapi + '\n' + qservice
 qjs=read('assets/js/staff-quick-order.js')
 inv=read('includes/inventory.php')
 invhome=read('admin/inventory.php')
@@ -23,7 +25,7 @@ helptext=read('includes/help_topics.php')
 
 # One catalog-validation owner across order entry points.
 assert 'function order_catalog_items_locked' in func and 'function order_catalog_item_is_orderable' in func
-for body in [create,qapi,bill,guest]:
+for body in [create,qowner,bill,guest]:
     assert 'order_catalog_items_locked' in body
 
 # Guest mutable order: one full replacement, safe retry/stale guard, reduction allowed under pause.
@@ -65,9 +67,9 @@ assert "o.status IN('accounted','completed')" in waitfeed
 assert "in_array((string)$order['status'],['accounted','completed'],true)" in waitaction
 
 # Quick Order binds submit/retry to the exact table-session observed on screen.
-assert '$expectedSessionId' in qapi and 'expected_session_id' in qapi
-assert 'حساب این میز تغییر کرده است؛ صفحه را تازه کنید.' in qapi
-assert 'order_catalog_items_locked' in qapi
+assert '$expectedSessionId' in qowner and 'expected_session_id' in qowner
+assert 'حساب این میز تغییر کرده است؛ صفحه را تازه کنید.' in qowner
+assert 'order_catalog_items_locked' in qowner
 assert 'expectedSessionId' in qjs and 'expected_session_id' in qjs
 assert 'sokna.quick-order.uncertain.v2.' in qjs
 
@@ -81,7 +83,7 @@ assert "'cancelled' => []" in func
 # Inventory outbox stays durable and FIFO per order; request paths only schedule bounded after-response materialization.
 assert "p.order_id=e.order_id AND p.id<e.id AND p.status<>'done'" in inv
 assert 'function inventory_process_order_events_for_order' in inv
-for body in [qapi,bill,status]:
+for body in [qowner,bill,status]:
     assert 'inventory_register_after_response_order' in body
     assert 'inventory_process_order_events_for_order' not in body
 assert 'inventory_process_pending_order_events(10)' in invhome
@@ -94,9 +96,9 @@ assert "in_array((string)$order['status'],['accounted','completed'],true)" in pu
 # Required preparation print intent is part of the order transaction; only secondary delivery/push remains best-effort.
 assert 'function order_side_effect_best_effort_tx' in func
 assert 'print_enqueue_prep_order($pdo' in func and "order_side_effect_best_effort_tx($pdo, 'print preparation order'" not in func
-assert 'print_enqueue_prep_order($pdo' in qapi
+assert 'print_enqueue_prep_order($pdo' in qowner
 assert 'print_enqueue_prep_' in bill
-assert 'order_side_effect_best_effort_tx' in create and 'order_side_effect_best_effort_tx' in qapi and 'order_side_effect_best_effort_tx' in bill and 'order_side_effect_best_effort_tx' in status
+assert 'order_side_effect_best_effort_tx' in create and 'order_side_effect_best_effort_tx' in qowner and 'order_side_effect_best_effort_tx' in bill and 'order_side_effect_best_effort_tx' in status
 
 # Help mirrors the approved small-cafe contract.
 for needle in ['مصرف مواد تعریف‌شده در زمان تأیید سفارش', 'آماده شده بود یا نه', 'اصلاحیه باز آماده‌سازی تسویه را متوقف نمی‌کند']:

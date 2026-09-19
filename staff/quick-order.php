@@ -63,6 +63,7 @@ $successReturn = $base . '/operator/index.php?work=tables#tables';
     <section class="quick-order-workspace hidden" id="quickOrderWorkspace">
       <input id="quickOrderTable" type="hidden" value="">
       <?php if($mode === 'late_accounting'): ?><div class="quick-order-late-accounting-note" role="status"><strong>فقط برای قلم تحویل‌شده</strong><span>این ثبت فقط حساب و موجودی را اصلاح می‌کند و دوباره به بار یا آشپزخانه ارسال نمی‌شود.</span></div><?php endif; ?>
+      <?php if($mode === 'normal'): ?><div class="quick-order-draft-status hidden" id="quickOrderDraftStatus" role="status" aria-live="polite"><span><strong>پیش‌نویس مشترک</strong><small id="quickOrderDraftStatusText">در حال بررسی…</small></span><button class="btn btn-light btn-sm" id="quickOrderDraftCancel" type="button">لغو پیش‌نویس</button></div><?php endif; ?>
       <button class="quick-order-mobile-pending-banner hidden" id="quickOrderMobilePendingBanner" type="button"><span><strong id="quickOrderMobilePendingCount">سفارش مهمان منتظر است</strong><small>پیش از ثبت سفارش جدید بررسی شود.</small></span><b>بررسی سفارش</b></button>
       <div class="quick-order-uncertain hidden" id="quickOrderUncertainNotice" role="status" aria-live="polite"><strong>نتیجه ثبت قبلی هنوز مشخص نیست.</strong><span>سبد تا تعیین نتیجه ثابت می‌ماند؛ «بررسی و تلاش دوباره» همان درخواست را با همان شناسه پیگیری می‌کند.</span></div>
       <nav class="quick-order-menu-switcher hidden" id="quickOrderMenus" aria-label="انتخاب منوی فروش"></nav>
@@ -117,6 +118,7 @@ $successReturn = $base . '/operator/index.php?work=tables#tables';
 <div id="panelToast" class="panel-toast hidden" role="status" aria-live="polite"></div>
 <script>
 window.STAFF_QUICK_ORDER_API=<?= json_script(asset('staff/api_quick_order.php')) ?>;
+window.STAFF_TABLE_DRAFT_API=<?= json_script(asset('staff/api_table_draft.php')) ?>;
 window.OPERATOR_STATUS_API=<?= json_script(asset('operator/api_status.php')) ?>;
 window.SOKNA_ICON_SPRITE=<?= json_script(asset('assets/icons/ui-sprite.svg')) ?>;
 window.QUICK_ORDER_USER_KEY=<?= json_script((string)($user['id'] ?? '0')) ?>;

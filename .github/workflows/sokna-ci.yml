@@ -140,6 +140,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Phase 6A preparation contract failed' }
           php tests/phase6b-sellable-kind-contract.php
           if ($LASTEXITCODE -ne 0) { throw 'Phase 6B sellable kind contract failed' }
+          php tests/phase6c-table-draft-contract.php
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 6C Table Draft contract failed' }
           python tests/v1360-ui-language-contract.py
           if ($LASTEXITCODE -ne 0) { throw 'UI language contract failed' }
           python tests/v1360-module-ownership-contract.py
@@ -288,6 +290,8 @@ jobs:
           php tests/phase5-deferred-local.php
           php tests/phase6a-preparation-local.php
           php tests/phase6b-sellable-kind-local.php
+          php tests/phase6c-table-draft-http.php
+          php tests/phase6c-table-draft-local.php
       - name: Public edge log on failure
         if: failure()
         shell: bash

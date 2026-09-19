@@ -4,6 +4,10 @@ $session=public_session(); $body=public_json_body(); $body['actor_projection_id'
 $valid=sokna_relay_validate_realtime_envelope($body); if(!$valid['ok']) public_json(['ok'=>false,'error'=>'invalid_envelope','fields'=>$valid['errors']],400);
 if(in_array((string)$body['kind'],['guest_order.submit','waiter_call.create'],true) && !(int)$session['order_intake_enabled']) public_json(['ok'=>false,'error'=>'order_intake_disabled'],409);
 $cap=public_capability_for_kind((string)$body['kind']); if(!in_array($cap,$session['capabilities'],true) && !in_array('*',$session['capabilities'],true)) public_json(['ok'=>false,'error'=>'forbidden'],403);
+if(str_starts_with((string)$body['kind'],'table_draft.')){
+  $connectivity=public_remote_connectivity((string)$session['installation_id']);
+  if(empty($connectivity['local_fresh'])) public_json(['ok'=>false,'error'=>'local_unavailable','connectivity'=>$connectivity],503);
+}
 $pdo=public_db(); $installationId=(string)$session['installation_id']; $hash=sokna_relay_request_hash($body); $json=sokna_relay_canonical_json($body); $expires=date('Y-m-d H:i:s',(int)$valid['expires_ts']);
 $pdo->beginTransaction(); try{
   $q=$pdo->prepare('SELECT request_hash,state,result_json,error_code FROM realtime_requests WHERE installation_id=? AND request_id=? FOR UPDATE'); $q->execute([$installationId,(string)$body['request_id']]); $existing=$q->fetch();

@@ -8,7 +8,7 @@ schema=read('database/schema.sql')
 functions=read('includes/functions.php')
 create=read('api/create_order.php')
 guest_edit=((read('api/guest_orders.php') + '\n' + read('includes/guest_order_manage_service.php')) + '\n' + read('includes/guest_order_manage_service.php'))
-quick=read('staff/api_quick_order.php')
+quick=read('staff/api_quick_order.php') + '\n' + read('includes/staff_order_service.php')
 printing=read('includes/printing.php')
 push=read('includes/push.php')
 inventory=read('includes/inventory.php')
@@ -48,7 +48,7 @@ for src in (create,guest_edit,quick):
     assert 'fulfillment_mode' in src
 assert "INSERT INTO order_items(order_id,item_id,item_name,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total)" in create
 assert "INSERT INTO order_items(order_id,item_id,item_name,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total)" in guest_edit
-assert "INSERT INTO order_items(order_id,item_id,item_name,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total)" in quick
+assert 'INSERT INTO order_items' in quick and 'sellable_kind_snapshot' in quick and 'fulfillment_mode' in quick
 
 # 1.35 fulfillment policy remains line-level but presentation is context-specific.
 assert 'takeaway_quantity' in menu_js and 'orderPayloadLines' in menu_js

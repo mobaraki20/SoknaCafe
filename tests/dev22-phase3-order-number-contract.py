@@ -2,7 +2,7 @@
 from pathlib import Path
 R=Path(__file__).resolve().parents[1]
 read=lambda p:(R/p).read_text(encoding='utf-8')
-schema=read('database/schema.sql'); funcs=read('includes/functions.php'); guest=read('api/create_order.php'); quick=read('staff/api_quick_order.php'); bill=read('operator/api_bill.php'); mig=read('release/1.36.4-dev.22-order-business-number.sql'); modules=read('includes/modules.php')
+schema=read('database/schema.sql'); funcs=read('includes/functions.php'); guest=read('api/create_order.php'); quick=read('staff/api_quick_order.php') + '\n' + read('includes/staff_order_service.php'); bill=read('operator/api_bill.php'); mig=read('release/1.36.4-dev.22-order-business-number.sql'); modules=read('includes/modules.php')
 assert 'business_order_number INT UNSIGNED NOT NULL' in schema
 assert 'UNIQUE KEY uq_orders_business_number (business_date,business_order_number)' in schema
 assert 'CREATE TABLE IF NOT EXISTS order_business_sequences' in schema

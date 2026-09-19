@@ -3,7 +3,7 @@ from pathlib import Path
 import json, re, hashlib
 ROOT=Path(__file__).resolve().parents[1]
 read=lambda p:(ROOT/p).read_text(encoding='utf-8')
-page=read('staff/quick-order.php'); js=read('assets/js/staff-quick-order.js'); css=read('assets/css/quick-order.css'); layout=read('includes/panel_layout.php'); api=read('staff/api_quick_order.php'); status=read('operator/api_status.php'); functions=read('includes/functions.php')
+page=read('staff/quick-order.php'); js=read('assets/js/staff-quick-order.js'); css=read('assets/css/quick-order.css'); layout=read('includes/panel_layout.php'); api=read('staff/api_quick_order.php'); service=read('includes/staff_order_service.php'); owner=api+'\n'+service; status=read('operator/api_status.php'); functions=read('includes/functions.php')
 assert 'id="quickOrderPage"' in page and 'quick-order-page-shell' in page
 assert 'includes/staff_quick_order.php' not in layout and not (ROOT/'includes/staff_quick_order.php').exists()
 assert 'data-open-quick-order' not in layout and "staff/quick-order.php" in layout
@@ -34,22 +34,24 @@ assert "icon('message')" in js and 'pencil' not in js.lower()
 # 1.31.7: pending guest orders are independent immediate decisions, not deferred
 # state carried into the next staff-order POST.
 for retired in ['pending_action','pending_order_ids','pendingAction','pendingOrderIds','فعلاً منتظر بماند','تأیید هر']:
-    assert retired not in js+api+page, retired
+    assert retired not in js+owner+page, retired
 assert 'window.OPERATOR_STATUS_API' in page and "operator/api_status.php" in page
 assert 'data-qo-pending-status="accounted"' in js and 'data-qo-pending-status="cancelled"' in js
 assert 'تأیید سفارش' in js and 'رد سفارش' in js
 assert 'reviewPendingOrder' in js and 'confirmAction' in js
 assert "status === 'cancelled'" in js and "okLabel: 'رد سفارش'" in js
-assert "سفارش مهمان منتظر بررسی است؛ ابتدا آن را تأیید یا رد کنید." in api
+assert "سفارش مهمان منتظر بررسی است؛ ابتدا آن را تأیید یا رد کنید." in owner
 assert "pending_order_count" in api and "pending_orders" in api
 assert 'confirm_order_locked' in status and "'cancelled'" in status
 # Idempotent duplicate success must commit exactly once in its branch.
 branch=status.split('if ($oldStatus === $status',1)[1].split('throw new RuntimeException',1)[0]
 assert branch.count('$pdo->commit();')==1, 'operator status retry branch must commit once'
-dup_branch=api.split('if ($duplicate = $duplicateStmt->fetch())',1)[1].split('$sessionStmt',1)[0]
-assert dup_branch.count('$pdo->commit();')==1, 'quick-order duplicate-token branch must commit once'
+dup_branch=service.split('if ($duplicate = $duplicateStmt->fetch())',1)[1].split('$sessionStmt',1)[0]
+assert '$pdo->commit();' not in dup_branch, 'canonical service must not own transaction commit'
+assert "'duplicate'=>true" in dup_branch and "'_after_commit_order_id'=>0" in dup_branch, 'duplicate retry must return persisted success without side effects'
+assert api.count('$pdo->commit();')==1 and api.find('$pdo->commit();') < api.find('staff_order_after_commit($result)'), 'quick-order route must commit once before after-commit acceleration'
 
-assert 'request_token' in js and 'request_token' in api
+assert 'request_token' in js and 'request_token' in owner
 assert 'localStorage' in js and '12 * 3600 * 1000' in js and 'state.uncertain' in js
 assert 'quickOrderUncertainNotice' in page and 'نتیجه ثبت قبلی هنوز مشخص نیست' in page
 assert 'این میز آزاد است' not in page+js

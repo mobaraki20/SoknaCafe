@@ -15,6 +15,7 @@ for token in ["action==='claim'","action==='accept'","action==='start'","action=
 # Required preparation paths must not use best-effort wrapper.
 for f in ['includes/functions.php','staff/api_quick_order.php','operator/api_bill.php']:
  txt=(root/f).read_text(encoding='utf-8')
+ if f=='staff/api_quick_order.php': txt += '\n' + (root/'includes/staff_order_service.php').read_text(encoding='utf-8')
  if 'print_enqueue_prep_' not in txt: errors.append(f+' missing prep enqueue')
 # Pre-launch clean baseline is v4-only.
 if (root/'print-agent/api.php').exists(): errors.append('legacy v3 agent api still present')

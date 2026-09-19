@@ -36,6 +36,7 @@ php tests/phase4-remote-read-contract.php
 php tests/phase5-deferred-boundary-contract.php
 php tests/phase6a-preparation-permissions-contract.php
 php tests/phase6b-sellable-kind-contract.php
+php tests/phase6c-table-draft-contract.php
 
 echo '== Supply / modular contracts =='
 python tests/v1360-supply-module-contract.py
@@ -113,6 +114,7 @@ python tests/panel-jalali-browser.py
 python tests/panel-navigation-browser.py
 python tests/v1315-touch-focus-browser.py
 python tests/quick-order-production-browser.py
+python tests/phase6c-table-draft-browser.py
 python tests/dev19-stepper-alignment-browser.py
 python tests/backup-manager-browser.py
 python tests/itemized-settlement-browser.py

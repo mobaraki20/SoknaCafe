@@ -44,18 +44,21 @@ assert not re.search(r'\b(?:UPDATE|DELETE\s+FROM)\s+inventory_movements\b',inv,r
 
 # Protected order paths only create the durable local event inside the order transaction.
 # Protected order requests only register bounded after-response work after commit; no materializer belongs before the HTTP response.
-for path in ['includes/functions.php','staff/api_quick_order.php','operator/api_bill.php','operator/api_status.php']:
+quick_order_owner='\n'.join([read('staff/api_quick_order.php'),read('includes/staff_order_service.php')])
+for path in ['includes/functions.php','staff/api_quick_order.php','includes/staff_order_service.php','operator/api_bill.php','operator/api_status.php']:
     text=read(path)
     assert 'inventory_process_pending_order_events' not in text, path
     assert 'inventory_process_order_event(' not in text, path
 assert "inventory_enqueue_order_event_tx($pdo,'accounted'" in read('includes/functions.php')
-assert "inventory_enqueue_order_event_tx($pdo,'accounted'" in read('staff/api_quick_order.php')
+assert re.search(r"inventory_enqueue_order_event_tx\s*\(\s*\$pdo\s*,\s*'accounted'", quick_order_owner)
 assert "inventory_enqueue_order_event_tx($pdo,'quantity_adjusted'" in read('operator/api_bill.php')
 # Rejecting a still-pending guest order has consumed nothing, so it must not create a compensating inventory event.
 status_api=read('operator/api_status.php')
 assert "inventory_enqueue_order_event_tx($pdo,'cancelled'" not in status_api
 assert "inventory_enqueue_order_event_tx($pdo,'reaccounted'" not in status_api
-for path in ['staff/api_quick_order.php','operator/api_bill.php','operator/api_status.php']:
+assert 'inventory_register_after_response_order' in quick_order_owner
+assert 'inventory_process_order_events_for_order' not in quick_order_owner
+for path in ['operator/api_bill.php','operator/api_status.php']:
     body=read(path)
     assert 'inventory_register_after_response_order' in body, path
     assert 'inventory_process_order_events_for_order' not in body, path

@@ -17,6 +17,8 @@ function sokna_relay_dispatch_registry(): array
     require_once __DIR__ . '/guest_order_status_service.php';
     require_once __DIR__ . '/guest_table_context_service.php';
     require_once __DIR__ . '/waiter_call_service.php';
+    require_once __DIR__ . '/relay_actor.php';
+    require_once __DIR__ . '/table_draft.php';
     return [
         'guest_order.submit' => static function(PDO $pdo, array $envelope): array {
             try {
@@ -65,6 +67,61 @@ function sokna_relay_dispatch_registry(): array
                 return guest_order_manage_mutate_tx($pdo,$payload);
             } catch (GuestOrderEditException $e) {
                 throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
+            }
+        },
+        'table_draft.get' => static function(PDO $pdo, array $envelope): array {
+            try {
+                $actor=sokna_relay_actor_locked($pdo,(string)($envelope['actor_projection_id']??''));
+                $payload=is_array($envelope['payload']??null)?$envelope['payload']:[];
+                return table_draft_get($pdo,(int)($payload['table_id']??0),$actor);
+            } catch (TableDraftException $e) {
+                throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
+            } catch (SoknaRelayActorException $e) {
+                throw new SoknaRelayBusinessRejection('actor_invalid',['success'=>false,'code'=>'actor_invalid','message'=>$e->getMessage()]);
+            }
+        },
+        'table_draft.create' => static function(PDO $pdo, array $envelope): array {
+            try {
+                $actor=sokna_relay_actor_locked($pdo,(string)($envelope['actor_projection_id']??''));
+                $payload=is_array($envelope['payload']??null)?$envelope['payload']:[];
+                $payload['expected_version']=0;
+                return table_draft_save_tx($pdo,$payload,$actor);
+            } catch (TableDraftException $e) {
+                throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
+            } catch (SoknaRelayActorException $e) {
+                throw new SoknaRelayBusinessRejection('actor_invalid',['success'=>false,'code'=>'actor_invalid','message'=>$e->getMessage()]);
+            }
+        },
+        'table_draft.edit' => static function(PDO $pdo, array $envelope): array {
+            try {
+                $actor=sokna_relay_actor_locked($pdo,(string)($envelope['actor_projection_id']??''));
+                return table_draft_save_tx($pdo,is_array($envelope['payload']??null)?$envelope['payload']:[],$actor);
+            } catch (TableDraftException $e) {
+                throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
+            } catch (SoknaRelayActorException $e) {
+                throw new SoknaRelayBusinessRejection('actor_invalid',['success'=>false,'code'=>'actor_invalid','message'=>$e->getMessage()]);
+            }
+        },
+        'table_draft.cancel' => static function(PDO $pdo, array $envelope): array {
+            try {
+                $actor=sokna_relay_actor_locked($pdo,(string)($envelope['actor_projection_id']??''));
+                return table_draft_cancel_tx($pdo,is_array($envelope['payload']??null)?$envelope['payload']:[],$actor);
+            } catch (TableDraftException $e) {
+                throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
+            } catch (SoknaRelayActorException $e) {
+                throw new SoknaRelayBusinessRejection('actor_invalid',['success'=>false,'code'=>'actor_invalid','message'=>$e->getMessage()]);
+            }
+        },
+        'table_draft.finalize' => static function(PDO $pdo, array $envelope): array {
+            try {
+                $actor=sokna_relay_actor_locked($pdo,(string)($envelope['actor_projection_id']??''));
+                $result=table_draft_finalize_tx($pdo,is_array($envelope['payload']??null)?$envelope['payload']:[],$actor);
+                unset($result['_after_commit_order_id']);
+                return $result;
+            } catch (TableDraftException $e) {
+                throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
+            } catch (SoknaRelayActorException $e) {
+                throw new SoknaRelayBusinessRejection('actor_invalid',['success'=>false,'code'=>'actor_invalid','message'=>$e->getMessage()]);
             }
         },
         'waiter_call.create' => static function(PDO $pdo, array $envelope): array {
