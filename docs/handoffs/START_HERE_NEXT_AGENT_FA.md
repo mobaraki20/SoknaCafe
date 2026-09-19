@@ -36,8 +36,10 @@ cat VERSION.txt
 نقطه ادامه دقیق در:
 `docs/handoffs/CURRENT_STATUS_FA.md`
 
-در زمان ایجاد این فایل:
+در وضعیت فعلی:
 - completed through Phase 6B
-- active next: Phase 6C — Server-persistent Table Draft
+- Phase 6C is already IN PROGRESS on `phase/6c-table-draft`
+- active head: `756d805912351d6dd539f9922e9bd97144369b63`
+- read `docs/handoffs/PHASE6C_IN_PROGRESS_HANDOFF_FA.md` before changing code
 
 اگر `CURRENT_STATUS_FA.md` جدیدتر است، همان وضعیت جدیدتر معتبر است.
