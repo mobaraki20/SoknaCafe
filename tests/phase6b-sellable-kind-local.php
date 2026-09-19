@@ -56,8 +56,11 @@ $result=guest_order_commit($pdo,[
         'fulfillment_mode'=>'dine_in',
     ]],
 ]);
-$orderId=(int)($result['order_id']??0);
-p6bl($orderId>0,'canonical guest order owner committed explicit service item',$result);
+p6bl(!empty($result['success'])&&!empty($result['order_code']),'canonical guest order owner committed explicit service item',$result);
+$orderLookup=$pdo->prepare('SELECT id FROM orders WHERE client_token=? LIMIT 1');
+$orderLookup->execute(['p6b-client-'.$suffix.'-123456']);
+$orderId=(int)($orderLookup->fetchColumn()?:0);
+p6bl($orderId>0,'committed order exists in Local authority');
 
 $stmt=$pdo->prepare('SELECT sellable_kind_snapshot,preparation_station,item_name FROM order_items WHERE order_id=? LIMIT 1');
 $stmt->execute([$orderId]);$line=$stmt->fetch()?:[];
