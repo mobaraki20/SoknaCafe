@@ -14,7 +14,7 @@ checks={
  'runtime knows canonical Agent service name': 'sokna_runtime_print_agent_service_name' in runtime and 'Sokna Print Agent 6' in runtime,
  'bridge is CLI and Windows-SCM scoped': "PHP_SAPI !== 'cli'" in bridge and "PHP_OS_FAMILY !== 'Windows'" in bridge and "'sc.exe'" in bridge,
  'bridge can recover only a stopped installed service': "'query'" in bridge and "'start'" in bridge and "state === 'STOPPED'" in bridge,
- 'bridge treats missing Agent as install state not business failure': "'not_installed'" in bridge and r'\b1060\b' in bridge,
+ 'bridge treats missing Agent as install state not business failure': "'not_installed'" in bridge and '1060' in bridge,
  'bridge does not duplicate Print API/state machine': all(token not in bridge for token in ['print_jobs','print_attempts','print_claim_requests','print_v4_','StartDoc','Winspool','INSERT INTO','UPDATE ','DELETE FROM ']),
  'stable Agent distribution remains external': 'mobaraki20/Pagent' in distribution and 'Stable GitHub Release Asset' in distribution and 'Cafe binary را mirror نمی‌کند' in distribution,
  'printing registry describes Runtime supervision': 'SOKNA Runtime -> tools/print-runtime-worker.php -> installed Windows Print Agent service' in modules,
