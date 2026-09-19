@@ -114,6 +114,7 @@ python tests/panel-jalali-browser.py
 python tests/panel-navigation-browser.py
 python tests/v1315-touch-focus-browser.py
 python tests/quick-order-production-browser.py
+python tests/phase6c-table-draft-browser.py
 python tests/dev19-stepper-alignment-browser.py
 python tests/backup-manager-browser.py
 python tests/itemized-settlement-browser.py
