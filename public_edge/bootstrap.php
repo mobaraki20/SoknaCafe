@@ -144,7 +144,7 @@ function public_capability_for_kind(string $kind): string
         'guest_order.submit','guest_order.list','guest_order.status','guest_table.context'=>'guest.order.submit',
         'waiter_call.create','waiter_call.status','waiter_call.cancel'=>'guest.waiter_call.create',
         'settlement.commit'=>'finance.settle','preparation.mutate'=>'preparation.mutate',
-        'order.edit','order.cancel'=>'orders.mutate','table_draft.create','table_draft.edit','table_draft.finalize','table_draft.cancel'=>'orders.table_draft',default=>'relay.denied',
+        'order.edit','order.cancel'=>'orders.mutate','table_draft.get','table_draft.create','table_draft.edit','table_draft.finalize','table_draft.cancel'=>'orders.table_draft',default=>'relay.denied',
     };
 }
 
