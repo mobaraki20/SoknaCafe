@@ -105,7 +105,7 @@ function validate_guest_order_update_lines(PDO $pdo,array $payload,array $existi
             $lines[]=[
                 'item_id'=>$itemId,'item_name'=>(string)$old['item_name'],'unit_price'=>$unit,'quantity'=>$newQty,
                 'item_note'=>(string)$line['note'],'fulfillment_mode'=>$mode,
-                'station'=>normalize_preparation_station((string)($old['preparation_station']??'cold_bar')),'line_total'=>$lineTotal,
+                'station'=>normalize_preparation_station((string)($old['preparation_station']??'cold_bar')),'sellable_kind'=>normalize_sellable_kind($old['sellable_kind_snapshot']??null),'line_total'=>$lineTotal,
             ];
             continue;
         }
@@ -121,7 +121,7 @@ function validate_guest_order_update_lines(PDO $pdo,array $payload,array $existi
         $name=$old?(string)$old['item_name']:(string)$item['name'];
         $station=$old?normalize_preparation_station((string)($old['preparation_station']??'cold_bar')):normalize_preparation_station((string)($item['preparation_station']??'cold_bar'));
         $unit=$old?(int)$old['unit_price']:$currentPrice;$lineTotal=$unit*$newQty;$total+=$lineTotal;
-        $lines[]=['item_id'=>$itemId,'item_name'=>$name,'unit_price'=>$unit,'quantity'=>$newQty,'item_note'=>(string)$line['note'],'fulfillment_mode'=>$mode,'station'=>$station,'line_total'=>$lineTotal];
+        $lines[]=['item_id'=>$itemId,'item_name'=>$name,'unit_price'=>$unit,'quantity'=>$newQty,'item_note'=>(string)$line['note'],'fulfillment_mode'=>$mode,'station'=>$station,'sellable_kind'=>$old&&$old['sellable_kind_snapshot']!==null?normalize_sellable_kind($old['sellable_kind_snapshot']):normalize_sellable_kind($item['sellable_kind']??null),'line_total'=>$lineTotal];
     }
 
     if($unavailable){
@@ -158,9 +158,9 @@ function guest_order_payload_matches_current(array $payload,array $order,array $
 function replace_mutable_order(PDO $pdo,int $orderId,array $payload,array $validated):void
 {
     $pdo->prepare('DELETE FROM order_items WHERE order_id=?')->execute([$orderId]);
-    $insert=$pdo->prepare('INSERT INTO order_items(order_id,item_id,item_name,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total) VALUES(?,?,?,?,?,?,?,?,?,?)');
+    $insert=$pdo->prepare('INSERT INTO order_items(order_id,item_id,item_name,sellable_kind_snapshot,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total) VALUES(?,?,?,?,?,?,?,?,?,?,?)');
     foreach($validated['lines'] as $line){
-        $insert->execute([$orderId,$line['item_id'],$line['item_name'],$line['unit_price'],$line['quantity'],$line['quantity'],$line['item_note'],$line['fulfillment_mode'],$line['station'],$line['line_total']]);
+        $insert->execute([$orderId,$line['item_id'],$line['item_name'],$line['sellable_kind'],$line['unit_price'],$line['quantity'],$line['quantity'],$line['item_note'],$line['fulfillment_mode'],$line['station'],$line['line_total']]);
     }
     $pdo->prepare('UPDATE orders SET customer_note=?,total_amount=?,updated_at=NOW() WHERE id=?')->execute([$payload['customer_note'],$validated['total'],$orderId]);
 }
@@ -211,7 +211,7 @@ function guest_order_manage_mutate_tx(PDO $pdo,array $data):array
     if(!in_array((string)$session['status'],['active','pending'],true))throw new GuestOrderEditException('session_inactive','نشست این میز پایان یافته است.',409);
     if(!guest_order_status_is_mutable((string)$order['status']))throw new GuestOrderEditException('order_not_editable','این سفارش تأیید شده و دیگر ویرایش مستقیم ندارد.',409);
 
-    $existingStmt=$pdo->prepare('SELECT item_id,item_name,unit_price,quantity,item_note,fulfillment_mode,preparation_station,line_total FROM order_items WHERE order_id=? ORDER BY id FOR UPDATE');
+    $existingStmt=$pdo->prepare('SELECT item_id,item_name,sellable_kind_snapshot,unit_price,quantity,item_note,fulfillment_mode,preparation_station,line_total FROM order_items WHERE order_id=? ORDER BY id FOR UPDATE');
     $existingStmt->execute([(int)$order['id']]);$existingRows=$existingStmt->fetchAll();
     try{
         $payload=normalize_order_request_payload(array_merge($data,[
