@@ -91,7 +91,7 @@ function menu_catalog_snapshot(PDO $pdo, string $context, ?string $requestedMenu
     $visibility = $guest ? " AND c.audience='guest_staff' AND COALESCE(i.staff_only,0)=0" : '';
     $available = $orderableOnly ? ' AND i.available=1' : '';
     $stmt = $pdo->prepare("SELECT
-        i.id,i.item_code,i.category_id,i.name,i.description,i.price,i.image_path,i.available,i.active,i.featured,i.staff_only,
+        i.id,i.item_code,i.category_id,i.name,i.description,i.price,i.image_path,i.available,i.active,i.featured,i.staff_only,i.sellable_kind,
         i.takeaway_allowed,i.preparation_station,i.suggested_item_id,i.sort_order item_sort,
         c.category_key,c.name category_name,c.audience category_audience,c.image_path category_image,c.icon_key category_icon,
         mc.sort_order category_sort,m.menu_key,m.name menu_name
