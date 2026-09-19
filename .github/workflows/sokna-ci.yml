@@ -24,6 +24,9 @@ on:
       - 'tests/**'
       - 'schema/**'
       - 'scripts/**'
+      - 'docs/handoffs/**'
+      - 'docs/architecture-migration-r2/**'
+      - 'RELEASE_NOTES_*_FA.md'
       - '.github/workflows/sokna-ci.yml'
       - '.gitattributes'
   pull_request:
