@@ -1,7 +1,10 @@
 # Phase 6B Handoff — Explicit Sellable Kind
 
-Status: VALIDATION / PENDING MERGE
-Release candidate: `1.36.4-dev.33`
+Status: COMPLETE
+Release: `1.36.4-dev.33`
+Merged PR: #7
+Merge commit: `afa84a333ca34d8405af58f2bb3287e6aebfca39`
+Post-merge CI: `35424762946` — SUCCESS
 Branch: `phase/6b-explicit-sellable-kind`
 
 ## What changed
@@ -36,6 +39,9 @@ The classification is persisted on `items.sellable_kind`, exposed through catalo
 - `includes/function_domains/audit.php`
 
 ## Validation
+Final-head gates: Windows PASS / Public+Local MariaDB PASS / Linux+Browser PASS.
+Post-merge main run `35424762946`: SUCCESS.
+
 Dedicated:
 - `tests/phase6b-sellable-kind-contract.php`
 - `tests/phase6b-sellable-kind-local.php`
