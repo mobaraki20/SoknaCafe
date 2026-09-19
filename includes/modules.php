@@ -276,7 +276,7 @@ function sokna_module_registry(): array
             'required' => false,
             'depends_on' => ['platform','finance','orders'],
             'reads_from' => ['finance','orders'],
-            'owner' => 'includes/accommodation.php + admin/accommodation*.php',
+            'owner' => 'includes/accommodation.php + includes/accommodation_transport.php + admin/accommodation*.php',
             'owns_tables' => ['accommodation_transfers'],
             'entrypoints' => ['admin/accommodation.php','admin/accommodation_settings.php','operator/api_accommodation.php'],
             'capabilities' => ['cashier_accounts','shift_supervision'],

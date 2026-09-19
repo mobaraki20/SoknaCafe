@@ -2,8 +2,8 @@
 
 Updated: 2026-09-19
 Repository: `mobaraki20/SoknaCafe`
-Current completed release checkpoint: `1.36.4-dev.34`
-Active validation target: `1.36.4-dev.35` / Phase 7A
+Current completed release checkpoint: `1.36.4-dev.35`
+Active validation target: `1.36.4-dev.36` / Phase 7B
 
 ## Completed architecture migration
 - Phase 0 — Source Audit.
@@ -45,18 +45,19 @@ Read latest handoff:
 - Public does not become Table Draft business authority.
 
 ## Active work
-Phase 7A — Runtime-owned Printing / Notifications.
+Phase 7B — Accommodation transport adaptation.
 
-Branch: `phase/7-print-notify-integrations`
+Branch: `phase/7b-accommodation-transport`
 
 Current scope:
-- supervise the installed stable Windows Print Agent service from SOKNA Runtime without duplicating its state machine.
-- make Runtime ownership of Push queue processing explicit while preserving transactional outbox semantics.
+- move HTTPS mechanics out of the Accommodation business owner.
+- preserve Local-authoritative settlement/recovery/error classification exactly.
 
 Design: `docs/architecture-migration-r2/PHASE7_DESIGN_NOTES_FA.md`
-Checkpoint: `docs/architecture-migration-r2/PHASE7A_CHECKPOINT_FA.md`
+Checkpoint: `docs/architecture-migration-r2/PHASE7B_CHECKPOINT_FA.md`
 
-After 7A final-head + post-merge CI, continue Phase 7B Accommodation transport adaptation.
+Phase 7A is complete: PR #12 / main CI `35439861511` SUCCESS.
+After 7B post-merge PASS, continue Phase 7C Center outbound adaptation.
 
 ## Phase 7 frozen direction
 

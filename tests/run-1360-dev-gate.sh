@@ -53,6 +53,7 @@ python tests/v1360-marketing-module-contract.py
 python tests/v1360-reporting-module-contract.py
 python tests/v1360-personnel-module-contract.py
 python tests/v1360-accommodation-boundary-contract.py
+python tests/phase7b-accommodation-transport-contract.py
 python tests/v1360-defect-class-gate.py
 python tests/v1360-operations-purchase-permissions.py
 python tests/v1360-final-invariants.py
