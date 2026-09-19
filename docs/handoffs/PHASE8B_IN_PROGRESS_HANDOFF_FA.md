@@ -23,6 +23,15 @@ Branch: `phase/8b-windows-setup`
 3. Windows Service host + PowerShell orchestrator + hosted contracts.
 4. CI/version/docs finalization.
 
+## Audit refinement
+- `runtime/sokna-runtime.php` is a correct long-running supervisor entrypoint, but Windows SCM host/packaging is intentionally absent.
+- `runtime/windows/provision-local-https.ps1` already owns local CA/certificate/hosts provisioning.
+- direct `sc.exe create ... php.exe` remains forbidden.
+- Phase 8B will use a real Windows service wrapper contract (WinSW supplied/pinned by packaging; not downloaded ad-hoc by runtime).
+- Recover will use a protected plan file; DB password and recovery passphrase are file-backed secrets and never command-line values.
+- `includes/maintenance.php` remains restore owner; 8B only adds an explicit fresh-target compatibility path so an empty replacement DB does not pretend to have the old migration fingerprint.
+- Print Agent optional installation delegates to the official Pagent installer package and never recreates its service/rollback logic.
+
 ## Current audit result
 Existing owners to compose:
 - `install.php`
