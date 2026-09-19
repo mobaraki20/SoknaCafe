@@ -32,6 +32,8 @@ function admin_item_payload(array $item): array
         'price' => (int)$item['price'],
         'category_id' => (int)$item['category_id'],
         'category_name' => (string)($item['category_name'] ?? ''),
+        'sellable_kind' => normalize_sellable_kind($item['sellable_kind'] ?? null),
+        'sellable_kind_label' => sellable_kind_label($item['sellable_kind'] ?? null),
         'preparation_station' => normalize_preparation_station((string)($item['preparation_station'] ?? 'other')),
         'station_label' => station_label((string)($item['preparation_station'] ?? 'other')),
         'available' => (int)$item['available'] === 1,
