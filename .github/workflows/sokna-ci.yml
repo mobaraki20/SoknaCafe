@@ -152,6 +152,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Phase 7B accommodation transport contract failed' }
           python tests/phase7c-center-outbound-contract.py
           if ($LASTEXITCODE -ne 0) { throw 'Phase 7C Center outbound contract failed' }
+          python tests/phase8a-recovery-identity-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8A recovery identity contract failed' }
+          php tests/phase8a-installation-identity-runtime.php
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8A installation identity runtime failed' }
+          php tests/phase8a-recovery-metadata-runtime.php
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8A recovery metadata runtime failed' }
           python tests/v1360-final-invariants.py
           if ($LASTEXITCODE -ne 0) { throw 'Final invariants failed' }
           python tests/updater-current-contract.py

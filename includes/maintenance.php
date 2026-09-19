@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/installation_identity.php';
+
 /**
  * Backup, restore and maintenance helpers.
  * Archives use tar.gz so the feature works without the optional PHP zip extension.
@@ -648,6 +650,50 @@ function maintenance_schema_fingerprint(?PDO $pdo = null): string
     }
 }
 
+function maintenance_recovery_metadata(): array
+{
+    global $config;
+    $relay = is_array($config['relay'] ?? null) ? $config['relay'] : [];
+    $relaySecret = (string)($relay['shared_secret'] ?? '');
+    $relayBase = trim((string)($relay['public_base_url'] ?? ''));
+    $relayHost = $relayBase !== '' ? (string)(parse_url($relayBase, PHP_URL_HOST) ?: '') : '';
+    $getSetting = static function (string $key, string $default = ''): string {
+        return function_exists('setting') ? (string)setting($key, $default) : $default;
+    };
+    $centerBase = $getSetting('sokna_center_base_url');
+    $accommodationBase = $getSetting('accommodation_api_base_url');
+    return [
+        'format'=>'sokna-recovery-metadata-v1',
+        'installation_identity'=>sokna_installation_identity_public_metadata(),
+        'private_identity_cloned'=>false,
+        'public_binding'=>[
+            'enabled'=>(bool)($relay['enabled'] ?? false),
+            'installation_id'=>trim((string)($relay['installation_id'] ?? '')),
+            'public_host'=>$relayHost,
+            'shared_secret_fingerprint'=>$relaySecret === '' ? '' : strtoupper(substr(hash('sha256', $relaySecret), 0, 16)),
+        ],
+        'media_theme'=>[
+            'menu_theme'=>$getSetting('menu_theme'),
+            'primary_color'=>$getSetting('primary_color'),
+            'accent_color'=>$getSetting('accent_color'),
+            'background_color'=>$getSetting('background_color'),
+            'logo_path'=>$getSetting('logo_path'),
+            'favicon_updated_at'=>$getSetting('favicon_updated_at'),
+        ],
+        'integrations'=>[
+            'center'=>[
+                'enabled'=>$getSetting('sokna_center_connection_enabled', '0') === '1',
+                'host'=>$centerBase !== '' ? (string)(parse_url($centerBase, PHP_URL_HOST) ?: '') : '',
+                'secret_fingerprint'=>$getSetting('sokna_center_handoff_secret_fingerprint'),
+            ],
+            'accommodation'=>[
+                'enabled'=>$getSetting('accommodation_connection_enabled', '0') === '1',
+                'host'=>$accommodationBase !== '' ? (string)(parse_url($accommodationBase, PHP_URL_HOST) ?: '') : '',
+                'secret_fingerprint'=>$getSetting('accommodation_api_key_fingerprint'),
+            ],
+        ],
+    ];
+}
 function maintenance_backup_sidecar_path(string $archivePath): string { return $archivePath . '.meta.json'; }
 function maintenance_write_backup_sidecar(string $archivePath, array $manifest, ?bool $valid = null, ?string $error = null): void
 {
@@ -1271,6 +1317,7 @@ function maintenance_create_backup_unlocked(string $kind, ?int $actorUserId = nu
             'actor_user_id'=>$actorUserId,'database_sha256'=>$dumpMetadata['sha256'],'files_index_sha256'=>hash('sha256',$indexJson),
             'entry_count'=>count($entries),'uploads_present'=>is_dir($uploadDir),'schema_fingerprint'=>maintenance_schema_fingerprint(),
             'portable_app_identity'=>true,'app_identity_fingerprint'=>substr(hash('sha256',$appKey),0,16),
+            'recovery_metadata'=>maintenance_recovery_metadata(),
         ];
         $archive->addFromString('manifest.json', json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
         $tarSha256 = hash_file('sha256', $tarPath);
