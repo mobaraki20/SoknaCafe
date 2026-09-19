@@ -1,7 +1,7 @@
 # Phase 7C Checkpoint — Center Outbound User Projection
 
 Version target: 1.36.4-dev.37
-Status: VALIDATION
+Status: COMPLETE
 
 Goal: move routine Cafe user discovery toward outbound Local→Center transport without breaking older Center installations.
 
@@ -24,3 +24,8 @@ Validation:
 - tests/phase7c-center-outbound-contract.py
 - tests/phase7c-center-projection-local.php
 - all existing Center handoff/entitlement/payroll/inbound compatibility tests remain active.
+
+Validation evidence:
+- PR #14 merged.
+- merge commit: b29cf18aea52228fc44e08aac5e2a7c521295f98.
+- post-merge main CI 35441174227: Windows PASS / Public+Local MariaDB PASS / Linux+Browser PASS.
