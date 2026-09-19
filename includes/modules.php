@@ -73,7 +73,7 @@ function sokna_module_registry(): array
             ],
             'entrypoints' => [
                 'api/create_order.php','api/guest_orders.php','api/order_status.php','api/table_context.php','api/waiter_call.php',
-                'staff/quick-order.php','staff/api_quick_order.php','operator/index.php','operator/api_orders.php','operator/api_status.php',
+                'staff/quick-order.php','staff/api_quick_order.php','staff/api_table_draft.php','operator/index.php','operator/api_orders.php','operator/api_status.php',
                 'operator/api_table_session.php','operator/api_waiter.php','operator/api_controls.php','waiter/index.php','waiter/api_feed.php','waiter/api_action.php',
                 'admin/tables.php','admin/qr.php',
             ],
