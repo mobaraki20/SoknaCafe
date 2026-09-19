@@ -67,7 +67,7 @@ function sokna_module_registry(): array
             'reads_from' => ['finance','inventory','printing','notifications'],
             'owner' => 'api/create_order.php + staff/api_quick_order.php + operator/ + waiter/',
             'owns_tables' => [
-                'cafe_tables','table_sessions','table_session_clients','orders','order_business_sequences','order_items','order_status_history',
+                'cafe_tables','table_sessions','table_session_clients','table_drafts','table_draft_items','orders','order_business_sequences','order_items','order_status_history',
                 'waiter_calls','order_preparation_claims','preparation_adjustments','order_item_adjustments',
                 'user_preparation_areas',
             ],
@@ -79,7 +79,7 @@ function sokna_module_registry(): array
             ],
             'capabilities' => ['orders_floor','preparation','shift_supervision'],
             'background_jobs' => [],
-            'public_contracts' => ['order/session state machine','preparation adjustment contract','staff quick-order idempotency'],
+            'public_contracts' => ['order/session state machine','table draft lifecycle/finalize contract','preparation adjustment contract','staff quick-order idempotency'],
         ],
         'finance' => [
             'label' => 'مالی و تسویه',
