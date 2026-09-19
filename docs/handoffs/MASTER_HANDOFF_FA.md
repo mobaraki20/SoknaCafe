@@ -43,7 +43,7 @@ cat VERSION.txt
 
 اگر لازم است checkpoint فعلی را دقیقاً بازسازی کنی:
 ```bash
-git checkout fb929f3e62d76b98c89c1721183988d2c1ae493b
+git checkout b29cf18aea52228fc44e08aac5e2a7c521295f98
 ```
 
 اما در حالت عادی همیشه از آخرین `main` شروع کن و سپس `docs/handoffs/CURRENT_STATUS_FA.md` را بخوان.
@@ -93,9 +93,11 @@ git checkout fb929f3e62d76b98c89c1721183988d2c1ae493b
 - override فقط audited manager/admin با reason + actor + timestamp + connectivity snapshot.
 - closed report تا correction explicit دست‌نخورده می‌ماند.
 
-### Printing
-- state machine بالغ چاپ را زود refactor نکن.
-- target آینده: internal Print Worker، اما stability چاپ 4–5s مهم است.
+### Printing / Notifications / Integrations
+- Runtime اکنون lifecycle سرویس نصب‌شده Print Agent را supervise می‌کند؛ Print API v4، Agent SQLite، renderer، submission fence و Winspool state machine همچنان owner بالغ خود را دارند و نباید در PHP duplicate شوند.
+- Push queue processing زیر Runtime است؛ `push_event_queue` durable truth می‌ماند و request-time drain فقط accelerator/fallback است.
+- Accommodation transport از business/settlement/recovery owner جدا است.
+- Center outbound user projection capability-gated است؛ legacy inbound directory تا اثبات migration سمت Center حذف نمی‌شود.
 - business receipt tax دارد؛ preparation ticket tax ندارد.
 
 ### UI/DS
