@@ -3,20 +3,20 @@
 این ریپو باید بدون تاریخچه ChatGPT قابل ادامه باشد.
 
 ## Current exact state — 2026-09-19
-- completed through: **Phase 6C / 1.36.4-dev.34**
-- Phase 6C merged PR: #10
-- product merge commit: `ccf0656655702a0b175a7cb9d7521fcb808745b1`
-- product post-merge CI: `35438494232` — SUCCESS
+- completed through: **Phase 7 / 1.36.4-dev.37**
+- final Phase 7 product merge: `b29cf18aea52228fc44e08aac5e2a7c521295f98`
+- post-merge CI: `35441174227` — SUCCESS
 - required gates: Windows PASS / Public+Local MariaDB PASS / Linux+Browser PASS
-- next work: **Phase 7 — Printing / Notifications / Integrations**
+- next work: **Phase 8 — Setup / Recovery / Backup / Takeover**
 
 Read in this order:
 1. `docs/handoffs/MASTER_HANDOFF_FA.md`
 2. `docs/handoffs/CURRENT_STATUS_FA.md`
-3. `docs/handoffs/PHASE6C_HANDOFF_FA.md`
+3. `docs/handoffs/PHASE7_HANDOFF_FA.md`
 4. `DEVELOPER_READ_FIRST_FA.md`
 5. R2 Implementation/API/Schema/Risk contracts.
 
-Then fetch current `main` and create a new Phase 7 branch. Do not reuse `phase/6c-table-draft` and do not follow the superseded in-progress Phase 6C handoff.
+Then fetch current `main` and create a new Phase 8 branch.
+Do not reuse Phase 7 branches.
 
-Phase 7 begins with an audit of printing, notification, Accommodation and Center owners. Preserve the mature printing queue/state machine while internalizing worker ownership incrementally.
+Phase 8 begins by auditing existing installer/updater/backup/recovery and identity/pairing owners. Preserve mature engines and extend them for Windows new/recover install, enriched Recovery Set/PITR and machine/Public takeover.

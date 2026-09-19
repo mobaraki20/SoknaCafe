@@ -1,6 +1,6 @@
 # Phase 7 Design Notes — Printing / Notifications / Integrations
 
-Status: IN PROGRESS
+Status: COMPLETE
 Branch: `phase/7-print-notify-integrations`
 Base main: `4dc3f4166ba3e4f2b4876a6d88498af55c10b347`
 
@@ -31,3 +31,9 @@ Replace routine inbound Center→Cafe dependency with outbound Local→Center pr
 
 ## Exit gates
 Each subphase requires dedicated contracts, relevant Windows/MariaDB coverage, Linux full regression, PR merge and post-merge main CI.
+
+## Final Phase 7 evidence
+- 7A: PR #12 / main CI 35439861511 SUCCESS.
+- 7B: PR #13 / main CI 35440573461 SUCCESS.
+- 7C: PR #14 / main CI 35441174227 SUCCESS.
+- Phase 7 handoff: docs/handoffs/PHASE7_HANDOFF_FA.md.

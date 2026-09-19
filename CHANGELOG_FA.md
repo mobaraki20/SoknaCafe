@@ -1,3 +1,9 @@
+## 1.36.4-dev.37 — Phase 7 complete
+- Runtime now supervises installed Print Agent service without duplicating the mature printing state machine.
+- Notification processing ownership is under Runtime while durable Push outbox remains canonical.
+- Accommodation HTTPS transport is isolated from settlement/recovery business logic.
+- Center adds capability-gated outbound Cafe user projection with legacy inbound compatibility.
+- Phase 7 final product main CI 35441174227 passed Windows, Public+Local MariaDB and Linux+Browser gates.
 ## 1.36.4-dev.34 — Phase 6C / Server-persistent Table Draft
 - Table Draft به Business State محلی و server-persistent با یک Draft فعال برای هر میز تبدیل شد.
 - optimistic version conflict مانع overwrite شدن Draft جدید توسط context قدیمی می‌شود.

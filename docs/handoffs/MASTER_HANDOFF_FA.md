@@ -2,8 +2,8 @@
 
 Updated: 2026-09-19  
 Repository: `mobaraki20/SoknaCafe`  
-Current verified release checkpoint: `1.36.4-dev.34`  
-Current verified product main checkpoint: `ccf0656655702a0b175a7cb9d7521fcb808745b1`
+Current verified release checkpoint: `1.36.4-dev.37`  
+Current verified product main checkpoint: `b29cf18aea52228fc44e08aac5e2a7c521295f98`
 
 این فایل مرجع سطح‌بالای ادامه پروژه است. هر ایجنت جدید باید قبل از هر تغییر کد، این فایل را کامل بخواند. هدف این است که ادامه پروژه بدون نیاز به تاریخچه ChatGPT یا پرسیدن مجدد تصمیم‌های قبلی ممکن باشد.
 
@@ -43,7 +43,7 @@ cat VERSION.txt
 
 اگر لازم است checkpoint فعلی را دقیقاً بازسازی کنی:
 ```bash
-git checkout fb929f3e62d76b98c89c1721183988d2c1ae493b
+git checkout b29cf18aea52228fc44e08aac5e2a7c521295f98
 ```
 
 اما در حالت عادی همیشه از آخرین `main` شروع کن و سپس `docs/handoffs/CURRENT_STATUS_FA.md` را بخوان.
@@ -93,9 +93,11 @@ git checkout fb929f3e62d76b98c89c1721183988d2c1ae493b
 - override فقط audited manager/admin با reason + actor + timestamp + connectivity snapshot.
 - closed report تا correction explicit دست‌نخورده می‌ماند.
 
-### Printing
-- state machine بالغ چاپ را زود refactor نکن.
-- target آینده: internal Print Worker، اما stability چاپ 4–5s مهم است.
+### Printing / Notifications / Integrations
+- Runtime اکنون lifecycle سرویس نصب‌شده Print Agent را supervise می‌کند؛ Print API v4، Agent SQLite، renderer، submission fence و Winspool state machine همچنان owner بالغ خود را دارند و نباید در PHP duplicate شوند.
+- Push queue processing زیر Runtime است؛ `push_event_queue` durable truth می‌ماند و request-time drain فقط accelerator/fallback است.
+- Accommodation transport از business/settlement/recovery owner جدا است.
+- Center outbound user projection capability-gated است؛ legacy inbound directory تا اثبات migration سمت Center حذف نمی‌شود.
 - business receipt tax دارد؛ preparation ticket tax ندارد.
 
 ### UI/DS
@@ -299,30 +301,49 @@ Outcome:
 Handoff:
 - `docs/handoffs/PHASE6C_HANDOFF_FA.md`
 
+### Phase 7 — Printing / Notifications / Integrations
+Release: `1.36.4-dev.37`
+
+Phase 7A — PR #12 / merge `215949cd3507bcf2d20860bd6a8c1c6ef67c51b3` / main CI `35439861511` SUCCESS.
+- Runtime supervises the installed stable Print Agent without duplicating Agent state/Winspool logic.
+- Push processing is explicitly Runtime-owned; durable outbox remains canonical.
+
+Phase 7B — PR #13 / merge `c83df6bdfd240a29a8c8bcf6653f2b69886d2954` / main CI `35440573461` SUCCESS.
+- Accommodation HTTPS mechanics extracted to `includes/accommodation_transport.php`.
+- Local settlement/recovery/ambiguity semantics preserved.
+
+Phase 7C — PR #14 / merge `b29cf18aea52228fc44e08aac5e2a7c521295f98` / main CI `35441174227` SUCCESS.
+- Runtime-owned, capability-gated outbound Cafe user projection to Center.
+- legacy inbound user directory retained as compatibility fallback.
+- no Public personnel database.
+
+Handoff:
+- `docs/handoffs/PHASE7_HANDOFF_FA.md`
+
 ---
 
 ## 5) Current Exact State
 
 Current completed checkpoint:
-**Phase 6C / 1.36.4-dev.34**
+**Phase 7 / 1.36.4-dev.37**
 
-Phase 6C product merge:
-- PR #10
-- branch final head: `ea46ecf6209ff14329438684fb94720445ce2403`
-- merge commit: `ccf0656655702a0b175a7cb9d7521fcb808745b1`
-- product post-merge CI: `35438494232` — SUCCESS
+Final Phase 7 product merge:
+- PR #14
+- merge commit: `b29cf18aea52228fc44e08aac5e2a7c521295f98`
+- post-merge CI: `35441174227` — SUCCESS
 - all three gates PASS: Windows / Public+Local MariaDB / Linux+Browser.
 
 Current next phase:
-**Phase 7 — Printing / Notifications / Integrations**
+**Phase 8 — Setup / Recovery / Backup / Takeover**
 
-Frozen Phase 7 direction from R2:
-- internalize Print Worker under Runtime without replacing the mature printing state machine.
-- move Notification processing under Runtime while preserving durable outbox semantics.
-- adapt Accommodation transport without changing its business contract.
-- refactor Center toward outbound Local-authoritative integration.
+Frozen Phase 8 direction:
+- Windows install new/recover flows.
+- optional Public pairing/printer/offsite/push setup.
+- enriched Recovery Set/PITR.
+- machine replacement + fresh identity + Public takeover.
+- checkpoint requires restore + takeover drill.
 
-Before writing Phase 7 code, audit current printing/notification/integration owners and write Phase 7 design notes + preservation contracts.
+Before changing code, audit current updater, backup, recovery, install and identity/pairing owners. Preserve mature updater/backup engines and extend rather than rewrite.
 
 ---
 
@@ -398,11 +419,25 @@ Before writing Phase 7 code, audit current printing/notification/integration own
 - `assets/js/menu.js`
 - `assets/css/guest-menu.css`
 
-### Printing
-Preserve existing mature owner/state machine until Phase 7:
-- `admin/printing.php`
-- print queue/state/claim code under current printing owners.
-Do not redesign early.
+### Printing / Runtime
+- `includes/printing.php` + `print-agent/v4/` — mature print state/API owner.
+- `tools/print-runtime-worker.php` — Runtime supervision of installed Windows Agent only.
+- `includes/runtime.php` / `runtime/sokna-runtime.php` — worker orchestration.
+
+### Notifications
+- `includes/push.php`
+- `tools/push-worker.php`
+- `service-worker.js`
+
+### Accommodation
+- `includes/accommodation.php` — business/settlement/recovery owner.
+- `includes/accommodation_transport.php` — HTTPS transport owner.
+
+### Center / Personnel integration
+- `includes/sokna_center.php` — trust/handoff/entitlement owner.
+- `includes/sokna_center_projection.php` — outbound Cafe user projection.
+- `tools/center-projection-worker.php` — Runtime projection worker.
+- `api/sokna_center_users.php` — legacy compatibility directory until Center migration is proven.
 
 ---
 
@@ -460,23 +495,23 @@ For every new Phase/Subphase:
 
 ## 10) Next Agent — Exact First Action
 
-Phase 6C is complete. Do **not** reopen or recreate its branch.
+Phase 7 is complete. Do **not** reopen or recreate Phase 7 branches.
 
-Start Phase 7 from current `main` only after reading:
+Start Phase 8 from current `main` after reading:
 - `docs/handoffs/CURRENT_STATUS_FA.md`
-- `docs/handoffs/PHASE6C_HANDOFF_FA.md`
-- `docs/architecture-migration-r2/IMPLEMENTATION_PLAN_FA.md` Phase 7
-- `docs/architecture-migration-r2/SCHEMA_CHANGE_PLAN.md` Phase 7
-- `docs/architecture-migration-r2/RISK_REGISTER.md` R08 and integration risks.
+- `docs/handoffs/PHASE7_HANDOFF_FA.md`
+- `docs/architecture-migration-r2/IMPLEMENTATION_PLAN_FA.md` Phase 8
+- `docs/architecture-migration-r2/SCHEMA_CHANGE_PLAN.md` Phase 8
+- `docs/architecture-migration-r2/RISK_REGISTER.md` setup/recovery/backup/takeover risks.
 
-First audit, before changing code:
-- mature printing queue/state/claim/reconciliation owners and Print Agent v4 boundaries.
-- `runtime/sokna-runtime.php` worker registry/supervision.
-- current push/notification outbox and `tools/push-worker.php`.
-- Accommodation canonical business contract and transport boundary.
-- Center inbound/outbound authority boundaries.
+First audit before changing code:
+- updater staging/validation/recovery-point/rollback owners.
+- backup integrity/encryption/portable restore owners.
+- Runtime Windows installation/service lifecycle.
+- Public installation binding/pairing/identity rotation and takeover paths.
+- printer setup/discovery and optional offsite/push setup.
 
-Then create a dedicated Phase 7 branch and design/checkpoint notes. Preserve current printing reliability; internalization is a deployment/worker ownership change, not a state-machine rewrite.
+Then create a dedicated Phase 8 branch. Preserve mature updater/backup engines; Phase 8 extends setup/recovery/takeover rather than rewriting proven engines.
 
-Exact current status is always in:
+Exact current status:
 `docs/handoffs/CURRENT_STATUS_FA.md`.
