@@ -1254,6 +1254,99 @@ function maintenance_health_check(?PDO $pdo = null): array
     return ['ok' => !in_array(false, $checks, true), 'checks' => $checks, 'version' => maintenance_version(), 'checked_at' => date(DATE_ATOM)];
 }
 
+function maintenance_machine_recovery_compatibility(array $manifest): void
+{
+    if (($manifest['type'] ?? '') !== 'backup') throw new RuntimeException('Machine Recovery فقط از پشتیبان اصلی مجاز است.');
+    if (($manifest['format'] ?? '') !== 'sokna-backup-v3' || empty($manifest['portable_app_identity'])) {
+        throw new RuntimeException('Recovery Set برای انتقال کامل ماشین کافی نیست.');
+    }
+    $version = (string)($manifest['version'] ?? '');
+    if ($version !== maintenance_version()) {
+        throw new RuntimeException('Recovery Set برای نسخه ' . $version . ' است؛ باینری مقصد باید دقیقاً همان نسخه باشد.');
+    }
+}
+
+function maintenance_restore_archive_to_empty_target(string $path, PDO $pdo): array
+{
+    $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
+    if ($tables) throw new RuntimeException('Machine Recovery فقط روی دیتابیس کاملاً خالی مجاز است.');
+
+    $validated = maintenance_validate_archive($path);
+    maintenance_machine_recovery_compatibility($validated['manifest']);
+    $targetKey = (string)($validated['app_key'] ?? '');
+    if ($targetKey === '') throw new RuntimeException('هویت داخلی Recovery Set ناقص است.');
+
+    maintenance_disk_check(max((int)(filesize($path) ?: 0), 1));
+    $job = maintenance_job_start('machine_recovery', ['source'=>basename($path)]);
+    maintenance_set_state(
+        'restore',
+        'بازیابی ماشین جدید در حال انجام است. تا پایان Health Check سامانه قفل می‌ماند.',
+        null,
+        ['maintenance_job_id'=>(string)$job['id'],'fresh_target'=>true]
+    );
+
+    try {
+        $job['stage']='apply';
+        $job['progress']=40;
+        $job['message']='در حال بازیابی دیتابیس و فایل‌ها…';
+        maintenance_job_write($job);
+
+        $archive = maintenance_open_archive($path);
+        maintenance_restore_sql_file($pdo, $validated['database_path']);
+        maintenance_clear_directory(maintenance_root() . '/uploads');
+        maintenance_restore_files($archive, 'uploads', maintenance_root() . '/uploads');
+        maintenance_config_set_app_key($targetKey);
+
+        $job['stage']='health';
+        $job['progress']=85;
+        $job['message']='در حال بررسی سلامت ماشین بازیابی‌شده…';
+        maintenance_job_write($job);
+        $health = maintenance_health_check($pdo);
+        if (!$health['ok']) throw new RuntimeException('Health Check پس از Machine Recovery کامل نبود.');
+
+        maintenance_clear_state();
+        maintenance_job_finish($job, true, 'Machine Recovery و Health Check کامل شد.');
+        return [
+            'success'=>true,
+            'health'=>$health,
+            'recovery_metadata'=>$validated['manifest']['recovery_metadata'] ?? null,
+        ];
+    } catch (Throwable $e) {
+        maintenance_set_state(
+            'recovery_required',
+            'Machine Recovery کامل نشد؛ مقصد برای جلوگیری از استفاده ناامن قفل مانده است.',
+            null,
+            ['maintenance_job_id'=>(string)$job['id'],'fresh_target'=>true]
+        );
+        maintenance_job_finish($job, false, 'Machine Recovery نیازمند رسیدگی است: ' . $e->getMessage());
+        throw $e;
+    }
+}
+
+function maintenance_restore_external_backup_to_empty_target(string $sourcePath, string $passphrase = ''): array
+{
+    if (!is_file($sourcePath) || !is_readable($sourcePath)) {
+        throw new RuntimeException('فایل Recovery Set قابل خواندن نیست.');
+    }
+    maintenance_ensure_storage();
+    $secure = maintenance_secure_backup_is_file($sourcePath);
+    $stage = maintenance_tmp_dir() . '/machine-recovery-' . bin2hex(random_bytes(12)) . '.tar.gz';
+    if ($secure) {
+        maintenance_secure_backup_decrypt_file($sourcePath, $stage, $passphrase);
+    } else {
+        if (!copy($sourcePath, $stage)) throw new RuntimeException('مرحله‌بندی Recovery Set انجام نشد.');
+        @chmod($stage, 0640);
+    }
+
+    try {
+        return maintenance_lock(static function () use ($stage): array {
+            return maintenance_restore_archive_to_empty_target($stage, db());
+        });
+    } finally {
+        @unlink($stage);
+    }
+}
+
 function maintenance_restore_compatibility(array $manifest): void
 {
     if(($manifest['type']??'')!=='backup')throw new RuntimeException('بازیابی مدیریتی فقط از پشتیبان اصلی سامانه مجاز است.');
