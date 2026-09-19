@@ -15,7 +15,7 @@
     [switch]$SkipService
 )
 $ErrorActionPreference = 'Stop'
-Import-Module (Join-Path $PSScriptRoot 'setup-support.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'setup-support.psm1') -DisableNameChecking -Force
 $ServiceName = 'SoknaRuntime'
 $sessionId = [guid]::NewGuid().ToString('N')
 $session = ''
@@ -104,7 +104,11 @@ try {
     if (Test-Path (Join-Path $AppRoot 'VERSION.txt')) { $summary.version = (Get-Content (Join-Path $AppRoot 'VERSION.txt') -Raw).Trim() }
     $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
     if ($Mode -ne 'Validate' -and -not $isAdmin) { throw 'Administrator privileges are required.' }
-    if (-not $SkipHttps) { Assert-File $OpenSslExe 'OpenSSL executable'; Invoke-SoknaProcess $OpenSslExe @('version') | Out-Null }
+    if (-not $SkipHttps) {
+        Assert-File $OpenSslExe 'OpenSSL executable'
+        Invoke-SoknaProcess $OpenSslExe @('version') | Out-Null
+        & (Join-Path $PSScriptRoot 'provision-local-https.ps1') -OpenSslExe $OpenSslExe -DataRoot $DataRoot -Hostname $Hostname -ValidateOnly | Out-Null
+    }
     if (-not $ServiceHostExe) { $ServiceHostExe = Join-Path $PSScriptRoot 'bin\SoknaRuntimeService.exe' }
     Assert-File $ServiceHostExe 'Prebuilt Runtime Service Host (build it in CI)'
     $phpCheck = 'if(PHP_VERSION_ID<80200){fwrite(STDERR,"PHP 8.2+ required");exit(2);}foreach(["pdo_mysql","fileinfo","openssl","sodium","mbstring"] as $e){if(!extension_loaded($e)){fwrite(STDERR,"Missing PHP extension: ".$e);exit(2);}}'

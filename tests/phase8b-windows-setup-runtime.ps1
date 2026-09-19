@@ -1,7 +1,7 @@
 ﻿param([Parameter(Mandatory=$true)][string]$PhpExe, [Parameter(Mandatory=$true)][string]$ServiceHostExe, [Parameter(Mandatory=$true)][string]$OpenSslExe)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $repo 'runtime/windows/setup-support.psm1') -Force
+Import-Module (Join-Path $repo 'runtime/windows/setup-support.psm1') -DisableNameChecking -Force
 $root = Join-Path $env:TEMP ('SOKNA setup آزمون ' + [guid]::NewGuid().ToString('N'))
 New-SoknaPrivateDirectory $root | Out-Null
 $setup = Join-Path $repo 'runtime/windows/setup-sokna.ps1'
@@ -51,12 +51,12 @@ try {
     [IO.File]::WriteAllText((Join-Path $app 'install.lock'), 'preserve-lock')
     [IO.File]::WriteAllText((Join-Path $app 'VERSION.txt'), 'fixture')
     $configHash = (Get-FileHash (Join-Path $app 'config.php')).Hash
-    $args = @('-Mode','Repair','-AppRoot',$app,'-DataRoot',$data,'-SkipHttps')
+    $repairArguments = @('-Mode','Repair','-AppRoot',$app,'-DataRoot',$data,'-SkipHttps')
     $ownsService = $true
-    $s = Run-Setup $args
+    $s = Run-Setup $repairArguments
     Assert ((Get-Service SoknaRuntime).Status -eq 'Running') 'Real SCM service did not start'
     $before = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\SoknaRuntime').ImagePath
-    $s = Run-Setup $args
+    $s = Run-Setup $repairArguments
     Assert ((Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\SoknaRuntime').ImagePath -eq $before) 'Repair changed service configuration'
     Assert ((Get-FileHash (Join-Path $app 'config.php')).Hash -eq $configHash) 'Repair changed config/secret'
 
@@ -69,7 +69,7 @@ try {
     $goodHash = (Get-FileHash (Join-Path $data 'bin/SoknaRuntimeService.exe')).Hash
     $goodHost = $ServiceHostExe
     $ServiceHostExe = $badExe
-    $s = Run-Setup $args 2
+    $s = Run-Setup $repairArguments 2
     $ServiceHostExe = $goodHost
     Assert ((Get-FileHash (Join-Path $data 'bin/SoknaRuntimeService.exe')).Hash -eq $goodHash) 'Failed repair did not restore original host binary'
     Assert ((Get-Service SoknaRuntime).Status -eq 'Running') 'Failed repair did not restore running service'

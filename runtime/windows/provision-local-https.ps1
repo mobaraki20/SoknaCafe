@@ -1,10 +1,11 @@
 param(
     [Parameter(Mandatory=$true)][string]$OpenSslExe,
     [string]$DataRoot = "$env:ProgramData\SOKNA",
-    [string]$Hostname = 'sokna.local'
+    [string]$Hostname = 'sokna.local',
+    [switch]$ValidateOnly
 )
 $ErrorActionPreference = 'Stop'
-Import-Module (Join-Path $PSScriptRoot 'setup-support.psm1')
+Import-Module (Join-Path $PSScriptRoot 'setup-support.psm1') -DisableNameChecking
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'Administrator privileges are required.' }
 if (-not (Test-Path -LiteralPath $OpenSslExe -PathType Leaf)) { throw 'OpenSSL executable was not found.' }
 if ($Hostname -notmatch '^(?=.{1,253}$)[a-z0-9]+(?:[.-][a-z0-9]+)*$') { throw 'Invalid local hostname.' }
@@ -38,6 +39,12 @@ function Assert-TlsIdentity([string]$Directory) {
         $privatePublic = (Invoke-SoknaProcess $OpenSslExe @('pkey','-in',$pair[1],'-pubout')).Output.Trim()
         if ($public -ne $privatePublic) { throw 'TLS certificate/private key mismatch. Existing identity was preserved.' }
     }
+}
+
+if ($ValidateOnly) {
+    if ($present -eq $required.Count) { Assert-TlsIdentity $Secrets }
+    [pscustomobject]@{ valid=$true; identity_exists=($present -eq 4) } | ConvertTo-Json -Compress
+    return
 }
 
 if ($present -eq $required.Count) {
