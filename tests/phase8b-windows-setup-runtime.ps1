@@ -49,7 +49,7 @@ try {
     $app = Join-Path $root 'app'
     $data = Join-Path $root 'data'
     New-Item -ItemType Directory -Force (Join-Path $app 'runtime') | Out-Null
-    [IO.File]::WriteAllText((Join-Path $app 'runtime/sokna-runtime.php'), '<?php if(in_array("--self-check",$argv,true)){exit(0);} if(!in_array("--child",$argv,true)){$child=proc_open([PHP_BINARY,__FILE__,"--child"],[], $pipes);} while(true){sleep(1);}')
+    [IO.File]::WriteAllText((Join-Path $app 'runtime/sokna-runtime.php'), '<?php if(in_array("--self-check",$argv,true)){exit(0);} file_put_contents(__DIR__."/started-".getmypid().".txt",json_encode($argv)); if(!in_array("--child",$argv,true)){$child=proc_open([PHP_BINARY,__FILE__,"--child"],[0=>["file","NUL","r"],1=>["file",__DIR__."/child.log","a"],2=>["file",__DIR__."/child.log","a"]],$pipes);file_put_contents(__DIR__."/spawn-result.txt",is_resource($child)?"started":"failed");} while(true){sleep(1);}')
     [IO.File]::WriteAllText((Join-Path $app 'config.php'), '<?php /* secret-canary-123 */')
     [IO.File]::WriteAllText((Join-Path $app 'install.lock'), 'preserve-lock')
     [IO.File]::WriteAllText((Join-Path $app 'VERSION.txt'), 'fixture')
@@ -67,7 +67,13 @@ try {
         if ($children.Count -eq 2) { break }
         Start-Sleep -Milliseconds 100
     }
-    Assert ($children.Count -eq 2) 'Repair left orphan runtime processes'
+    if ($children.Count -ne 2) {
+        Write-Host ('Fixture process count=' + $children.Count)
+        $children | Select-Object ProcessId,ParentProcessId,CommandLine | ConvertTo-Json -Compress | Write-Host
+        Get-ChildItem (Join-Path $app 'runtime') -File | Where-Object { $_.Extension -in @('.txt','.log') } | ForEach-Object { Write-Host $_.Name; Get-Content $_.FullName | Write-Host }
+        Get-Content (Join-Path $data 'logs/runtime-service-host.log') | Write-Host
+    }
+    Assert ($children.Count -eq 2) 'Repair must leave exactly one runtime and one fixture worker'
 
     # Inject an SCM start failure AFTER replacing the installed binary.
     $badSource = Join-Path $root 'FailService.cs'
