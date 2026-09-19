@@ -9,7 +9,7 @@ sw=read('service-worker.js')
 assert f"const RELEASE='{version}'" in sw and f"const CACHE='cafe-staff-v{version}'" in sw
 
 # Quick Order: only approved workflow/reliability changes; visual owner stays frozen.
-qo=read('assets/js/staff-quick-order.js'); qapi=read('staff/api_quick_order.php'); qpage=read('staff/quick-order.php')
+qo=read('assets/js/staff-quick-order.js'); qapi=read('staff/api_quick_order.php')+'\n'+read('includes/staff_order_service.php'); qpage=read('staff/quick-order.php')
 assert 'pendingAction' not in qo and 'pendingOrderIds' not in qo and 'فعلاً منتظر بماند' not in qo
 assert 'data-qo-pending-status="accounted"' in qo and 'data-qo-pending-status="cancelled"' in qo
 assert qo.index('data-qo-pending-status="accounted"') < qo.index('data-qo-pending-status="cancelled"')
