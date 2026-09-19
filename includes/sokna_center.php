@@ -438,6 +438,21 @@ function sokna_center_payroll_reminder_count(int $localUserId, int $timeoutSecon
     return (int)$count;
 }
 
+function sokna_center_outbound_user_projection_supported(): bool
+{
+    $override = $GLOBALS['SOKNA_CENTER_CONFIG_OVERRIDE'] ?? null;
+    if (is_array($override) && array_key_exists('outbound_user_projection_supported', $override)) {
+        return (bool)$override['outbound_user_projection_supported'];
+    }
+    return setting_bool('sokna_center_outbound_user_projection_supported', false);
+}
+
+function sokna_center_store_remote_capabilities(array $data): void
+{
+    $caps = is_array($data['capabilities'] ?? null) ? $data['capabilities'] : [];
+    $supported = bool_from_mixed($caps['user_projection_v1'] ?? false);
+    sokna_center_setting_write('sokna_center_outbound_user_projection_supported', $supported ? '1' : '0');
+}
 function sokna_center_update_connection_state(bool $success, string $error = ''): void
 {
     $now = date('Y-m-d H:i:s');
@@ -573,6 +588,7 @@ function sokna_center_test_connection(int $actorUserId, ?string $baseUrl = null,
         $token = sokna_center_build_token('probe', $actorUserId, 'CAFE', $baseUrl, $secret, 'strict');
         $response = sokna_center_http_post_form(sokna_center_endpoint('/auth/probe.php', $baseUrl), ['token'=>$token], sokna_center_request_origin(), 7);
         $data = sokna_center_remote_result($response, 'probe');
+        sokna_center_store_remote_capabilities($data);
         sokna_center_update_connection_state(true);
         if ($audit) audit_log_write('center_probe_success', 'integration', 'sokna_center', ['version'=>text_substr((string)($data['version'] ?? ''), 0, 40)], $actorUserId);
         return $data;

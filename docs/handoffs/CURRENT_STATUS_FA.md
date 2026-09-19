@@ -2,8 +2,8 @@
 
 Updated: 2026-09-19
 Repository: `mobaraki20/SoknaCafe`
-Current completed release checkpoint: `1.36.4-dev.35`
-Active validation target: `1.36.4-dev.36` / Phase 7B
+Current completed release checkpoint: `1.36.4-dev.36`
+Active validation target: `1.36.4-dev.37` / Phase 7C
 
 ## Completed architecture migration
 - Phase 0 — Source Audit.
@@ -45,19 +45,20 @@ Read latest handoff:
 - Public does not become Table Draft business authority.
 
 ## Active work
-Phase 7B — Accommodation transport adaptation.
+Phase 7C — Center outbound adaptation.
 
-Branch: `phase/7b-accommodation-transport`
+Branch: `phase/7c-center-outbound`
 
 Current scope:
-- move HTTPS mechanics out of the Accommodation business owner.
-- preserve Local-authoritative settlement/recovery/error classification exactly.
+- add capability-negotiated Runtime-owned Cafe→Center user projection.
+- preserve the old Center→Cafe directory endpoint as compatibility fallback.
+- keep Cafe as user authority and Center as HR authority; Public stays out of personnel data.
 
-Design: `docs/architecture-migration-r2/PHASE7_DESIGN_NOTES_FA.md`
-Checkpoint: `docs/architecture-migration-r2/PHASE7B_CHECKPOINT_FA.md`
+Checkpoint: docs/architecture-migration-r2/PHASE7C_CHECKPOINT_FA.md
 
-Phase 7A is complete: PR #12 / main CI `35439861511` SUCCESS.
-After 7B post-merge PASS, continue Phase 7C Center outbound adaptation.
+Phase 7A complete: PR #12 / main CI 35439861511 SUCCESS.
+Phase 7B complete: PR #13 / main CI 35440573461 SUCCESS.
+After 7C post-merge PASS, finalize Phase 7 handoff.
 
 ## Phase 7 frozen direction
 

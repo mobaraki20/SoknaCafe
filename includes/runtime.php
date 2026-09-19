@@ -77,6 +77,11 @@ function sokna_runtime_worker_registry(): array
             'command' => [PHP_BINARY, $root . '/tools/deferred-worker.php', '--once'],
             'required' => false,
         ],
+        'center_projection' => [
+            'interval_seconds' => 60,
+            'command' => [PHP_BINARY, $root . '/tools/center-projection-worker.php', '--once'],
+            'required' => false,
+        ],
         'guest_availability' => [
             'interval_seconds' => 2,
             'command' => [PHP_BINARY, $root . '/tools/guest-availability-worker.php', '--once'],

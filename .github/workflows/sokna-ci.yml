@@ -150,6 +150,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Module ownership contract failed' }
           python tests/phase7b-accommodation-transport-contract.py
           if ($LASTEXITCODE -ne 0) { throw 'Phase 7B accommodation transport contract failed' }
+          python tests/phase7c-center-outbound-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 7C Center outbound contract failed' }
           python tests/v1360-final-invariants.py
           if ($LASTEXITCODE -ne 0) { throw 'Final invariants failed' }
           python tests/updater-current-contract.py
@@ -298,6 +300,7 @@ jobs:
           php tests/phase6b-sellable-kind-local.php
           php tests/phase6c-table-draft-http.php
           php tests/phase6c-table-draft-local.php
+          php tests/phase7c-center-projection-local.php
       - name: Public edge log on failure
         if: failure()
         shell: bash
