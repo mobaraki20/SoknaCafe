@@ -68,7 +68,7 @@ need(not duplicates, f"duplicate table owners: {duplicates}")
 discovered = schema_tables()
 owned = set(owners)
 need(discovered == owned, f"table ownership coverage mismatch missing={sorted(discovered-owned)} extra={sorted(owned-discovered)}")
-need(len(discovered) == 67, f"expected 62 current schema tables, found {len(discovered)}")
+need(len(discovered) == 69, f"expected 69 current schema tables, found {len(discovered)}")
 
 # Every user/agent-facing PHP route has one module owner. This keeps HTTP ownership explicit
 # without forcing entrypoint files to move folders.
