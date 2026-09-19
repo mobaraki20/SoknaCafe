@@ -470,3 +470,16 @@ Core/Finance/Orders/Platform/Menu و Printing نباید Casual Toggle داشت�
 - Subscriber payment Deferred فقط پس از Local ledger commit رسمی می‌شود؛ reversal Deferred نیست.
 - `deferred_context` یک Read Model محدود برای فرم‌های 4G است و Public آن را بر اساس capability filter می‌کند.
 - Late event مربوط به period بسته فقط یک review candidate می‌سازد و هیچ silent back-post/reopen انجام نمی‌دهد.
+
+
+## Preparation Permission Boundary (Phase 6A)
+- Release checkpoint: `1.36.4-dev.32`.
+- Canonical permission owner: `includes/preparation_permissions.php`.
+- Visibility و Actionability دو مفهوم جدا هستند.
+- `preparation` بدون supervision فقط areaهای assign‌شده را می‌بیند/عمل می‌کند.
+- `shift_supervision` بدون Preparation، Kitchen/Bar را سراسری می‌بیند ولی هیچ mutation آماده‌سازی ندارد.
+- ترکیب `shift_supervision + preparation` دید سراسری دارد ولی mutation فقط در areaهای assign‌شده مجاز است.
+- Admin role برای Preparation operational mutation wildcard محسوب نمی‌شود؛ Admin مانیتور سراسری read-only است.
+- `waiter/api_feed.php` هیچ write side effect ندارد.
+- `waiter/api_action.php` authority را دوباره از owner canonical می‌گیرد و area را server-side enforce می‌کند.
+- Browser از `visible_preparation_areas` و `actionable_preparation_areas` سرور استفاده می‌کند و role label را infer نمی‌کند.
