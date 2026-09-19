@@ -4,8 +4,11 @@ require dirname(__DIR__) . '/bootstrap.php';
 require_any_capability(['preparation','shift_supervision']);
 require dirname(__DIR__) . '/includes/panel_layout.php';
 $user=current_user();
-$assignedAreas=user_preparation_areas((int)$user['id']);
-$canPrepare=!is_admin() && user_has_capability('preparation',$user) && !empty($assignedAreas);
+$preparationAccess=preparation_access_context($user);
+$assignedAreas=$preparationAccess['assigned_areas'];
+$visibleAreas=$preparationAccess['visible_areas'];
+$actionableAreas=$preparationAccess['actionable_areas'];
+$canPrepare=(bool)$preparationAccess['can_mutate'];
 $monitorOnly=!$canPrepare;
 panel_header('آماده‌سازی','waiter');
 ?>
@@ -37,6 +40,8 @@ window.WAITER_ACTION_API=<?= json_script(asset('waiter/api_action.php')) ?>;
 window.WAITER_STATUS_API=<?= json_script(asset('operator/api_status.php')) ?>;
 window.CAFE_CURRENCY=<?= json_script('تومان') ?>;
 window.WAITER_CAN_CLAIM=<?= $canPrepare?'true':'false' ?>;
+window.WAITER_ACTIONABLE_AREAS=<?= json_script($actionableAreas) ?>;
+window.WAITER_VISIBLE_AREAS=<?= json_script($visibleAreas) ?>;
 window.WAITER_MONITOR_ONLY=<?= $monitorOnly?'true':'false' ?>;
 </script>
 <?php panel_footer('<script defer src="'.e(asset('assets/js/waiter.js')).'"></script>'); ?>

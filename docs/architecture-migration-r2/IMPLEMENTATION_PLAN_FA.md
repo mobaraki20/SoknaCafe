@@ -65,7 +65,12 @@ Checkpoint gates:
 
 ## Phase 6 — Domain Additions/Refactors
 ترتیب داخلی برای کاهش ریسک:
-1. Preparation visible/actionable permission fix
+1. Preparation visible/actionable permission fix — IMPLEMENTED in `1.36.4-dev.32`
+   - owner: `includes/preparation_permissions.php`
+   - `shift_supervision` و Admin: global read-only monitor
+   - `preparation`: assigned-area visibility/action
+   - `shift_supervision + preparation`: global visibility, mutation فقط assigned areas
+   - feed کاملاً read-only؛ action route server-authoritative
 2. explicit sellable kind
 3. server Table Draft
 4. batch purchase

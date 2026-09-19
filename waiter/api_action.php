@@ -6,7 +6,7 @@ maintenance_guard_json();
 require_any_capability(['orders_floor','preparation']);
 if($_SERVER['REQUEST_METHOD']!=='POST')json_response(['success'=>false],405);
 $data=request_json();if(!csrf_valid($data['csrf_token']??null))json_response(['success'=>false,'message'=>'صفحه منقضی شده؛ تازه‌سازی کنید.'],419);
-$user=current_user();$userId=(int)$user['id'];$ordersAllowed=user_has_capability('orders_floor',$user);$preparationAllowed=!is_admin()&&user_has_capability('preparation',$user);$action=(string)($data['action']??'');$callId=(int)($data['call_id']??0);$orderId=(int)($data['order_id']??0);$pdo=db();
+$user=current_user();$userId=(int)$user['id'];$ordersAllowed=user_has_capability('orders_floor',$user);$preparationAccess=preparation_access_context($user);$preparationAllowed=(bool)$preparationAccess['can_mutate'];$actionableAreas=$preparationAccess['actionable_areas'];$action=(string)($data['action']??'');$callId=(int)($data['call_id']??0);$orderId=(int)($data['order_id']??0);$pdo=db();
 try{$pdo->beginTransaction();
 if(in_array($action,['accept_call','done_call'],true)){
  if(!$ordersAllowed||$callId<1)throw new RuntimeException('مسئولیت «سفارش و سالن» برای رسیدگی به فراخوان فعال نیست.');
@@ -17,7 +17,7 @@ if(in_array($action,['accept_call','done_call'],true)){
 }
 if($action==='claim_order_area'){
  if(!$preparationAllowed||$orderId<1)throw new RuntimeException('مسئولیت «آماده‌سازی» برای این کار فعال نیست.');
- $area=normalize_preparation_area((string)($data['area']??''));if(!in_array($area,user_preparation_areas($userId),true))throw new RuntimeException('این بخش آماده‌سازی برای حساب شما فعال نیست.');
+ $area=normalize_preparation_area((string)($data['area']??''));if(!in_array($area,$actionableAreas,true))throw new RuntimeException('این بخش آماده‌سازی برای حساب شما فعال نیست.');
  $orderStmt=$pdo->prepare('SELECT o.id,o.status,o.table_id,t.name table_name FROM orders o JOIN cafe_tables t ON t.id=o.table_id WHERE o.id=? FOR UPDATE');$orderStmt->execute([$orderId]);$order=$orderStmt->fetch();if(!$order)throw new RuntimeException('سفارش پیدا نشد.');if(!in_array((string)$order['status'],['accounted','completed'],true))throw new RuntimeException('فقط سفارش تأییدشده قابل دریافت است.');
  $itemStmt=$pdo->prepare('SELECT id,item_name,quantity,item_note,preparation_station FROM order_items WHERE order_id=? AND quantity>0 ORDER BY id FOR UPDATE');$itemStmt->execute([$orderId]);$items=array_values(array_filter($itemStmt->fetchAll(),static fn(array $x):bool=>preparation_station_requires_work((string)$x['preparation_station'])&&preparation_area_for_station((string)$x['preparation_station'])===$area));if(!$items)throw new RuntimeException('این سفارش آیتمی برای بخش انتخاب‌شده ندارد.');$signature=preparation_items_signature($items);
  $claimStmt=$pdo->prepare('SELECT c.*,u.display_name claimed_by FROM order_preparation_claims c LEFT JOIN users u ON u.id=c.claimed_by_user_id WHERE c.order_id=? AND c.area_key=? FOR UPDATE');$claimStmt->execute([$orderId,$area]);$claim=$claimStmt->fetch();
@@ -29,9 +29,9 @@ if($action==='claim_order_area'){
 if($action==='ack_adjustment'){
  $adjustmentId=(int)($data['adjustment_id']??0);if(!$preparationAllowed||$adjustmentId<1)throw new RuntimeException('مسئولیت عملیاتی آماده‌سازی برای این حساب فعال نیست.');
  $stmt=$pdo->prepare("SELECT * FROM preparation_adjustments WHERE id=? FOR UPDATE");$stmt->execute([$adjustmentId]);$adjustment=$stmt->fetch();if(!$adjustment)throw new RuntimeException('اصلاحیه پیدا نشد.');
- $area=normalize_preparation_area((string)$adjustment['area_key']);if(!in_array($area,user_preparation_areas($userId),true))throw new RuntimeException('این اصلاحیه مربوط به بخش شما نیست.');
+ $area=normalize_preparation_area((string)$adjustment['area_key']);if(!in_array($area,$actionableAreas,true))throw new RuntimeException('این اصلاحیه مربوط به بخش شما نیست.');
  if((string)$adjustment['status']==='applied'){$pdo->commit();json_response(['success'=>true,'message'=>'این اصلاحیه قبلاً اعمال شده است.']);}
- $pdo->prepare("UPDATE preparation_adjustments SET status='applied',acknowledged_at=COALESCE(acknowledged_at,NOW()),acknowledged_by_user_id=COALESCE(acknowledged_by_user_id,?),applied_at=NOW(),applied_by_user_id=? WHERE id=?")->execute([$userId,$userId,$adjustmentId]);
+ $pdo->prepare("UPDATE preparation_adjustments SET status='applied',delivered_at=COALESCE(delivered_at,NOW()),acknowledged_at=COALESCE(acknowledged_at,NOW()),acknowledged_by_user_id=COALESCE(acknowledged_by_user_id,?),applied_at=NOW(),applied_by_user_id=? WHERE id=?")->execute([$userId,$userId,$adjustmentId]);
  audit_log_write('preparation.adjustment_applied','preparation_adjustment',$adjustmentId,['order_id'=>(int)$adjustment['order_id'],'area'=>$area,'previous_quantity'=>(int)$adjustment['previous_quantity'],'new_quantity'=>(int)$adjustment['new_quantity']],$userId);
  $pdo->commit();json_response(['success'=>true,'message'=>'اصلاحیه آماده‌سازی اعمال شد.']);
 }
