@@ -113,6 +113,16 @@ function table_draft_get(PDO $pdo,int $tableId,array $user): array
     return ['success'=>true,'draft'=>$draft?table_draft_result($pdo,$draft):null];
 }
 
+function table_draft_get_by_id(PDO $pdo,int $draftId,array $user): array
+{
+    table_draft_assert_permission($user);
+    if($draftId<1)throw new TableDraftException('invalid_draft','پیش‌نویس معتبر نیست.',422);
+    $stmt=$pdo->prepare('SELECT * FROM table_drafts WHERE id=? LIMIT 1');
+    $stmt->execute([$draftId]);$draft=$stmt->fetch(PDO::FETCH_ASSOC);
+    if(!$draft)throw new TableDraftException('invalid_draft','پیش‌نویس پیدا نشد.',404);
+    return ['success'=>true,'draft'=>table_draft_result($pdo,$draft)];
+}
+
 function table_draft_validate_session_locked(PDO $pdo,int $tableId,int $expectedSessionId): int
 {
     $current=table_draft_current_session_id_locked($pdo,$tableId);
