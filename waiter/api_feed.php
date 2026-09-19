@@ -8,7 +8,8 @@ $userId=(int)$user['id'];
 $preparationMode=(string)($_GET['mode']??'')==='preparation';
 $ordersAllowed=!$preparationMode && user_has_capability('orders_floor',$user);
 $preparationAccess=preparation_access_context($user);
-$preparationAllowed=(bool)$preparationAccess['can_view'];
+$preparationCapability=(bool)$preparationAccess['has_preparation'];
+$preparationVisible=(bool)$preparationAccess['can_view'];
 $assignedAreas=$preparationAccess['assigned_areas'];
 $canClaimPreparation=(bool)$preparationAccess['can_mutate'];
 $monitorPreparation=(bool)$preparationAccess['monitor_only'] || (bool)$preparationAccess['has_shift_supervision'] || (bool)$preparationAccess['is_admin'];
@@ -31,7 +32,7 @@ try{
     $lightRevision=substr(hash('sha256',json_encode([$revision,$areas,$ordersAllowed,$canClaimPreparation],JSON_UNESCAPED_UNICODE)),0,24);
 }catch(Throwable $revisionError){error_log('preparation revision: '.$revisionError->getMessage());}
 if($lightRevision!==''&&$clientRevision!==''&&hash_equals($lightRevision,$clientRevision)){
-    json_response(['success'=>true,'unchanged'=>true,'revision'=>$lightRevision,'permissions'=>['orders_floor'=>$ordersAllowed,'preparation'=>$preparationAllowed,'preparation_areas'=>$areas,'visible_preparation_areas'=>$areas,'actionable_preparation_areas'=>$actionableAreas,'can_claim_preparation'=>$canClaimPreparation,'monitor_preparation'=>$monitorPreparation],'server_time'=>date(DATE_ATOM)]);
+    json_response(['success'=>true,'unchanged'=>true,'revision'=>$lightRevision,'permissions'=>['orders_floor'=>$ordersAllowed,'preparation'=>$preparationCapability,'preparation_visible'=>$preparationVisible,'preparation_actionable'=>$canClaimPreparation,'preparation_areas'=>$areas,'visible_preparation_areas'=>$areas,'actionable_preparation_areas'=>$actionableAreas,'can_claim_preparation'=>$canClaimPreparation,'monitor_preparation'=>$monitorPreparation],'server_time'=>date(DATE_ATOM)]);
 }
 
 if($ordersAllowed){
@@ -70,7 +71,7 @@ if($areas){
     }
 }
 
-if($preparationAllowed && $areas){
+if($preparationVisible && $areas){
     $orders=$pdo->query("SELECT o.id,o.table_id,o.status,o.total_amount,o.customer_note,o.created_at,o.updated_at,t.name table_name,t.zone_label FROM orders o JOIN cafe_tables t ON t.id=o.table_id WHERE o.status IN('accounted','completed') AND o.business_date=$businessDateSql ORDER BY o.created_at,o.id")->fetchAll();
     $ids=array_map('intval',array_column($orders,'id'));$itemsByArea=[];$claims=[];
     if($ids){
@@ -94,4 +95,4 @@ usort($tasks,static fn(array $a,array $b):int=>((int)$b['priority']<=>(int)$a['p
 usort($todayOrders,static fn(array $a,array $b):int=>strcmp((string)$b['created_at'],(string)$a['created_at']));
 $snapshot=hash('sha256',json_encode([$callIds,$attentionKeys,array_map(static fn(array $t):array=>[$t['key'],$t['status'],$t['updated_at']??'',$t['claimed_by']??''],$tasks),array_map(static fn(array $t):array=>[$t['key'],$t['claimed']??false,$t['claimed_by']??'',$t['updated_at']??''],$todayOrders)],JSON_UNESCAPED_UNICODE));
 $client=trim((string)($_GET['snapshot']??''));$unchanged=$client!==''&&hash_equals($snapshot,$client);
-json_response(['success'=>true,'unchanged'=>$unchanged,'snapshot'=>$snapshot,'revision'=>$lightRevision,'tasks'=>$unchanged?[]:$tasks,'today_orders'=>$unchanged?[]:$todayOrders,'call_ids'=>$callIds,'attention_keys'=>$attentionKeys,'permissions'=>['orders_floor'=>$ordersAllowed,'preparation'=>$preparationAllowed,'preparation_areas'=>$areas,'visible_preparation_areas'=>$areas,'actionable_preparation_areas'=>$actionableAreas,'can_claim_preparation'=>$canClaimPreparation,'monitor_preparation'=>$monitorPreparation],'server_time'=>date(DATE_ATOM)]);
+json_response(['success'=>true,'unchanged'=>$unchanged,'snapshot'=>$snapshot,'revision'=>$lightRevision,'tasks'=>$unchanged?[]:$tasks,'today_orders'=>$unchanged?[]:$todayOrders,'call_ids'=>$callIds,'attention_keys'=>$attentionKeys,'permissions'=>['orders_floor'=>$ordersAllowed,'preparation'=>$preparationCapability,'preparation_visible'=>$preparationVisible,'preparation_actionable'=>$canClaimPreparation,'preparation_areas'=>$areas,'visible_preparation_areas'=>$areas,'actionable_preparation_areas'=>$actionableAreas,'can_claim_preparation'=>$canClaimPreparation,'monitor_preparation'=>$monitorPreparation],'server_time'=>date(DATE_ATOM)]);
