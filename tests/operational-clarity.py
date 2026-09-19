@@ -15,6 +15,7 @@ need('waiter/index.php','staffActionQueue','Unified actionable queue is missing.
 forbid('waiter/index.php','مسئولیت شیفت','Temporary shift responsibility UI remains.')
 forbid('waiter/index.php','waiterTables','Ordinary tables remain mixed into the action queue.')
 forbid('waiter/api_feed.php','responsibility_active(','Staff feed still depends on temporary shift toggles.')
-need('staff/api_quick_order.php','expected_price','Quick-order price revalidation is missing.')
+quick_order_owner=read('staff/api_quick_order.php')+'\n'+read('includes/staff_order_service.php')
+if 'expected_price' not in quick_order_owner: errors.append('Quick-order price revalidation is missing.')
 if errors:raise SystemExit('\n'.join(errors))
 print('Operational clarity passed: capability routing, unified bills, preparation-only queue, and safe quick-order revalidation.')
