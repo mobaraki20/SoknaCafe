@@ -3,7 +3,7 @@
 Updated: 2026-09-19  
 Repository: `mobaraki20/SoknaCafe`  
 Current verified release checkpoint: `1.36.4-dev.33`  
-Current verified main at time of this handoff: `fb929f3e62d76b98c89c1721183988d2c1ae493b`
+Current verified main at time of this handoff: `3b1c35c8bf7e06a512194559736fbba0303fec46`
 
 این فایل مرجع سطح‌بالای ادامه پروژه است. هر ایجنت جدید باید قبل از هر تغییر کد، این فایل را کامل بخواند. هدف این است که ادامه پروژه بدون نیاز به تاریخچه ChatGPT یا پرسیدن مجدد تصمیم‌های قبلی ممکن باشد.
 
@@ -281,8 +281,13 @@ Handoff:
 Current completed checkpoint:
 **Phase 6B / 1.36.4-dev.33**
 
-Current next work:
+Current in-progress work:
 **Phase 6C — Server-persistent Table Draft**
+
+Active branch: `phase/6c-table-draft`  
+Active head: `756d805912351d6dd539f9922e9bd97144369b63`  
+Current CI: Windows PASS / Public+MariaDB PASS / Linux FAIL.  
+Read `docs/handoffs/PHASE6C_IN_PROGRESS_HANDOFF_FA.md` before changing Phase 6C.
 
 Frozen target:
 - exactly one active draft per table.
@@ -450,3 +455,8 @@ Then write:
 
 Exact active status is always in:
 `docs/handoffs/CURRENT_STATUS_FA.md`.
+
+For the current unmerged Phase 6C branch also read:
+`docs/handoffs/PHASE6C_IN_PROGRESS_HANDOFF_FA.md`.
+
+Never discard or restart an active phase branch merely because `main` is the last completed checkpoint. First compare the branch to main and inspect its latest CI.
