@@ -290,6 +290,7 @@ jobs:
           php tests/phase5-deferred-local.php
           php tests/phase6a-preparation-local.php
           php tests/phase6b-sellable-kind-local.php
+          php tests/phase6c-table-draft-http.php
           php tests/phase6c-table-draft-local.php
       - name: Public edge log on failure
         if: failure()
