@@ -150,6 +150,7 @@ function quick_order_catalog(array $tableIds, ?string $requestedMenuKey = null):
             'category_name'=>(string)$row['category_name'],
             'price'=>(int)$row['price'],
             'station'=>$station,
+            'sellable_kind'=>normalize_sellable_kind($row['sellable_kind']??null),
             'takeaway_allowed'=>(int)($row['takeaway_allowed']??1),
             'order_available'=>1,
             'blocked_scope'=>null,
@@ -265,7 +266,7 @@ try {
         $id=(int)$row['id'];$item=$itemsById[$id];
         $quantity=(int)$row['quantity'];$itemNote=(string)$row['note'];
         $lineTotal=(int)$item['price']*$quantity;$total+=$lineTotal;
-        $lines[] = [$id,(string)$item['name'],(int)$item['price'],$quantity,$itemNote,normalize_fulfillment_mode((string)$row['fulfillment_mode']),normalize_preparation_station((string)($item['preparation_station'] ?? 'cold_bar')),$lineTotal];
+        $lines[] = [$id,(string)$item['name'],(int)$item['price'],$quantity,$itemNote,normalize_fulfillment_mode((string)$row['fulfillment_mode']),normalize_preparation_station((string)($item['preparation_station'] ?? 'cold_bar')),$lineTotal,normalize_sellable_kind($item['sellable_kind']??null)];
     }
 
     $publicCode = strtoupper(bin2hex(random_bytes(8)));
@@ -275,9 +276,9 @@ try {
         VALUES(?,?,NULL,?,?, 'staff','accounted',?,?,NOW(),?,?,?,?,?,?,?)");
     $insert->execute([$publicCode,$clientToken,$tableId,$sessionId,$note,$total,$userId,$userId,$businessOrderNumber,(string)$business['business_date'],(string)$business['shift_key'],(string)$business['shift_label'],(string)$business['cutoff']]);
     $orderId = (int)$pdo->lastInsertId();
-    $lineStmt = $pdo->prepare('INSERT INTO order_items(order_id,item_id,item_name,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total) VALUES(?,?,?,?,?,?,?,?,?,?)');
-    foreach ($lines as [$itemId,$name,$price,$quantity,$itemNote,$fulfillmentMode,$station,$lineTotal]) {
-        $lineStmt->execute([$orderId,$itemId,$name,$price,$quantity,$quantity,$itemNote !== '' ? $itemNote : null,$fulfillmentMode,$station,$lineTotal]);
+    $lineStmt = $pdo->prepare('INSERT INTO order_items(order_id,item_id,item_name,sellable_kind_snapshot,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total) VALUES(?,?,?,?,?,?,?,?,?,?,?)');
+    foreach ($lines as [$itemId,$name,$price,$quantity,$itemNote,$fulfillmentMode,$station,$lineTotal,$sellableKind]) {
+        $lineStmt->execute([$orderId,$itemId,$name,$sellableKind,$price,$quantity,$quantity,$itemNote !== '' ? $itemNote : null,$fulfillmentMode,$station,$lineTotal]);
     }
     $pdo->prepare("INSERT INTO order_status_history(order_id,from_status,to_status,actor_user_id) VALUES(?,NULL,'accounted',?)")->execute([$orderId,$userId]);
     $hasPreparation = (bool)array_filter($lines, static fn(array $line): bool => preparation_station_requires_work((string)$line[6]));
