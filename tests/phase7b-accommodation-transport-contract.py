@@ -14,7 +14,7 @@ checks={
  'business owner has no HTTP engine': all(token not in business for token in ['curl_init','stream_context_create','SOKNA_ACCOMMODATION_TRANSPORT','CURLOPT_']),
  'transport owns test injection and HTTPS engines': all(token in transport for token in ['SOKNA_ACCOMMODATION_TRANSPORT','curl_init','stream_context_create','CURLOPT_SSL_VERIFYPEER','CURLOPT_SSL_VERIFYHOST']),
  'transport preserves auth and tracking headers': 'Authorization: Bearer ' in transport and 'X-Tracking-ID: ' in transport and 'X-Sokna-Tracking-ID:' in transport,
- 'transport preserves release user-agent': "Sokna-Cafe/' . app_release_version()" in transport,
+ 'transport preserves release user-agent': 'CURLOPT_USERAGENT' in transport and "'Sokna-Cafe/'" in transport and 'app_release_version()' in transport,
  'transport does not own business persistence': all(token not in transport for token in ['accommodation_transfers','settlement_finalize_locked','settlement_reopen_locked','INSERT INTO','UPDATE accommodation_','DELETE FROM']),
  'module registry names both owners': 'includes/accommodation.php + includes/accommodation_transport.php + admin/accommodation*.php' in modules,
  'existing contract still targets compatibility API': "accommodation_http_request('search'" in api_contract and 'accommodation_transport_request' not in api_contract,
