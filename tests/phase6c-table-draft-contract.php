@@ -8,6 +8,9 @@ $draft=(string)file_get_contents($root.'/includes/table_draft.php');
 $staffService=(string)file_get_contents($root.'/includes/staff_order_service.php');
 $quick=(string)file_get_contents($root.'/staff/api_quick_order.php');
 $relay=(string)file_get_contents($root.'/includes/relay_protocol.php');
+$quickPage=(string)file_get_contents($root.'/staff/quick-order.php');
+$quickJs=(string)file_get_contents($root.'/assets/js/staff-quick-order.js');
+$gate=(string)file_get_contents($root.'/tests/run-1360-dev-gate.sh');
 
 function p6c(bool $ok,string $message):void{
     if(!$ok){fwrite(STDERR,"FAIL: $message\n");exit(1);}
@@ -37,6 +40,10 @@ p6c(str_contains($staffService,'function staff_order_commit_tx'),'Staff Order co
 p6c(str_contains($quick,'staff_order_commit_tx($pdo, $data, $user, $mode)'),'Quick Order consumes canonical Staff Order owner');
 p6c(!preg_match('/INSERT\s+INTO\s+orders/i',$quick),'Quick Order endpoint no longer owns order INSERT');
 p6c(str_contains($staffService,'$clientToken'),'push idempotency uses canonical staff client token');
+p6c(str_contains($quickPage,'window.STAFF_TABLE_DRAFT_API'),'Quick Order page exposes the canonical Table Draft endpoint');
+p6c(str_contains($quickJs,'sharedDraftEnabled')&&str_contains($quickJs,'saveDraftNow')&&str_contains($quickJs,"action:'finalize'"),'Quick Order normal mode consumes server-persistent Table Draft lifecycle');
+p6c(str_contains($quickJs,"late_accounting.${Number(tableId || 0)}")&&!str_contains($quickJs,"? `sokna.quick-order.v2.${userKey}.late_accounting"),'browser draft key is reserved for late-accounting/recovery, not normal Table Draft authority');
+p6c(str_contains($gate,'python tests/phase6c-table-draft-browser.py'),'multi-context Table Draft browser test is part of the Linux gate');
 
 foreach(['table_draft.create','table_draft.edit','table_draft.finalize','table_draft.cancel'] as $kind){
     p6c(str_contains($relay,"'".$kind."'"),'Realtime protocol reserves '.$kind);
