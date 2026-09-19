@@ -1,7 +1,7 @@
 # Phase 7A Checkpoint — Runtime-owned Print/Notification Processing
 
 Version target: `1.36.4-dev.35`
-Status: VALIDATION
+Status: COMPLETE
 
 ## Printing
 - SOKNA Runtime registers a bounded `printing` supervisor worker.
@@ -20,5 +20,10 @@ Status: VALIDATION
 - Windows CI executes `tools/print-runtime-worker.php --once`.
 - existing notification hybrid/security regressions remain active.
 
+## Validation evidence
+- PR #12 merged.
+- merge commit: `215949cd3507bcf2d20860bd6a8c1c6ef67c51b3`.
+- post-merge main CI `35439861511`: Windows PASS / Public+Local MariaDB PASS / Linux+Browser PASS.
+
 ## Next
-After 7A merge + post-merge CI, continue Phase 7B Accommodation transport adaptation.
+Phase 7B Accommodation transport adaptation.

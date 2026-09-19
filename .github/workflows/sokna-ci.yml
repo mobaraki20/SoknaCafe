@@ -148,6 +148,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'UI language contract failed' }
           python tests/v1360-module-ownership-contract.py
           if ($LASTEXITCODE -ne 0) { throw 'Module ownership contract failed' }
+          python tests/phase7b-accommodation-transport-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 7B accommodation transport contract failed' }
           python tests/v1360-final-invariants.py
           if ($LASTEXITCODE -ne 0) { throw 'Final invariants failed' }
           python tests/updater-current-contract.py
