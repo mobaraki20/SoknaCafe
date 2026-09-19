@@ -4,11 +4,13 @@
 
 ## نقطه شروع اجباری
 هر ایجنت جدید بعد از اتصال به GitHub باید به این ترتیب بخواند:
-1. `docs/handoffs/CURRENT_STATUS_FA.md`
-2. handoff آخرین Phase/Subphase معرفی‌شده در همان فایل
-3. `DEVELOPER_READ_FIRST_FA.md`
-4. `docs/architecture-migration-r2/IMPLEMENTATION_PLAN_FA.md`
-5. checkpoint همان Phase در `docs/architecture-migration-r2/`
+1. `docs/handoffs/START_HERE_NEXT_AGENT_FA.md`
+2. `docs/handoffs/MASTER_HANDOFF_FA.md`
+3. `docs/handoffs/CURRENT_STATUS_FA.md`
+4. handoff آخرین Phase/Subphase معرفی‌شده در همان فایل
+5. `DEVELOPER_READ_FIRST_FA.md`
+6. `docs/architecture-migration-r2/IMPLEMENTATION_PLAN_FA.md`
+7. checkpoint همان Phase در `docs/architecture-migration-r2/`
 
 ## قانون به‌روزرسانی
 از Phase 6A به بعد، هر PR مربوط به Phase/Subphase باید قبل از Merge:

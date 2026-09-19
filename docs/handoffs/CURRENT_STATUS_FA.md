@@ -53,9 +53,11 @@ Frozen target:
 
 ## New-agent startup
 1. Fetch current `main`.
-2. Read this file.
-3. Read `docs/handoffs/PHASE6B_HANDOFF_FA.md`.
-4. Read R2 Implementation Plan/API/Schema contracts.
-5. Check latest GitHub Actions state.
-6. Create/use `phase/6c-table-draft` from current main.
-7. Update this file + Phase 6C handoff in the same Phase 6C PR.
+2. Read `docs/handoffs/START_HERE_NEXT_AGENT_FA.md`.
+3. Read `docs/handoffs/MASTER_HANDOFF_FA.md`.
+4. Read this file.
+5. Read `docs/handoffs/PHASE6B_HANDOFF_FA.md`.
+6. Read R2 Implementation Plan/API/Schema/Risk contracts.
+7. Check latest GitHub Actions state.
+8. Create/use `phase/6c-table-draft` from current main.
+9. Update this file + Phase 6C handoff + Master source map if ownership changes in the same Phase 6C PR.
