@@ -52,8 +52,9 @@ checks={
         and "'fresh_target'=>true" in maint,
 
     'setup CLI reads sensitive values from files rather than secret arguments':
-        '--config-file=' in cli
-        and '--passphrase-file=' in cli
+        "'config-file'" in cli
+        and "'passphrase-file'" in cli
+        and "'--'.$name.'='" in cli
         and '--db-pass=' not in cli
         and '--password=' not in cli,
 
