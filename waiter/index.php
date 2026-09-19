@@ -40,6 +40,8 @@ window.WAITER_ACTION_API=<?= json_script(asset('waiter/api_action.php')) ?>;
 window.WAITER_STATUS_API=<?= json_script(asset('operator/api_status.php')) ?>;
 window.CAFE_CURRENCY=<?= json_script('تومان') ?>;
 window.WAITER_CAN_CLAIM=<?= $canPrepare?'true':'false' ?>;
+window.WAITER_ACTIONABLE_AREAS=<?= json_script($actionableAreas) ?>;
+window.WAITER_VISIBLE_AREAS=<?= json_script($visibleAreas) ?>;
 window.WAITER_MONITOR_ONLY=<?= $monitorOnly?'true':'false' ?>;
 </script>
 <?php panel_footer('<script defer src="'.e(asset('assets/js/waiter.js')).'"></script>'); ?>
