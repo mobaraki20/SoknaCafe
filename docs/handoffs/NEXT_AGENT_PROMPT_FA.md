@@ -1,73 +1,36 @@
 # Copy/Paste Prompt for the Next Agent
 
-این متن را تقریباً بدون تغییر به ایجنت بعدی بده.
-
----
-
-تو مسئول ادامه پروژه SOKNA Cafe هستی. این پروژه قبلاً تا Phase 6B کامل شده و Phase 6C در حال اجراست. از من سؤال‌های معماری/محصولی که قبلاً تصمیم‌گیری شده نپرس. GitHub و handoffها source of truth هستند.
+تو مسئول ادامه پروژه SOKNA Cafe هستی. پروژه تا **Phase 6C / 1.36.4-dev.34** کامل شده است. GitHub و handoffها source of truth هستند و تصمیم‌های frozen قبلی را دوباره از کاربر نپرس.
 
 Repository:
 `https://github.com/mobaraki20/SoknaCafe`
 
-ابتدا بدون تغییر کد این فایل‌ها را به ترتیب بخوان:
+ابتدا بخوان:
 1. `NEXT_AGENT_START_HERE.md`
 2. `docs/handoffs/MASTER_HANDOFF_FA.md`
 3. `docs/handoffs/CURRENT_STATUS_FA.md`
-4. `docs/handoffs/PHASE6C_IN_PROGRESS_HANDOFF_FA.md`
-5. `docs/architecture-migration-r2/PHASE6C_DESIGN_NOTES_FA.md`
-6. `DEVELOPER_READ_FIRST_FA.md`
-7. `docs/architecture-migration-r2/IMPLEMENTATION_PLAN_FA.md`
-8. `docs/architecture-migration-r2/API_CONTRACTS.md`
-9. `docs/architecture-migration-r2/SCHEMA_CHANGE_PLAN.md`
-10. `docs/architecture-migration-r2/RISK_REGISTER.md`
+4. `docs/handoffs/PHASE6C_HANDOFF_FA.md`
+5. `DEVELOPER_READ_FIRST_FA.md`
+6. R2 Implementation/API/Schema/Risk contracts.
 
-وضعیت کد:
-- verified safe main: `3b1c35c8bf7e06a512194559736fbba0303fec46`
-- completed checkpoint: `1.36.4-dev.33` / Phase 6B
-- active branch: `phase/6c-table-draft`
-- active branch head: `756d805912351d6dd539f9922e9bd97144369b63`
-- branch 30 commits ahead of main, 0 behind.
-- latest CI run: `35426707212`
-- Windows PASS.
-- Public/MariaDB PASS.
-- Linux FAIL only in current regression path after Phase6C contract passes.
+وضعیت معتبر:
+- Phase 6C PR #10 merged.
+- product merge commit: `ccf0656655702a0b175a7cb9d7521fcb808745b1`.
+- post-merge product CI `35438494232`: SUCCESS on Windows / Public+Local MariaDB / Linux+Browser.
+- old `PHASE6C_IN_PROGRESS_HANDOFF_FA.md` is superseded.
 
-اولین کار تو:
-- Phase 6C را از صفر نساز.
-- branch موجود را checkout کن.
-- failure فعلی `tests/itemized-settlement-contract.py` را بررسی کن.
-- سه late-accounting check به احتمال زیاد owner-drift تست هستند چون behavior به `includes/staff_order_service.php` منتقل شده.
-- `runtime edit locks` را کورکورانه به تست منتقل نکن؛ با نسخه main قبل از extraction مقایسه کن و مطمئن شو invariant واقعاً در canonical service حفظ شده. اگر behavior گم شده، product را اصلاح کن.
-- بعد full CI را سبز کن، handoff Phase 6C را کامل کن، PR/merge با expected head SHA انجام بده، post-merge CI main را سبز کن و فقط بعد Phase 6C را COMPLETE اعلام کن.
+اولین کار:
+- از current `main` یک branch جدید برای Phase 7 بساز.
+- قبل از کدنویسی، printing queue/state/claim/reconciliation، Runtime supervisor، notification outbox/worker، Accommodation transport و Center boundary را audit کن.
+- Phase 7 باید Print Worker را زیر Runtime internalize کند **بدون** تعویض state machine بالغ چاپ.
+- Notification processing را زیر Runtime منتقل کن و durable outbox semantics را حفظ کن.
+- Accommodation business contract را حفظ و فقط transport را adapt کن.
+- Center را به سمت outbound Local-authoritative integration ببَر.
 
-قواعد غیرقابل‌مذاکره:
+قواعد:
 - Local تنها Business Authority است.
 - Public full DB/admin clone نیست.
-- Realtime و Deferred دو queue/state machine جدا هستند.
-- Permission system دوم نساز.
-- UI/Design System فعلی owner است.
-- Business owner موازی نساز؛ owner فعلی را پیدا و refactor کن.
-- Table Draft قبل از Finalize هیچ order/business-number/preparation/inventory/finance/receipt side effect ندارد.
-- Table Draft هیچ auto-expiry ندارد.
-- Table Draft Remote فقط هنگام reachable بودن Local کار می‌کند و هرگز Deferred-safe نیست.
-- موفقیت mutation فقط بعد از Local commit معتبر است.
-- lost ACK نباید duplicate mutation بسازد.
-- printing state machine را قبل از Phase 7 بی‌دلیل بازطراحی نکن.
-
-روش کار:
-- تصمیم‌های فنی را خودت بگیر.
-- فقط اگر یک تصمیم واقعی محصولی در source/R2/handoff باز است آن را با کاربر مطرح کن.
-- برای هر subphase branch/contract/tests/CI/PR/post-merge CI داشته باش.
-- بعد از هر subphase، GitHub handoff را به‌روز کن تا ایجنت بعدی بدون تاریخچه گفتگو ادامه دهد.
-- اگر owner یک فایل جابه‌جا شد، regression test را به owner جدید وصل کن؛ invariant را ضعیف نکن.
-
-در پایان هر checkpoint، حتماً این‌ها را update کن:
-- `docs/handoffs/CURRENT_STATUS_FA.md`
-- handoff همان Phase/Subphase
-- `docs/handoffs/MASTER_HANDOFF_FA.md` اگر source map یا تصمیم‌های مهم عوض شده
-- exact branch/head/PR/merge SHA/CI run IDs
-- known failures/UAT gaps/next exact action
-
----
-
-این پروژه باید بدون نیاز به پرسیدن مجدد هدف یا مسیر از کاربر ادامه یابد.
+- Realtime و Deferred جدا می‌مانند.
+- Business owner موازی نساز.
+- printing reliability و idempotency را برای refactor deployment قربانی نکن.
+- هر subphase باید tests/CI/PR/post-merge validation و handoff GitHub داشته باشد.

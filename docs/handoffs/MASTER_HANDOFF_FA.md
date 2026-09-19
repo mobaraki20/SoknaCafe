@@ -2,8 +2,8 @@
 
 Updated: 2026-09-19  
 Repository: `mobaraki20/SoknaCafe`  
-Current verified release checkpoint: `1.36.4-dev.33`  
-Current verified main at time of this handoff: `3b1c35c8bf7e06a512194559736fbba0303fec46`
+Current verified release checkpoint: `1.36.4-dev.34`  
+Current verified product main checkpoint: `ccf0656655702a0b175a7cb9d7521fcb808745b1`
 
 این فایل مرجع سطح‌بالای ادامه پروژه است. هر ایجنت جدید باید قبل از هر تغییر کد، این فایل را کامل بخواند. هدف این است که ادامه پروژه بدون نیاز به تاریخچه ChatGPT یا پرسیدن مجدد تصمیم‌های قبلی ممکن باشد.
 
@@ -153,6 +153,7 @@ Owners:
 - `includes/relay_client.php`
 - `includes/relay_dispatch.php`
 - `includes/relay_projection.php`
+- `includes/relay_actor.php`
 - `public_edge/`
 - `tools/relay-worker.php`
 
@@ -274,35 +275,54 @@ Migration:
 Handoff:
 - `docs/handoffs/PHASE6B_HANDOFF_FA.md`
 
+### Phase 6C — Server-persistent Table Draft
+Release: `1.36.4-dev.34`  
+PR #10  
+Merge commit: `ccf0656655702a0b175a7cb9d7521fcb808745b1`  
+Product post-merge CI: `35438494232` SUCCESS
+
+Canonical owners:
+- `includes/staff_order_service.php` — canonical Staff Quick Order commit transaction.
+- `includes/table_draft.php` — Table Draft lifecycle and concurrency owner.
+- `staff/api_table_draft.php` — Local HTTP surface.
+- `includes/relay_actor.php` + relay dispatch/protocol — authenticated remote adapter.
+
+Outcome:
+- exactly one active server-persistent draft per table.
+- shared draft across authorized staff with optimistic `version` conflict protection.
+- no order row/business number/preparation/inventory/finance/receipt side effect before Finalize.
+- explicit cancel/finalize; no auto-expiry.
+- Finalize revalidates current Local state and delegates to canonical Staff Order owner.
+- normal Quick Order browser state is server-authoritative; stale editor cannot overwrite newer draft.
+- remote Table Draft is Realtime/Local-required only and never Deferred-safe.
+
+Handoff:
+- `docs/handoffs/PHASE6C_HANDOFF_FA.md`
+
 ---
 
 ## 5) Current Exact State
 
 Current completed checkpoint:
-**Phase 6B / 1.36.4-dev.33**
+**Phase 6C / 1.36.4-dev.34**
 
-Current in-progress work:
-**Phase 6C — Server-persistent Table Draft**
+Phase 6C product merge:
+- PR #10
+- branch final head: `ea46ecf6209ff14329438684fb94720445ce2403`
+- merge commit: `ccf0656655702a0b175a7cb9d7521fcb808745b1`
+- product post-merge CI: `35438494232` — SUCCESS
+- all three gates PASS: Windows / Public+Local MariaDB / Linux+Browser.
 
-Active branch: `phase/6c-table-draft`  
-Active head: `756d805912351d6dd539f9922e9bd97144369b63`  
-Current CI: Windows PASS / Public+MariaDB PASS / Linux FAIL.  
-Read `docs/handoffs/PHASE6C_IN_PROGRESS_HANDOFF_FA.md` before changing Phase 6C.
+Current next phase:
+**Phase 7 — Printing / Notifications / Integrations**
 
-Frozen target:
-- exactly one active draft per table.
-- server persistent and shared between authorized staff.
-- no order row before finalize.
-- no business order number before finalize.
-- no preparation task before finalize.
-- no inventory movement before finalize.
-- no finance/settlement/receipt before finalize.
-- no auto-expiry.
-- explicit finalize or cancel.
-- finalize revalidates table/session, permissions, catalog, price, availability and fulfillment.
-- finalize must call canonical Staff Order owner; no duplicated order transaction.
-- remote draft operations are realtime/local-required only.
-- Table Draft is never Deferred-safe.
+Frozen Phase 7 direction from R2:
+- internalize Print Worker under Runtime without replacing the mature printing state machine.
+- move Notification processing under Runtime while preserving durable outbox semantics.
+- adapt Accommodation transport without changing its business contract.
+- refactor Center toward outbound Local-authoritative integration.
+
+Before writing Phase 7 code, audit current printing/notification/integration owners and write Phase 7 design notes + preservation contracts.
 
 ---
 
@@ -326,6 +346,9 @@ Frozen target:
 - `includes/guest_order_manage_service.php`
 - `includes/guest_order_status_service.php`
 - `includes/guest_table_context_service.php`
+- `includes/staff_order_service.php`
+- `includes/table_draft.php`
+- `staff/api_table_draft.php`
 - `staff/api_quick_order.php`
 - `operator/api_bill.php`
 - `operator/api_status.php`
@@ -437,26 +460,23 @@ For every new Phase/Subphase:
 
 ## 10) Next Agent — Exact First Action
 
-Do not start by writing schema.
+Phase 6C is complete. Do **not** reopen or recreate its branch.
 
-First audit Phase 6C:
-- table/session lifecycle owners.
-- current staff quick-order/cart state.
-- canonical staff order commit transaction.
-- table/order permission owners.
-- any browser-only cart/draft persistence.
-- order side effects: business number, prep claim/ticket, inventory, finance, printing.
+Start Phase 7 from current `main` only after reading:
+- `docs/handoffs/CURRENT_STATUS_FA.md`
+- `docs/handoffs/PHASE6C_HANDOFF_FA.md`
+- `docs/architecture-migration-r2/IMPLEMENTATION_PLAN_FA.md` Phase 7
+- `docs/architecture-migration-r2/SCHEMA_CHANGE_PLAN.md` Phase 7
+- `docs/architecture-migration-r2/RISK_REGISTER.md` R08 and integration risks.
 
-Then write:
-- `docs/architecture-migration-r2/PHASE6C_DESIGN_NOTES_FA.md`
-- schema plan for draft-only tables.
-- contract proving draft save has zero canonical order side effect.
-- finalize adapter that delegates to existing canonical Staff Order transaction.
+First audit, before changing code:
+- mature printing queue/state/claim/reconciliation owners and Print Agent v4 boundaries.
+- `runtime/sokna-runtime.php` worker registry/supervision.
+- current push/notification outbox and `tools/push-worker.php`.
+- Accommodation canonical business contract and transport boundary.
+- Center inbound/outbound authority boundaries.
 
-Exact active status is always in:
+Then create a dedicated Phase 7 branch and design/checkpoint notes. Preserve current printing reliability; internalization is a deployment/worker ownership change, not a state-machine rewrite.
+
+Exact current status is always in:
 `docs/handoffs/CURRENT_STATUS_FA.md`.
-
-For the current unmerged Phase 6C branch also read:
-`docs/handoffs/PHASE6C_IN_PROGRESS_HANDOFF_FA.md`.
-
-Never discard or restart an active phase branch merely because `main` is the last completed checkpoint. First compare the branch to main and inspect its latest CI.

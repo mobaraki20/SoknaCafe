@@ -1,3 +1,11 @@
+## 1.36.4-dev.34 — Phase 6C / Server-persistent Table Draft
+- Table Draft به Business State محلی و server-persistent با یک Draft فعال برای هر میز تبدیل شد.
+- optimistic version conflict مانع overwrite شدن Draft جدید توسط context قدیمی می‌شود.
+- Quick Order عادی از server draft به‌عنوان authority استفاده می‌کند؛ browser storage authority نیست.
+- Draft Save هیچ Order/Business Number/Preparation/Inventory/Finance/Receipt ایجاد نمی‌کند.
+- Finalize وضعیت جاری را revalidate و به canonical Staff Order transaction واگذار می‌کند.
+- Remote Draft فقط Realtime/Local-required است و Deferred-safe نیست.
+- تست دو context کارکنان، HTTP actor/permission و MariaDB lifecycle به gateهای رسمی اضافه شدند.
 ## 1.36.4-dev.26 — Pre-Operational Print Clean Baseline
 - پاک‌سازی یک‌باره تاریخچه تستی Print v4 روی Server با حفظ Agent/Destination/Template و تمام داده‌های کسب‌وکار.
 - ترتیب حذف برای Claim reconciliation/claim requests/attempts/jobs با Foreign Keyها هم‌راستا شد.
