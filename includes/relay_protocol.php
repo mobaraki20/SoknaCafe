@@ -27,6 +27,7 @@ const SOKNA_RELAY_REALTIME_KINDS = [
     'order.cancel',
     'settlement.commit',
     'preparation.mutate',
+    'table_draft.get',
     'table_draft.create',
     'table_draft.edit',
     'table_draft.finalize',
