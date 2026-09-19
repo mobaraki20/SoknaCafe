@@ -198,6 +198,17 @@ try {
     $summary.stage = $stage
     $summary.exit_code = $exitCode
     $summary.finished_utc = [DateTime]::UtcNow.ToString('o')
+    $summary.os_version = [Environment]::OSVersion.VersionString
+    $summary.os_64bit = [Environment]::Is64BitOperatingSystem
+    try {
+        $serviceSnapshot = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+        $summary.service_status_at_exit = $(if ($serviceSnapshot) { [string]$serviceSnapshot.Status } else { 'not_installed' })
+        $hostLog = Join-Path $DataRoot 'logs\runtime-service-host.log'
+        Assert-SoknaSafePath $hostLog
+        if (Test-Path -LiteralPath $hostLog -PathType Leaf) {
+            $summary.service_host_recent_events = @(Get-Content -LiteralPath $hostLog -Tail 50 | ForEach-Object { Protect-SoknaLog ([string]$_) })
+        }
+    } catch { $summary.service_diagnostics = 'unavailable; setup error remains authoritative' }
     if ($session) {
         # Explicit allowlist: never recursively archive setup inputs, keys or backups.
         $summary.diagnostics_directory = $session

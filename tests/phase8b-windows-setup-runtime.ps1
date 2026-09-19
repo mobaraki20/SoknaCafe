@@ -63,13 +63,18 @@ try {
     Assert ((Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\SoknaRuntime').ImagePath -eq $before) 'Repair changed service configuration'
     Assert ((Get-FileHash (Join-Path $app 'config.php')).Hash -eq $configHash) 'Repair changed config/secret'
     for ($attempt=0; $attempt -lt 20; $attempt++) {
-        $children = @(Get-CimInstance Win32_Process -Filter "Name='php.exe'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains($app) })
+        # SYSTEM-owned processes can have a null CIM CommandLine; identify our
+        # fixture by its own PID markers, including previous generations.
+        $children = @(Get-ChildItem (Join-Path $app 'runtime') -Filter 'started-*.txt' | ForEach-Object {
+            $fixturePid = [int]($_.BaseName -replace '^started-','')
+            Get-Process -Id $fixturePid -ErrorAction SilentlyContinue
+        })
         if ($children.Count -eq 2) { break }
         Start-Sleep -Milliseconds 100
     }
     if ($children.Count -ne 2) {
         Write-Host ('Fixture process count=' + $children.Count)
-        $children | Select-Object ProcessId,ParentProcessId,CommandLine | ConvertTo-Json -Compress | Write-Host
+        $children | Select-Object Id,ProcessName | ConvertTo-Json -Compress | Write-Host
         Get-ChildItem (Join-Path $app 'runtime') -File | Where-Object { $_.Extension -in @('.txt','.log') } | ForEach-Object { Write-Host $_.Name; Get-Content $_.FullName | Write-Host }
         Get-Content (Join-Path $data 'logs/runtime-service-host.log') | Write-Host
     }
