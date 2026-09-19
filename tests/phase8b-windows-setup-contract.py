@@ -54,7 +54,7 @@ checks={
     'setup CLI reads sensitive values from files rather than secret arguments':
         "'config-file'" in cli
         and "'passphrase-file'" in cli
-        and "'--'.$name.'='" in cli
+        and "$prefix = '--' . $name . '=';" in cli
         and '--db-pass=' not in cli
         and '--password=' not in cli,
 
@@ -89,7 +89,8 @@ checks={
         and 'Setup\\.exe' in ps,
 
     'runtime docs point to Phase 8B setup owner':
-        'setup-sokna.ps1' in readme,
+        'runtime/windows/setup-sokna.ps1' in readme
+        and 'Canonical Windows setup owner' in readme,
 }
 
 failed=[name for name,ok in checks.items() if not ok]
