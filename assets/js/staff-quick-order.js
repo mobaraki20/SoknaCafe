@@ -11,6 +11,7 @@
     tableMeta: $('quickOrderSelectedTableMeta'), changeTable: $('quickOrderChangeTable'), headerContext: $('quickOrderHeaderContext'),
     back: $('quickOrderBack'), menus: $('quickOrderMenus'), categories: $('quickOrderCategories'), categorySearch: $('quickOrderCategorySearch'), categoryTitle: $('quickOrderCategoryTitle'),
     mobilePending: $('quickOrderMobilePendingBanner'), mobilePendingCount: $('quickOrderMobilePendingCount'), uncertainNotice: $('quickOrderUncertainNotice'),
+    draftStatus: $('quickOrderDraftStatus'), draftStatusText: $('quickOrderDraftStatusText'), draftCancel: $('quickOrderDraftCancel'),
     categoryBack: $('quickOrderCategoryBack'), searchWrap: $('quickOrderSearchWrap'), searchToggle: $('quickOrderSearchToggle'),
     search: $('quickOrderSearch'), searchClear: $('quickOrderSearchClear'), items: $('quickOrderItems'), cart: $('quickOrderCart'),
     cartClose: $('quickOrderCartClose'), cartBackdrop: $('quickOrderCartBackdrop'), cartTitle: $('quickOrderCartTitle'),
@@ -39,6 +40,7 @@
     loaded: false, loading: false, tables: [], menus: [], menuKey: '', categories: [], items: [], category: 0,
     mobileView: 'categories', cart: new Map(), requestToken: '', pendingReview: new Set(), submitting: false, uncertain: false,
     searchOpen: false, changeTableMode: false, draftTableId: 0, clearUndo: null, clearUndoTimer: 0, cartGesture: null, cartGestureTimer: 0, fulfillmentEditing: false,
+    serverDraftId: 0, serverDraftVersion: 0, serverDraftFingerprint: '', draftSaving: false, draftSaveTimer: 0, draftSavePromise: null, draftLoadSeq: 0, draftConflict: false, draftError: '',
   };
 
   const esc = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
@@ -86,8 +88,9 @@
     const record = {...payload, version: 3, updatedAt: Date.now()};
     safeLocalSet(uncertainKey(payload.tableId), JSON.stringify(record));
   }
+  const sharedDraftEnabled = !lateAccounting && Boolean(window.STAFF_TABLE_DRAFT_API);
   const resetToken = () => { if (state.uncertain) return; invalidateClearUndo(); state.requestToken = ''; saveDraft(); };
-  const draftKey = (tableId = Number(els.tableInput.value || 0)) => lateAccounting ? `sokna.quick-order.v2.${userKey}.late_accounting.${Number(tableId || 0)}` : `sokna.quick-order.v2.${userKey}.${Number(tableId || 0)}`;
+  const draftKey = (tableId = Number(els.tableInput.value || 0)) => `sokna.quick-order.v2.${userKey}.late_accounting.${Number(tableId || 0)}`;
 
   function toast(message, error = false) {
     if (window.CafeUI?.toast) return window.CafeUI.toast(message, error ? 'error' : 'success');
@@ -109,17 +112,45 @@
     return Promise.resolve(false);
   }
 
+  function renderDraftStatus(message = '') {
+    if (!els.draftStatus || lateAccounting) return;
+    const visible = Boolean(state.serverDraftId || state.draftSaving || state.draftConflict || state.draftError || message);
+    els.draftStatus.classList.toggle('hidden', !visible);
+    els.draftStatus.classList.toggle('is-saving', state.draftSaving);
+    els.draftStatus.classList.toggle('is-conflict', state.draftConflict || Boolean(state.draftError));
+    if (els.draftStatusText) {
+      els.draftStatusText.textContent = message || (state.draftSaving
+        ? 'در حال ذخیره روی سرور…'
+        : state.draftConflict
+          ? 'نسخه تازه‌تری ثبت شده است؛ پیش‌نویس دوباره بارگذاری شد.'
+          : state.draftError
+            ? state.draftError
+            : state.serverDraftId
+              ? `نسخه ${digits(state.serverDraftVersion)} · روی سرور ذخیره شده و برای همکاران قابل ادامه است.`
+              : '');
+    }
+    if (els.draftCancel) els.draftCancel.disabled = state.draftSaving || state.uncertain || state.serverDraftId < 1;
+  }
+
   function clearDraftState() {
+    if (state.draftSaveTimer) window.clearTimeout(state.draftSaveTimer);
+    state.draftSaveTimer = 0;
     state.cart.clear();
     state.requestToken = '';
     state.uncertain = false;
     state.fulfillmentEditing = false;
+    state.serverDraftId = 0;
+    state.serverDraftVersion = 0;
+    state.serverDraftFingerprint = '';
+    state.draftConflict = false;
+    state.draftError = '';
     if (els.note) els.note.value = '';
     els.noteWrap?.classList.add('hidden');
     els.noteToggle?.setAttribute('aria-expanded', 'false');
+    renderDraftStatus();
   }
 
-  function saveDraft() {
+  function saveLateAccountingDraft() {
     const tableId = Number(els.tableInput.value || 0);
     if (!tableId) return;
     state.draftTableId = tableId;
@@ -132,7 +163,7 @@
     sessionStorage.setItem(draftKey(tableId), JSON.stringify(payload));
   }
 
-  function restoreDraft(tableId) {
+  function restoreLateAccountingDraft(tableId) {
     clearDraftState();
     state.draftTableId = Number(tableId || 0);
     const raw = sessionStorage.getItem(draftKey(tableId));
@@ -153,21 +184,7 @@
       const uncertain = pendingUncertain || readUncertain(tableId);
       if (uncertain) {
         state.cart.clear();
-        for (const row of uncertain.items) {
-          const item = state.items.find((candidate) => Number(candidate.id) === Number(row.id));
-          const quantity = Math.min(50, Math.max(1, Number(row.quantity || 0)));
-          if (!item || !quantity) continue;
-          const existing = state.cart.get(Number(item.id));
-          if (existing) {
-            existing.quantity = Math.min(50, Number(existing.quantity || 0) + quantity);
-            if (String(row.fulfillment_mode || '') === 'takeaway') existing.takeaway_quantity = Math.min(existing.quantity, Number(existing.takeaway_quantity || 0) + quantity);
-            const incomingNote=String(row.note||'').slice(0,500).trim();
-            if(incomingNote && incomingNote!==String(existing.note||'').trim()) existing.note=[existing.note,incomingNote].filter(Boolean).join('؛ ');
-            clampTakeaway(existing);
-          } else {
-            state.cart.set(Number(item.id), {...item, quantity, note: String(row.note || '').slice(0,500), takeaway_quantity: String(row.fulfillment_mode || '') === 'takeaway' ? quantity : Math.max(0,Math.min(quantity,Number(row.takeaway_quantity||0))), noteOpen:false});
-          }
-        }
+        applyRequestRows(uncertain.items);
         els.note.value = String(uncertain.note || '').slice(0,500);
         state.requestToken = String(uncertain.requestToken || '');
         state.uncertain = true;
@@ -178,22 +195,274 @@
     }
   }
 
+  function applyRequestRows(rows) {
+    state.cart.clear();
+    for (const row of Array.isArray(rows) ? rows : []) {
+      const id = Number(row.id || row.item_id || 0);
+      const item = state.items.find((candidate) => Number(candidate.id) === id) || (id > 0 && String(row.name || row.item_name_snapshot || '').trim() !== '' ? {
+        id,
+        name:String(row.name || row.item_name_snapshot || ''),
+        price:Number(row.price ?? row.unit_price ?? row.expected_price ?? row.unit_price_snapshot ?? 0),
+        category_id:Number(row.category_id || 0),
+        category_name:String(row.category_name || ''),
+        takeaway_allowed:Number(row.takeaway_allowed ?? 1),
+        order_available:1,
+      } : null);
+      const quantity = Math.min(50, Math.max(1, Number(row.quantity || 0)));
+      if (!item || !quantity) continue;
+      const existing = state.cart.get(id);
+      const mode = String(row.fulfillment_mode || '') === 'takeaway' ? 'takeaway' : 'dine_in';
+      const incomingNote = String(row.note ?? row.item_note ?? '').slice(0,500).trim();
+      if (existing) {
+        existing.quantity = Math.min(50, Number(existing.quantity || 0) + quantity);
+        if (mode === 'takeaway') existing.takeaway_quantity = Math.min(existing.quantity, Number(existing.takeaway_quantity || 0) + quantity);
+        if (incomingNote && incomingNote !== String(existing.note || '').trim()) existing.note = [existing.note,incomingNote].filter(Boolean).join('؛ ').slice(0,500);
+        clampTakeaway(existing);
+        state.cart.set(id, existing);
+      } else {
+        state.cart.set(id, {...item, quantity, note:incomingNote, takeaway_quantity:mode === 'takeaway' ? quantity : 0, noteOpen:false});
+      }
+    }
+  }
+
+  const serverDraftFingerprint = (tableId, expectedSessionId, note, items) => JSON.stringify({
+    table_id:Number(tableId||0),
+    expected_session_id:Number(expectedSessionId||0),
+    note:String(note||'').trim(),
+    items:(Array.isArray(items)?items:[]).map((row)=>({
+      id:Number(row.id||0), quantity:Number(row.quantity||0), note:String(row.note||'').trim(),
+      expected_price:Number(row.expected_price??row.unit_price??0),
+      fulfillment_mode:String(row.fulfillment_mode||'dine_in'),
+    })),
+  });
+
+  function fingerprintFromServerDraft(draft) {
+    if (!draft) return '';
+    return serverDraftFingerprint(
+      Number(draft.table_id||0),
+      Number(draft.expected_session_id||0),
+      String(draft.note||''),
+      Array.isArray(draft.items) ? draft.items.map((row)=>({
+        id:Number(row.id||0), quantity:Number(row.quantity||0), note:String(row.note||''),
+        expected_price:Number(row.unit_price??row.expected_price??0),
+        fulfillment_mode:String(row.fulfillment_mode||'dine_in'),
+      })) : []
+    );
+  }
+
+  function draftApiUrl(query = {}) {
+    const url = new URL(window.STAFF_TABLE_DRAFT_API, window.location.href);
+    Object.entries(query).forEach(([key,value])=>{ if(value !== null && value !== undefined && String(value) !== '') url.searchParams.set(key,String(value)); });
+    return url.toString();
+  }
+
+  async function fetchDraftRecord({tableId = 0, draftId = 0} = {}) {
+    if (!sharedDraftEnabled) return null;
+    const response = await fetch(draftApiUrl(draftId > 0 ? {draft_id:draftId} : {table_id:tableId}), {headers:{Accept:'application/json'},credentials:'same-origin',cache:'no-store'});
+    const data = await response.json().catch(()=>({}));
+    if (!response.ok || !data.success) {
+      const error = new Error(data.message || 'دریافت پیش‌نویس انجام نشد.');
+      error.code = String(data.code || '');
+      error.status = Number(response.status || 0);
+      throw error;
+    }
+    return data.draft || null;
+  }
+
+  function navigateOrderSuccess(table, data) {
+    const destination = new URL(successUrl, window.location.origin);
+    destination.searchParams.set('quick_order_success', table.name || `میز ${displayTableCode(table)}`);
+    destination.searchParams.set('quick_order_table', String(table.id));
+    destination.searchParams.set('quick_order_order', String(Number(data.order_id || 0)));
+    destination.searchParams.set('quick_order_number', String(Number(data.order_number || data.order_id || 0)));
+    destination.searchParams.set('quick_order_mode', lateAccounting ? 'late_accounting' : 'normal');
+    destination.searchParams.set('open_table', String(table.id));
+    if (lateAccounting) destination.searchParams.set('resume_settlement', 'itemized');
+    else destination.searchParams.delete('resume_settlement');
+    destination.searchParams.set('work', 'tables');
+    destination.hash = 'tables';
+    window.location.assign(`${destination.pathname}${destination.search}${destination.hash}`);
+  }
+
+  async function loadServerDraft(tableId, options = {}) {
+    if (!sharedDraftEnabled) return null;
+    const loadSeq = ++state.draftLoadSeq;
+    const pending = options.skipUncertain ? null : readUncertain(tableId);
+    if (pending?.kind === 'draft_finalize' && Number(pending.draftId || 0) > 0) {
+      try {
+        const recoveryDraft = await fetchDraftRecord({draftId:Number(pending.draftId)});
+        if (loadSeq !== state.draftLoadSeq) return null;
+        if (recoveryDraft?.state === 'finalized' && Number(recoveryDraft.final_order_id || 0) > 0) {
+          clearUncertain(tableId);
+          const table = state.tables.find((row)=>Number(row.id)===Number(tableId)) || {id:tableId,name:`میز ${tableId}`};
+          navigateOrderSuccess(table,{order_id:Number(recoveryDraft.final_order_id),order_number:Number(recoveryDraft.final_order_id)});
+          return recoveryDraft;
+        }
+      } catch (_) {}
+    }
+
+    const draft = await fetchDraftRecord({tableId});
+    if (loadSeq !== state.draftLoadSeq) return draft;
+    clearDraftState();
+    state.draftTableId = Number(tableId || 0);
+    if (draft) {
+      state.serverDraftId = Number(draft.id || 0);
+      state.serverDraftVersion = Number(draft.version || 0);
+      state.serverDraftFingerprint = fingerprintFromServerDraft(draft);
+      applyRequestRows(draft.items);
+      els.note.value = String(draft.note || '').slice(0,500);
+    }
+
+    if (pending?.kind === 'draft_save') {
+      const priorVersion = Number(pending.draftVersion || 0);
+      const applied = Boolean(draft && Number(draft.version || 0) > priorVersion);
+      if (applied) {
+        clearUncertain(tableId);
+      } else {
+        applyRequestRows(pending.items);
+        els.note.value = String(pending.note || '').slice(0,500);
+        state.requestToken = '';
+        clearUncertain(tableId);
+        saveDraft();
+      }
+    } else if (pending?.kind === 'draft_finalize' && draft && Number(draft.id || 0) === Number(pending.draftId || 0)) {
+      state.uncertain = true;
+    }
+    renderDraftStatus();
+    renderCart();
+    return draft;
+  }
+
+  async function saveDraftNow(options = {}) {
+    if (lateAccounting) { saveLateAccountingDraft(); return null; }
+    if (!sharedDraftEnabled) return null;
+    if (state.draftSavePromise) await state.draftSavePromise;
+    const table = selectedTable();
+    const tableId = Number(table?.id || els.tableInput.value || 0);
+    if (!tableId || state.submitting || state.uncertain) return null;
+    const items = requestLines();
+    const note = String(els.note?.value || '').trim();
+    if (!items.length && !note && state.serverDraftId < 1) { renderDraftStatus(); return null; }
+    const expectedSessionId = Number(table?.session_id || 0);
+    const fingerprint = serverDraftFingerprint(tableId, expectedSessionId, note, items);
+    if (!options.force && fingerprint === state.serverDraftFingerprint) return {success:true,draft_id:state.serverDraftId,version:state.serverDraftVersion};
+
+    const run = (async()=>{
+      state.draftSaving = true; state.draftConflict = false; state.draftError = ''; renderDraftStatus();
+      let response;
+      try {
+        response = await fetch(draftApiUrl(), {
+          method:'POST', credentials:'same-origin', keepalive:Boolean(options.keepalive),
+          headers:{Accept:'application/json','Content-Type':'application/json'},
+          body:JSON.stringify({csrf_token:csrf,action:'save',table_id:tableId,expected_version:Number(state.serverDraftVersion||0),expected_session_id:expectedSessionId,note,items}),
+        });
+      } catch (error) {
+        state.draftError = 'ارتباط هنگام ذخیره نامشخص شد؛ پیش‌نویس برای بازیابی نگه داشته شد.';
+        state.uncertain = true;
+        persistUncertain({kind:'draft_save',requestToken:newToken(),tableId,expectedSessionId,note,items,draftId:Number(state.serverDraftId||0),draftVersion:Number(state.serverDraftVersion||0)});
+        renderDraftStatus(); renderCart();
+        throw error;
+      }
+      const data = await response.json().catch(()=>({}));
+      if (!response.ok || !data.success) {
+        const error = new Error(data.message || 'ذخیره پیش‌نویس انجام نشد.');
+        error.code = String(data.code || '');
+        error.status = Number(response.status || 0);
+        if (['version_conflict','session_changed'].includes(error.code)) {
+          state.draftConflict = true;
+          renderDraftStatus();
+          await loadServerDraft(tableId,{skipUncertain:true});
+          toast('پیش‌نویس توسط همکار یا وضعیت میز تغییر کرده بود؛ نسخه تازه بارگذاری شد.', true);
+        } else {
+          state.draftError = error.message;
+          renderDraftStatus();
+        }
+        throw error;
+      }
+      const draft = data.draft || null;
+      if (!draft) throw new Error('پاسخ ذخیره پیش‌نویس معتبر نیست.');
+      state.serverDraftId = Number(draft.id || 0);
+      state.serverDraftVersion = Number(draft.version || 0);
+      state.serverDraftFingerprint = fingerprintFromServerDraft(draft);
+      state.draftTableId = tableId;
+      clearUncertain(tableId);
+      state.draftError = '';
+      renderDraftStatus();
+      return data;
+    })();
+    state.draftSavePromise = run;
+    try { return await run; }
+    finally {
+      if (state.draftSavePromise === run) state.draftSavePromise = null;
+      state.draftSaving = false;
+      renderDraftStatus();
+    }
+  }
+
+  function saveDraft() {
+    if (lateAccounting) { saveLateAccountingDraft(); return; }
+    if (!sharedDraftEnabled || state.submitting || state.uncertain) return;
+    if (state.draftSaveTimer) window.clearTimeout(state.draftSaveTimer);
+    state.draftSaveTimer = window.setTimeout(()=>{
+      state.draftSaveTimer = 0;
+      void saveDraftNow().catch(()=>{});
+    },240);
+  }
+
+  async function flushDraftSave(options = {}) {
+    if (lateAccounting) { saveLateAccountingDraft(); return null; }
+    if (state.draftSaveTimer) window.clearTimeout(state.draftSaveTimer);
+    state.draftSaveTimer = 0;
+    return saveDraftNow(options);
+  }
+
+  async function restoreDraft(tableId) {
+    if (lateAccounting) { restoreLateAccountingDraft(tableId); return null; }
+    return loadServerDraft(tableId);
+  }
+
   function discardDraft(tableId) {
-    sessionStorage.removeItem(draftKey(tableId));
+    if (lateAccounting) sessionStorage.removeItem(draftKey(tableId));
     safeLocalRemove(uncertainKey(tableId));
-    if (Number(state.draftTableId) === Number(tableId)) state.draftTableId = 0;
+    if (Number(state.draftTableId) === Number(tableId)) {
+      state.draftTableId = 0;
+      state.serverDraftId = 0;
+      state.serverDraftVersion = 0;
+      state.serverDraftFingerprint = '';
+      state.draftConflict = false;
+      state.draftError = '';
+      renderDraftStatus();
+    }
   }
 
   function savedDraftHasContent(tableId) {
+    if (!lateAccounting) return Number(state.draftTableId) === Number(tableId) && state.serverDraftId > 0;
     const raw = sessionStorage.getItem(draftKey(tableId));
     if (!raw) return false;
     try {
       const draft = JSON.parse(raw);
-      return Number(draft?.version) === 6 && Number(draft?.tableId) === Number(tableId) && ((Array.isArray(draft.lines) && draft.lines.length > 0) || String(draft.note || '').trim() !== '');
+      return Number(draft?.version) === 7 && Number(draft?.tableId) === Number(tableId) && ((Array.isArray(draft.lines) && draft.lines.length > 0) || String(draft.note || '').trim() !== '');
     } catch (_) {
       sessionStorage.removeItem(draftKey(tableId));
       return false;
     }
+  }
+
+  async function cancelServerDraft(tableId, expectedVersion, options = {}) {
+    if (!sharedDraftEnabled || Number(expectedVersion||0) < 1) return {success:true,cancelled:false};
+    const response = await fetch(draftApiUrl(), {
+      method:'POST',credentials:'same-origin',headers:{Accept:'application/json','Content-Type':'application/json'},
+      body:JSON.stringify({csrf_token:csrf,action:'cancel',table_id:Number(tableId),expected_version:Number(expectedVersion)}),
+    });
+    const data = await response.json().catch(()=>({}));
+    if (!response.ok || !data.success) {
+      const error = new Error(data.message || 'لغو پیش‌نویس انجام نشد.');
+      error.code = String(data.code || '');
+      error.status = Number(response.status || 0);
+      throw error;
+    }
+    if (options.clearCurrent && Number(els.tableInput.value||0) === Number(tableId)) clearDraftState();
+    return data;
   }
 
   function hasDraft() {
@@ -518,6 +787,7 @@
     els.clear.disabled = state.uncertain || (!canUndoClear && !distinct && !String(els.note.value || '').trim());
     els.noteToggle.disabled = state.uncertain;
     els.note.readOnly = state.uncertain;
+    renderDraftStatus();
     updateGeneralNoteUi();
     els.submit.disabled = !table || !distinct || pending || state.submitting;
     els.submit.textContent = pending ? 'ابتدا سفارش مهمان را بررسی کنید' : state.submitting ? 'در حال بررسی…' : state.uncertain ? `بررسی و تلاش دوباره برای ${textDigits(table?.name || 'میز')}` : distinct ? (lateAccounting ? `ثبت قلم جاافتاده برای ${textDigits(table?.name || 'میز')}` : `ثبت سفارش برای ${textDigits(table?.name || 'میز')}`) : 'یک آیتم انتخاب کنید';
@@ -611,27 +881,53 @@
     const currentId = Number(current?.id || 0);
     const nextId = Number(next.id);
 
-    if (currentId && currentId !== nextId && state.changeTableMode) {
-      invalidateClearUndo();
-      saveDraft();
-      if (savedDraftHasContent(nextId)) {
-        const replace = await confirmAction(`${next.name} یک سفارش نیمه‌کاره ذخیره‌شده دارد. با انتقال این سفارش، پیش‌نویس قبلی آن میز جایگزین می‌شود.`, 'پیش‌نویس میز مقصد', {okLabel: 'جایگزینی و انتقال', danger: true});
-        if (!replace) return;
+    try {
+      if (currentId && currentId !== nextId && state.changeTableMode && sharedDraftEnabled) {
+        invalidateClearUndo();
+        await flushDraftSave();
+        const carry = hasDraft();
+        const carryLines = selectedLines().map((row)=>({...row}));
+        const carryNote = String(els.note?.value || '');
+        const carryCategory = Number(state.category || 0);
+        const destinationDraft = await fetchDraftRecord({tableId:nextId});
+        if (carry && destinationDraft) {
+          const replace = await confirmAction(`${next.name} یک سفارش نیمه‌کاره روی سرور دارد. با انتقال این سفارش، پیش‌نویس قبلی آن میز لغو و جایگزین می‌شود.`, 'پیش‌نویس میز مقصد', {okLabel:'جایگزینی و انتقال',danger:true});
+          if (!replace) return;
+          await cancelServerDraft(nextId,Number(destinationDraft.version||0));
+        }
+        if (state.serverDraftId > 0) await cancelServerDraft(currentId,state.serverDraftVersion);
+        clearDraftState();
+        els.tableInput.value = String(nextId);
+        state.draftTableId = nextId;
+        state.category = carryCategory;
+        if (carry) {
+          for (const row of carryLines) state.cart.set(Number(row.id),row);
+          els.note.value = carryNote;
+          await saveDraftNow({force:true});
+        } else {
+          await restoreDraft(nextId);
+        }
+      } else if (currentId && currentId !== nextId && state.changeTableMode) {
+        invalidateClearUndo();
+        saveDraft();
+        const carry = hasDraft();
+        discardDraft(nextId);
+        discardDraft(currentId);
+        els.tableInput.value = String(nextId);
+        state.draftTableId = nextId;
+        state.requestToken = '';
+        if (carry) saveDraft();
+      } else if (!currentId || currentId !== nextId) {
+        invalidateClearUndo();
+        if (currentId) await flushDraftSave();
+        els.tableInput.value = String(nextId);
+        await restoreDraft(nextId);
+      } else {
+        els.tableInput.value = String(nextId);
       }
-      const carry = hasDraft();
-      discardDraft(nextId);
-      discardDraft(currentId);
-      els.tableInput.value = String(nextId);
-      state.draftTableId = nextId;
-      state.requestToken = '';
-      if (carry) saveDraft();
-    } else if (!currentId || currentId !== nextId) {
-      invalidateClearUndo();
-      if (currentId) saveDraft();
-      els.tableInput.value = String(nextId);
-      restoreDraft(nextId);
-    } else {
-      els.tableInput.value = String(nextId);
+    } catch (error) {
+      toast(requestErrorMessage(error,'تغییر میز انجام نشد؛ پیش‌نویس فعلی حفظ شد.'),true);
+      return;
     }
 
     updateUrlTable(nextId);
@@ -683,8 +979,8 @@
       renderCategories();
       const requestedId = initialTableId || Number(new URL(window.location.href).searchParams.get('table_id') || 0);
       if (requestedId && state.tables.some((table) => Number(table.id) === requestedId)) {
-        restoreDraft(requestedId);
         els.tableInput.value = String(requestedId);
+        await restoreDraft(requestedId);
         showWorkspace(false);
       } else if (lateAccounting) {
         els.tableGroups.innerHTML = '<div class="empty-state is-error">حساب این میز برای ثبت قلم جاافتاده در دسترس نیست؛ به صندوق برگردید و حساب را تازه کنید.</div>';
@@ -886,10 +1182,81 @@
     else state.cartGesture = null;
   }
 
+  async function submitSharedDraftOrder(table) {
+    state.submitting = true;
+    renderCart();
+    try {
+      let recovery = state.uncertain ? readUncertain(table.id) : null;
+      if (recovery?.kind === 'draft_save') {
+        state.uncertain = false;
+        await restoreDraft(table.id);
+        await flushDraftSave({force:true});
+        recovery = readUncertain(table.id);
+      }
+
+      let draftId = Number(recovery?.kind === 'draft_finalize' ? recovery.draftId : state.serverDraftId || 0);
+      let draftVersion = Number(recovery?.kind === 'draft_finalize' ? recovery.draftVersion : state.serverDraftVersion || 0);
+      if (!(recovery?.kind === 'draft_finalize')) {
+        await flushDraftSave({force:true});
+        draftId = Number(state.serverDraftId || 0);
+        draftVersion = Number(state.serverDraftVersion || 0);
+      }
+      if (draftId < 1 || draftVersion < 1) throw new Error('پیش‌نویس سرور آماده ثبت نهایی نیست.');
+
+      if (!(recovery?.kind === 'draft_finalize')) {
+        persistUncertain({
+          kind:'draft_finalize',requestToken:newToken(),tableId:Number(table.id),
+          expectedSessionId:Number(table.session_id||0),note:String(els.note?.value||'').trim(),items:requestLines(),
+          draftId,draftVersion,
+        });
+      }
+
+      let response;
+      try {
+        response = await fetch(draftApiUrl(), {
+          method:'POST',credentials:'same-origin',headers:{Accept:'application/json','Content-Type':'application/json'},
+          body:JSON.stringify({csrf_token:csrf,action:'finalize',draft_id:draftId,expected_version:draftVersion}),
+        });
+      } catch (error) {
+        state.uncertain = true;
+        throw error;
+      }
+      const data = await response.json().catch(()=>({}));
+      window.SoknaPushRuntime?.handleResponse?.(data);
+      if (!response.ok || !data.success) {
+        clearUncertain(table.id);
+        const error = new Error(data.message || 'ثبت نهایی پیش‌نویس انجام نشد.');
+        error.code = String(data.code || '');
+        error.status = Number(response.status || 0);
+        if (['version_conflict','session_changed','finalize_rejected','draft_closed'].includes(error.code)) {
+          await loadServerDraft(table.id,{skipUncertain:true});
+        }
+        throw error;
+      }
+      clearUncertain(table.id);
+      discardDraft(table.id);
+      clearDraftState();
+      navigateOrderSuccess(table,data);
+    } catch (error) {
+      const networkUnknown = error instanceof TypeError || /fetch|network|load failed/i.test(String(error?.message || ''));
+      state.uncertain = networkUnknown || Boolean(readUncertain(table.id));
+      toast(networkUnknown ? 'نتیجه ثبت نهایی هنوز مشخص نیست؛ تلاش دوباره همان پیش‌نویس را بررسی می‌کند.' : requestErrorMessage(error,'ثبت سفارش انجام نشد.'),true);
+      if (!networkUnknown && ['version_conflict','session_changed','finalize_rejected','draft_closed'].includes(String(error?.code||''))) {
+        state.uncertain = false;
+        renderDraftStatus('نسخه تازه سرور بارگذاری شد؛ پیش از ثبت دوباره آن را بررسی کنید.');
+      }
+    } finally {
+      state.submitting = false;
+      renderCart();
+    }
+  }
+
   async function submitOrder() {
     const table = selectedTable();
     const lines = selectedLines();
     if (!table || !lines.length || els.submit.disabled) return;
+    if (sharedDraftEnabled) return submitSharedDraftOrder(table);
+
     state.submitting = true;
     state.requestToken ||= newToken();
     const uncertainRequest = state.uncertain ? readUncertain(table.id) : null;
@@ -917,20 +1284,7 @@
       }
       discardDraft(table.id);
       clearDraftState();
-      // ثبت موفق سفارش عادی باید Context همان میز را حفظ کند؛
-      // مقصد همچنان Workspace اصلی میزهاست و مسیر موازی ساخته نمی‌شود.
-      const destination = new URL(successUrl, window.location.origin);
-      destination.searchParams.set('quick_order_success', table.name || `میز ${displayTableCode(table)}`);
-      destination.searchParams.set('quick_order_table', String(table.id));
-      destination.searchParams.set('quick_order_order', String(Number(data.order_id || 0)));
-      destination.searchParams.set('quick_order_number', String(Number(data.order_number || data.order_id || 0)));
-      destination.searchParams.set('quick_order_mode', lateAccounting ? 'late_accounting' : 'normal');
-      destination.searchParams.set('open_table', String(table.id));
-      if (lateAccounting) destination.searchParams.set('resume_settlement', 'itemized');
-      else destination.searchParams.delete('resume_settlement');
-      destination.searchParams.set('work', 'tables');
-      destination.hash = 'tables';
-      window.location.assign(`${destination.pathname}${destination.search}${destination.hash}`);
+      navigateOrderSuccess(table,data);
     } catch (error) {
       const networkUnknown = error?.uncertain === true || error instanceof TypeError || /fetch|network|load failed/i.test(String(error?.message || ''));
       state.uncertain = networkUnknown;
@@ -965,7 +1319,10 @@
     if (!hasDraft()) return;
     event.preventDefault();
     const approved = await confirmAction(`این سفارش هنوز ثبت نشده است و ${digits(cartQuantity())} عدد انتخاب‌شده باقی می‌ماند. پیش‌نویس این میز حفظ می‌شود و بعداً می‌توانید ادامه دهید.`, 'خروج از ثبت سفارش', {okLabel: 'خروج'});
-    if (approved) window.location.assign(returnUrl);
+    if (approved) {
+      if (sharedDraftEnabled) { try { await flushDraftSave({force:true}); } catch (_) {} }
+      window.location.assign(returnUrl);
+    }
   }
 
   document.addEventListener('click', (event) => {
@@ -1077,6 +1434,14 @@
     resetToken();
   });
   els.submit.addEventListener('click', submitOrder);
+  els.draftCancel?.addEventListener('click', async () => {
+    if (!sharedDraftEnabled || state.uncertain || state.draftSaving || state.serverDraftId < 1) return;
+    const table=selectedTable(); if(!table)return;
+    const approved=await confirmAction('این پیش‌نویس مشترک برای این میز لغو می‌شود و همکاران دیگر هم دیگر آن را نخواهند دید.','لغو پیش‌نویس',{okLabel:'لغو پیش‌نویس',danger:true});
+    if(!approved)return;
+    try { await cancelServerDraft(Number(table.id),state.serverDraftVersion,{clearCurrent:true}); renderCart(); toast('پیش‌نویس لغو شد.'); }
+    catch(error){ if(String(error?.code||'')==='version_conflict') await restoreDraft(Number(table.id)); toast(requestErrorMessage(error,'لغو پیش‌نویس انجام نشد.'),true); }
+  });
 
   mobileMedia.addEventListener?.('change', () => {
     closeCart(false);
@@ -1099,7 +1464,11 @@
     if (event.state?.quickOrderView === 'items') selectMobileCategory(state.category, false);
   });
   window.addEventListener('resize', () => syncDesktopWorkspaceHeight(), {passive:true});
-  window.addEventListener('pagehide', () => { if (!state.submitting) saveDraft(); });
+  window.addEventListener('pagehide', () => {
+    if (state.submitting) return;
+    if (sharedDraftEnabled) { if(state.draftSaveTimer)window.clearTimeout(state.draftSaveTimer);state.draftSaveTimer=0;void saveDraftNow({keepalive:true}).catch(()=>{}); }
+    else saveDraft();
+  });
 
   loadCatalog();
 })();
