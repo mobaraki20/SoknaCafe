@@ -2,8 +2,8 @@
 
 Updated: 2026-09-19  
 Repository: `mobaraki20/SoknaCafe`  
-Current verified release checkpoint: `1.36.4-dev.37`  
-Current verified product main checkpoint: `b29cf18aea52228fc44e08aac5e2a7c521295f98`
+Current verified release checkpoint: `1.36.4-dev.38`  
+Current verified product main checkpoint: `485db60b71b40c475c931a9d6d056ce8a07d0df2`
 
 این فایل مرجع سطح‌بالای ادامه پروژه است. هر ایجنت جدید باید قبل از هر تغییر کد، این فایل را کامل بخواند. هدف این است که ادامه پروژه بدون نیاز به تاریخچه ChatGPT یا پرسیدن مجدد تصمیم‌های قبلی ممکن باشد.
 
@@ -43,7 +43,7 @@ cat VERSION.txt
 
 اگر لازم است checkpoint فعلی را دقیقاً بازسازی کنی:
 ```bash
-git checkout b29cf18aea52228fc44e08aac5e2a7c521295f98
+git checkout 485db60b71b40c475c931a9d6d056ce8a07d0df2
 ```
 
 اما در حالت عادی همیشه از آخرین `main` شروع کن و سپس `docs/handoffs/CURRENT_STATUS_FA.md` را بخوان.
@@ -320,30 +320,39 @@ Phase 7C — PR #14 / merge `b29cf18aea52228fc44e08aac5e2a7c521295f98` / main CI
 Handoff:
 - `docs/handoffs/PHASE7_HANDOFF_FA.md`
 
+### Phase 8A — Installation Identity + Recovery Set Metadata
+Release: `1.36.4-dev.38`
+PR #16
+Merge commit: `485db60b71b40c475c931a9d6d056ce8a07d0df2`
+Post-merge CI: `35442209529` SUCCESS
+
+Outcome:
+- dedicated Ed25519 installation identity under private data root.
+- installation private key is never archived.
+- Backup v3 manifest enriched with safe Recovery Set metadata.
+- portable app.key remains separate and portable for encrypted integration secrets.
+- no schema change; mature backup/restore engine preserved.
+
+Handoff:
+- `docs/handoffs/PHASE8A_HANDOFF_FA.md`
+
 ---
 
 ## 5) Current Exact State
 
 Current completed checkpoint:
-**Phase 7 / 1.36.4-dev.37**
+**Phase 8A / 1.36.4-dev.38**
 
-Final Phase 7 product merge:
-- PR #14
-- merge commit: `b29cf18aea52228fc44e08aac5e2a7c521295f98`
-- post-merge CI: `35441174227` — SUCCESS
-- all three gates PASS: Windows / Public+Local MariaDB / Linux+Browser.
+Latest merge:
+- PR #16
+- merge commit: `485db60b71b40c475c931a9d6d056ce8a07d0df2`
+- post-merge CI: `35442209529` — SUCCESS
+- all three gates PASS.
 
 Current next phase:
-**Phase 8 — Setup / Recovery / Backup / Takeover**
+**Phase 8B — Windows New / Recover Setup Orchestration**
 
-Frozen Phase 8 direction:
-- Windows install new/recover flows.
-- optional Public pairing/printer/offsite/push setup.
-- enriched Recovery Set/PITR.
-- machine replacement + fresh identity + Public takeover.
-- checkpoint requires restore + takeover drill.
-
-Before changing code, audit current updater, backup, recovery, install and identity/pairing owners. Preserve mature updater/backup engines and extend rather than rewrite.
+Preserve and compose existing owners: fresh install, Runtime/HTTPS service setup, stable Print Agent installer, backup import/restore, updater recovery, optional Public/off-server/push setup.
 
 ---
 
@@ -418,6 +427,12 @@ Before changing code, audit current updater, backup, recovery, install and ident
 - `includes/guest_publish.php`
 - `assets/js/menu.js`
 - `assets/css/guest-menu.css`
+
+### Setup / Recovery / Identity
+- `includes/installation_identity.php` — machine installation identity owner.
+- `includes/maintenance.php` — Backup v3 / secure export / restore / emergency recovery / Recovery Set metadata.
+- `install.php` — existing fresh web install owner.
+- `includes/updater_engine/1.5.3/` — updater staging/validation/recovery/rollback owner.
 
 ### Printing / Runtime
 - `includes/printing.php` + `print-agent/v4/` — mature print state/API owner.
@@ -495,23 +510,19 @@ For every new Phase/Subphase:
 
 ## 10) Next Agent — Exact First Action
 
-Phase 7 is complete. Do **not** reopen or recreate Phase 7 branches.
+Phase 8A is complete. Do not recreate it.
 
-Start Phase 8 from current `main` after reading:
+Start Phase 8B from current `main` after reading:
 - `docs/handoffs/CURRENT_STATUS_FA.md`
-- `docs/handoffs/PHASE7_HANDOFF_FA.md`
-- `docs/architecture-migration-r2/IMPLEMENTATION_PLAN_FA.md` Phase 8
-- `docs/architecture-migration-r2/SCHEMA_CHANGE_PLAN.md` Phase 8
-- `docs/architecture-migration-r2/RISK_REGISTER.md` setup/recovery/backup/takeover risks.
+- `docs/handoffs/PHASE8A_HANDOFF_FA.md`
+- `docs/architecture-migration-r2/PHASE8_DESIGN_NOTES_FA.md`
+- R2 Phase 8 schema/risk sections.
 
-First audit before changing code:
-- updater staging/validation/recovery-point/rollback owners.
-- backup integrity/encryption/portable restore owners.
-- Runtime Windows installation/service lifecycle.
-- Public installation binding/pairing/identity rotation and takeover paths.
-- printer setup/discovery and optional offsite/push setup.
+First audit:
+- `install.php` fresh install flow.
+- Runtime Windows service/HTTPS provisioning.
+- stable Print Agent Setup integration.
+- backup import/restore + updater recovery.
+- optional Public pairing/off-server/push configuration.
 
-Then create a dedicated Phase 8 branch. Preserve mature updater/backup engines; Phase 8 extends setup/recovery/takeover rather than rewriting proven engines.
-
-Exact current status:
-`docs/handoffs/CURRENT_STATUS_FA.md`.
+Build orchestration around these owners. Do not duplicate their state machines.
