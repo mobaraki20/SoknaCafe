@@ -3,6 +3,7 @@
 Updated: 2026-09-19
 Repository: `mobaraki20/SoknaCafe`
 Current completed release checkpoint: `1.36.4-dev.34`
+Active validation target: `1.36.4-dev.35` / Phase 7A
 
 ## Completed architecture migration
 - Phase 0 — Source Audit.
@@ -43,8 +44,21 @@ Read latest handoff:
 - remote Table Draft operations require reachable Local Realtime and are never Deferred-safe.
 - Public does not become Table Draft business authority.
 
-## Active next work
-Phase 7 — Printing / Notifications / Integrations.
+## Active work
+Phase 7A — Runtime-owned Printing / Notifications.
+
+Branch: `phase/7-print-notify-integrations`
+
+Current scope:
+- supervise the installed stable Windows Print Agent service from SOKNA Runtime without duplicating its state machine.
+- make Runtime ownership of Push queue processing explicit while preserving transactional outbox semantics.
+
+Design: `docs/architecture-migration-r2/PHASE7_DESIGN_NOTES_FA.md`
+Checkpoint: `docs/architecture-migration-r2/PHASE7A_CHECKPOINT_FA.md`
+
+After 7A final-head + post-merge CI, continue Phase 7B Accommodation transport adaptation.
+
+## Phase 7 frozen direction
 
 Frozen direction:
 - internalize Print Worker under Runtime without replacing the mature printing state machine.

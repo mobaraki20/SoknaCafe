@@ -23,5 +23,6 @@ return [
         'trust_proxy_headers' => false,
         'data_dir' => '', // Production Windows: C:\\ProgramData\\SOKNA (installer managed)
         'local_hostname' => 'sokna.local',
+        'print_agent_service_name' => 'Sokna Print Agent 6', // installed stable Agent Windows Service; Runtime supervises lifecycle only
     ],
 ];

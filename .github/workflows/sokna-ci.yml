@@ -142,6 +142,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Phase 6B sellable kind contract failed' }
           php tests/phase6c-table-draft-contract.php
           if ($LASTEXITCODE -ne 0) { throw 'Phase 6C Table Draft contract failed' }
+          python tests/phase7-runtime-services-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 7 runtime services contract failed' }
           python tests/v1360-ui-language-contract.py
           if ($LASTEXITCODE -ne 0) { throw 'UI language contract failed' }
           python tests/v1360-module-ownership-contract.py
@@ -163,6 +165,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Runtime self-check failed' }
           php runtime/sokna-runtime.php --health-json
           if ($LASTEXITCODE -ne 0) { throw 'Runtime health-json failed' }
+          php tools/print-runtime-worker.php --once
+          if ($LASTEXITCODE -ne 0) { throw 'Print Runtime supervisor self-check failed' }
 
       - name: Provision and validate sokna.local TLS
         shell: pwsh
