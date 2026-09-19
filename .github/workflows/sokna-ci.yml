@@ -133,6 +133,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'PHP unit checks failed' }
           php tests/phase2-relay-contract.php
           if ($LASTEXITCODE -ne 0) { throw 'Phase 2 relay contract failed' }
+          php tests/phase6a-preparation-permissions-contract.php
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 6A preparation contract failed' }
           python tests/v1360-ui-language-contract.py
           if ($LASTEXITCODE -ne 0) { throw 'UI language contract failed' }
           python tests/v1360-module-ownership-contract.py
@@ -279,6 +281,7 @@ jobs:
           php tests/phase4-remote-read-http.php
           php tests/phase5-deferred-http.php
           php tests/phase5-deferred-local.php
+          php tests/phase6a-preparation-local.php
       - name: Public edge log on failure
         if: failure()
         shell: bash
