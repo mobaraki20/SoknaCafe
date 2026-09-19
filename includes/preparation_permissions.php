@@ -62,6 +62,6 @@ function preparation_actionable_areas(?array $user=null): array
 
 function preparation_can_mutate_area(string $area,?array $user=null): bool
 {
-    $area=normalize_preparation_area($area);
+    if(!array_key_exists($area,preparation_operational_areas()))return false;
     return in_array($area,preparation_actionable_areas($user),true);
 }
