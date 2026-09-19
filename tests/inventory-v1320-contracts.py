@@ -50,7 +50,7 @@ for path in ['includes/functions.php','staff/api_quick_order.php','includes/staf
     assert 'inventory_process_pending_order_events' not in text, path
     assert 'inventory_process_order_event(' not in text, path
 assert "inventory_enqueue_order_event_tx($pdo,'accounted'" in read('includes/functions.php')
-assert "inventory_enqueue_order_event_tx($pdo,'accounted'" in quick_order_owner
+assert re.search(r"inventory_enqueue_order_event_tx\s*\(\s*\$pdo\s*,\s*'accounted'", quick_order_owner)
 assert "inventory_enqueue_order_event_tx($pdo,'quantity_adjusted'" in read('operator/api_bill.php')
 # Rejecting a still-pending guest order has consumed nothing, so it must not create a compensating inventory event.
 status_api=read('operator/api_status.php')
