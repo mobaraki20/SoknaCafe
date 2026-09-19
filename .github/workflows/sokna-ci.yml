@@ -158,12 +158,23 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Phase 8A installation identity runtime failed' }
           php tests/phase8a-recovery-metadata-runtime.php
           if ($LASTEXITCODE -ne 0) { throw 'Phase 8A recovery metadata runtime failed' }
+          python tests/phase8b-windows-setup-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B Windows setup contract failed' }
+          php tests/phase8b-setup-owner-runtime.php
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B setup owner runtime failed' }
           python tests/v1360-final-invariants.py
           if ($LASTEXITCODE -ne 0) { throw 'Final invariants failed' }
           python tests/updater-current-contract.py
           if ($LASTEXITCODE -ne 0) { throw 'Updater contract failed' }
           python tests/recovery-current-contract.py
           if ($LASTEXITCODE -ne 0) { throw 'Recovery contract failed' }
+
+      - name: Phase 8B Windows setup validate
+        shell: pwsh
+        run: |
+          $php = (Get-Command php).Source
+          ./runtime/windows/setup-sokna.ps1 -Mode Validate -PhpExe $php -AppRoot (Resolve-Path .).Path -DataRoot (Join-Path $env:RUNNER_TEMP 'sokna-setup-validate') -SkipHttps -SkipService
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B Windows setup validate failed' }
 
       - name: Local Runtime self-check
         shell: pwsh
@@ -307,6 +318,7 @@ jobs:
           php tests/phase6c-table-draft-http.php
           php tests/phase6c-table-draft-local.php
           php tests/phase7c-center-projection-local.php
+          php tests/phase8b-machine-recovery-local.php
       - name: Public edge log on failure
         if: failure()
         shell: bash
