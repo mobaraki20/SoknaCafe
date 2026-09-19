@@ -169,6 +169,24 @@ jobs:
           python tests/recovery-current-contract.py
           if ($LASTEXITCODE -ne 0) { throw 'Recovery contract failed' }
 
+      - name: Build Runtime Service Host on CI
+        shell: pwsh
+        run: |
+          ./runtime/windows/build-service-host.ps1 -OutputPath (Join-Path $PWD 'runtime/windows/bin/SoknaRuntimeService.exe')
+
+      - name: Windows setup repair and diagnostics runtime
+        shell: pwsh
+        run: |
+          $openssl = (Get-Command openssl -ErrorAction SilentlyContinue).Source
+          if (-not $openssl) { $openssl = 'C:\Program Files\Git\usr\bin\openssl.exe' }
+          ./tests/phase8b-windows-setup-runtime.ps1 -PhpExe (Get-Command php).Source -ServiceHostExe (Join-Path $PWD 'runtime/windows/bin/SoknaRuntimeService.exe') -OpenSslExe $openssl
+
+      - name: Upload prebuilt Runtime Service Host
+        uses: actions/upload-artifact@v4
+        with:
+          name: sokna-runtime-service-host
+          path: runtime/windows/bin/SoknaRuntimeService.exe
+
       - name: Phase 8B Windows setup validate
         shell: pwsh
         run: |
@@ -319,6 +337,7 @@ jobs:
           php tests/phase6c-table-draft-local.php
           php tests/phase7c-center-projection-local.php
           php tests/phase8b-machine-recovery-local.php
+          php tests/phase8b-setup-preflight-local.php
       - name: Public edge log on failure
         if: failure()
         shell: bash

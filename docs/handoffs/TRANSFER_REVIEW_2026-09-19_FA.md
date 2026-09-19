@@ -1,4 +1,4 @@
-# SOKNA — NEXT AGENT START HERE
+# بازبینی انتقال پروژه و الزامات نصب
 
 ## انتقال و بازبینی 2026-09-19 — شاخه فعال را از نو نسازید
 - main مشاهده‌شده: `98607d87d50c7913a1143d621e60f807965bae53` (checkpoint محصول همچنان Phase 8A / dev.38).
@@ -13,20 +13,3 @@
 
 ### قرارداد تحویل هر مرحله
 پیش از پایان هر گام، تغییرات را در GitHub ثبت کن؛ CURRENT_STATUS و هنداور فاز باید شامل branch/head، کار انجام‌شده، تست واقعی و run ID، موارد باز و اولین اقدام بعدی باشند. نقطه شروع root و MASTER باید به شاخه فعال اشاره کنند. شاخه‌ای با CI سبز اما بدون merge/post-merge CI را COMPLETE ننام. بسته ZIP تاریخی را بر GitHub فعلی مقدم ندان.
-
----
-
-Current exact state: **Phase 8A complete / 1.36.4-dev.38**.
-- PR #16 merged.
-- main: `485db60b71b40c475c931a9d6d056ce8a07d0df2`.
-- post-merge CI `35442209529`: SUCCESS on all three gates.
-- next: **Phase 8B — Windows New / Recover Setup Orchestration**.
-
-Read:
-1. `docs/handoffs/MASTER_HANDOFF_FA.md`
-2. `docs/handoffs/CURRENT_STATUS_FA.md`
-3. `docs/handoffs/PHASE8A_HANDOFF_FA.md`
-4. `docs/architecture-migration-r2/PHASE8_DESIGN_NOTES_FA.md`
-5. R2 Implementation/API/Schema/Risk contracts.
-
-Start from current `main`. Preserve mature installer/updater/backup/Print Agent owners; Phase 8B composes them into Windows new/recover setup.

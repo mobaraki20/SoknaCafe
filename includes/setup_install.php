@@ -152,6 +152,19 @@ function sokna_setup_connect(array $config): PDO
     return $pdo;
 }
 
+/** Read-only target checks shared by the Windows preflight and setup owner. */
+function sokna_setup_preflight(array $input, string $mode, string $root): void
+{
+    sokna_setup_require_valid($input, $mode);
+    if (!is_writable($root)) throw new RuntimeException('پوشه نصب قابل نوشتن نیست.');
+    if (is_file($root.'/config.php') || is_file($root.'/install.lock')) {
+        throw new RuntimeException('سامانه قبلاً نصب شده یا Setup ناقص دارد.');
+    }
+    $pdo = sokna_setup_connect(sokna_setup_config($input));
+    sokna_setup_assert_empty_database($pdo);
+    // No schema, configuration, identity or privilege-probe writes in preflight.
+}
+
 function sokna_setup_prepare_uploads(string $root): void
 {
     $uploadDir = rtrim($root, "\\/") . '/uploads';

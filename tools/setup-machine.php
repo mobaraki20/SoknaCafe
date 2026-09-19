@@ -10,6 +10,7 @@ if (PHP_SAPI !== 'cli') {
 $root = dirname(__DIR__);
 require_once $root . '/includes/setup_install.php';
 
+$validateOnly = in_array('--validate-only', $argv, true);
 $args = ['mode'=>'','config_file'=>'','recovery_file'=>'','passphrase_file'=>''];
 foreach (array_slice($argv, 1) as $arg) {
     foreach (['mode','config-file','recovery-file','passphrase-file'] as $name) {
@@ -40,6 +41,12 @@ try {
     $input = json_decode((string)file_get_contents($configFile), true, 64, JSON_THROW_ON_ERROR);
     if (!is_array($input)) throw new RuntimeException('Setup config JSON is invalid.');
 
+    if ($validateOnly) {
+        sokna_setup_preflight($input, $mode, $root);
+        echo json_encode(['ok'=>true,'mode'=>$mode,'validation_only'=>true]) . PHP_EOL;
+        exit(0);
+    }
+
     if ($mode === 'new') {
         $result = sokna_setup_fresh_install($input, $root);
         $GLOBALS['config'] = $result['config'];
@@ -58,12 +65,6 @@ try {
         throw new RuntimeException('Recovery Set file is required.');
     }
 
-    $prepared = sokna_setup_prepare_recovery_target($input, $root);
-    $GLOBALS['config'] = $prepared['config'];
-
-    require $root . '/bootstrap.php';
-    $freshIdentity = sokna_installation_identity_ensure();
-
     $passphrase = '';
     if ((string)$args['passphrase_file'] !== '') {
         $passphraseFile = (string)$args['passphrase_file'];
@@ -72,6 +73,12 @@ try {
         }
         $passphrase = rtrim((string)file_get_contents($passphraseFile), "\r\n");
     }
+
+    $prepared = sokna_setup_prepare_recovery_target($input, $root);
+    $GLOBALS['config'] = $prepared['config'];
+
+    require $root . '/bootstrap.php';
+    $freshIdentity = sokna_installation_identity_ensure();
 
     $restore = maintenance_restore_external_backup_to_empty_target($recoveryFile, $passphrase);
     sokna_setup_write_lock($root);

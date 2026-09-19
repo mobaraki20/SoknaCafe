@@ -55,3 +55,15 @@ If interrupted, continue from the newest commit on this branch and this document
 - Open risks: updater/MSI file ownership, target-side compilation, secret-file ACL before copy, authenticated Agent payload, service repair failure recovery and diagnostics. See the acceptance contract for evidence requirements.
 - This update changes documentation only. The CI result above belongs to the reviewed code SHA, not this new documentation commit.
 - Every further step must persist branch/SHA, actual test results, open work and exact next action in GitHub handoffs.
+
+## Hardening batch — implemented, CI pending
+Scope: Windows orchestration reliability; no POS UI/business behavior change.
+- Shared setup preflight checks empty DB/input without creating config/schema/identity.
+- Windows checks dependencies and prebuilt service host before application mutation; CI now builds the host and publishes a binary artifact.
+- Private ACL before credential file writes; redacted per-session JSON summary/events and allowlisted support ZIP.
+- Repair preserves existing service configuration; failure restores previous service binary and running state. No delete/recreate of an existing service.
+- Valid TLS keys/certs are reused byte-for-byte; partial/mismatched/expired identity fails closed. Conflicting hosts entries are not erased.
+- Agent payload requires SHA256 from a trusted manifest.
+- Tests added: real Windows SCM install/repair plus injected start failure rollback; native quoting, private ACL, preflight failure, diagnostics allowlist, TLS repair/partial failure; MariaDB read-only preflight.
+- Local checks: Phase 1 + Phase 8B Python contracts PASS, git diff --check PASS. PHP/Windows runtime unavailable in this Linux workspace; hosted CI is required and NOT yet claimed passed.
+- Next: inspect CI for this batch, fix any failures, then complete packaging acceptance (MSI/Burn/updater ownership/shortcuts/ARP/full prerequisites/end-to-end health). Phase 8B remains IN PROGRESS.
