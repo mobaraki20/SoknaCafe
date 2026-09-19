@@ -19,7 +19,9 @@ foreach(['settlement.commit','preparation.mutate','table_draft.finalize','invent
 }
 p5(str_contains($publicSchema,'CREATE TABLE IF NOT EXISTS deferred_work'),'Public has separate deferred store');
 p5(str_contains($publicSchema,'CREATE TABLE IF NOT EXISTS realtime_requests'),'Realtime store remains separate');
-p5(!preg_match('/CREATE TABLE IF NOT EXISTS deferred_work[\s\S]*?expires_at/i',$publicSchema),'Deferred work has no realtime expiry contract');
+$deferredTable='';
+if(preg_match('/CREATE TABLE IF NOT EXISTS deferred_work\s*\([\s\S]*?\) ENGINE=/i',$publicSchema,$m))$deferredTable=$m[0];
+p5($deferredTable!==''&&!preg_match('/\bexpires_at\b/i',$deferredTable),'Deferred work has no realtime expiry contract');
 foreach(['deferred_work_receipts','deferred_review_items','financial_period_close_overrides','expense_categories','expenses'] as $table)p5(str_contains($localSchema,'CREATE TABLE IF NOT EXISTS '.$table),'Local Phase 5 table exists: '.$table);
 p5(str_contains($deferred,"state='needs_review'")||str_contains($deferred,"'needs_review'"),'Local has needs-review persistence');
 p5(str_contains($deferred,'closed_financial_period'),'Closed period routes late work to review');
