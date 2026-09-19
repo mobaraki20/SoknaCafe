@@ -16,6 +16,7 @@ jobs:
       - name: Checkout exact source
         uses: actions/checkout@v4
         with:
+          ref: 652a950e5909a755a1aa80279c97a645dc537dfe
           fetch-depth: 1
       - name: Build source snapshot
         shell: bash
