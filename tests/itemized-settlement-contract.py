@@ -17,9 +17,11 @@ js=read('assets/js/operator.js')
 css=read('assets/css/operator-live.css')
 quick_page=read('staff/quick-order.php')
 quick_api=read('staff/api_quick_order.php')
+staff_order_service=read('includes/staff_order_service.php')
+quick_order_owner='\n'.join([quick_api,staff_order_service])
 quick_js=read('assets/js/staff-quick-order.js')
 locks='\n'.join(read(p) for p in [
-    'api/create_order.php','staff/api_quick_order.php','operator/api_bill.php',
+    'api/create_order.php','staff/api_quick_order.php','includes/staff_order_service.php','operator/api_bill.php',
     'operator/api_table_session.php','operator/api_subscribers.php','includes/accommodation.php'
 ])
 
@@ -50,10 +52,10 @@ checks={
  'late-accounting explicit action label': '<span>افزودن قلم جاافتاده</span>' in page,
  'success notice auto collapse owner': 'itemizedNoticeTimer:null' in js and '2600' in js and "tone!=='warning'" in js,
  'late-accounting cashier route': 'افزودن قلم جاافتاده' in js and "mode','late_accounting'" in js and 'data-mode="<?= e($mode) ?>"' in quick_page and "resume_settlement','itemized'" in js,
- 'late-accounting hard permission': "user_has_capability('cashier_accounts'" in quick_api and "ثبت قلم جاافتاده فقط برای صندوق‌دار" in quick_api,
- 'late-accounting requires active itemized session': "$mode === 'late_accounting'" in quick_api and '!$itemizedActive' in quick_api and '$expectedSessionId !== $sessionId' in quick_api,
- 'late-accounting suppresses preparation only': "$mode !== 'late_accounting' && $hasPreparation" in quick_api and "inventory_enqueue_order_event_tx" in quick_api and "late_accounting" in quick_api,
- 'late-accounting audited': "order.late_accounting_created" in quick_api and "preparation_suppressed'=>true" in quick_api,
+ 'late-accounting hard permission': "user_has_capability('cashier_accounts'" in quick_order_owner and "ثبت قلم جاافتاده فقط برای صندوق‌دار" in quick_order_owner,
+ 'late-accounting requires active itemized session': "$mode === 'late_accounting'" in quick_order_owner and '!$itemizedActive' in quick_order_owner and '$expectedSessionId !== $sessionId' in quick_order_owner,
+ 'late-accounting suppresses preparation only': "$mode !== 'late_accounting' && $hasPreparation" in quick_order_owner and "inventory_enqueue_order_event_tx" in quick_order_owner and "late_accounting" in quick_order_owner,
+ 'late-accounting audited': "order.late_accounting_created" in quick_order_owner and "preparation_suppressed'=>true" in quick_order_owner,
  'late-accounting fixed table/dine-in UI': 'lateAccounting' in quick_js and "mode, request_token" in quick_js and "fulfillment_mode:'dine_in'" in quick_js,
  'late-accounting returns to itemized context': "destination.searchParams.set('open_table'" in quick_js and "destination.searchParams.set('resume_settlement', 'itemized')" in quick_js and "startupResumeSettlement==='itemized'" in js and "returnUrl.searchParams.set('resume_settlement','itemized')" in js,
  'no payment inventory mutation': 'inventory_movement' not in settlement.lower() and 'inventory_movement' not in alloc.lower(),
