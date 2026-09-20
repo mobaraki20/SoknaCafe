@@ -3,10 +3,16 @@
 Updated: 2026-09-20
 Repository: `mobaraki20/SoknaCafe`
 
-## Latest continuation: native platform preview
-Source `67b32f767bd254bd26bb845302c8490223698e71` on the existing 8B branch implements the Inno platform preview and its lifecycle tests. PR CI `35491459618` is IN PROGRESS at this checkpoint; inspect current checks. No new PASS is claimed.
+## Verified native platform preview — 2026-09-20
+- Tested source: `a3435d187717ffdc1d2fc2914ab81a341e7742b3` on `phase/8b-windows-setup`.
+- CI: https://github.com/mobaraki20/SoknaCafe/actions/runs/35504331920 — all three jobs completed SUCCESS: Windows, Linux/browser regression and Public/Local MariaDB.
+- Actual Windows lifecycle PASS: missing prerequisite blocks before extraction/registration; native x64 install starts Runtime; Installed apps name/version/publisher and cached Modify/Repair; Desktop/Start shortcuts; deleted platform module and shortcut restored by cached Repair; simulated newer active app/config/TLS preserved; foreign service command blocks uninstall; normal uninstall removes owned service/registration/shortcut/platform scripts and preserves app/business sentinel/TLS key.
+- Artifact: `sokna-platform-preview-unsigned`, ID `10603552045`, available from the CI run while retained. Contains Setup.exe, compiler license and source/hash manifest. It is unsigned, uses no paid certificate, and is only for an already configured app with PHP/OpenSSL/web stack present.
+- Fixture tests do not prove real updater execution, HTTP/database readiness through this installer, clean-machine installation, Persian-path full lifecycle, printer acceptance or human UAT.
+- This verifies the exact source above; subsequent documentation commits are not assigned that source's CI result. PR #18 remains draft/unmerged; full Phase 8B is IN PROGRESS.
 
-Scope: existing configured app only; platform files, Desktop/Start shortcuts, ARP, cached Repair and owned-service uninstall/data preservation. This is not clean-machine New/Recover or the finished installer. Read the latest phase handoff for remaining acceptance.
+### Exact next action after this checkpoint
+Continue the existing branch. Complete consolidated installer/owner diagnostics and their failure-path tests, then clean-machine prerequisites/web stack/database acquisition and New/Recover orchestration using the existing owners. Full application Repair must use a complete same-version payload, never an older seed. Complete Persian installer copy and the acceptance table before promotion; require final-head and post-merge CI. Preserve the no-mandatory-cost decision. Do not restart WiX/MSI/Burn research or ask the settled budget question again.
 
 ## Completed release checkpoint
 - Phase 0–7 and Phase 8A completed: `1.36.4-dev.38`.
@@ -23,7 +29,7 @@ Scope: existing configured app only; platform files, Desktop/Start shortcuts, AR
 - Verified source `2fdb500d3240a1c2adde30b291fe4377d78fca44`: CI `35477813459` SUCCESS on all three gates. Any later code head needs its own validation.
 
 ## Remaining acceptance
-MSI/Burn packaging and updater file ownership; Desktop/Start shortcuts; Installed apps uninstall; complete prerequisite manifest/download/offline behavior; end-to-end HTTP/DB health; cashier/printer UAT. Runtime binary artifact is NOT Setup.exe.
+Clean-machine Inno New/Recover package; prerequisite manifest/download/offline behavior and web stack/database deployment; complete same-version application repair; consolidated installer/owner support ZIP; Persian installer copy; end-to-end HTTP/DB health; cashier/printer UAT. Platform preview lifecycle is verified above, but it is not the complete installer.
 
 Contract: `docs/architecture-migration-r2/WINDOWS_INSTALLER_ACCEPTANCE_FA.md`.
 Phase 8C takeover/replacement drill follows the Phase 8B gate. Do not recreate 8A or fork another setup/backup/updater owner.

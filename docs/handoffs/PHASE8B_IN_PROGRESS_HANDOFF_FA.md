@@ -121,3 +121,20 @@ Fetch current main's handoff and the existing 8B branch. Preserve the verified s
 - Still open: clean-machine app payload/New/Recover UI, web stack/DB deployment, prerequisite acquisition, full same-version app repair, unified installer+owner support ZIP, Persian installer copy and complete acceptance/UAT.
 
 Implementation source: `67b32f767bd254bd26bb845302c8490223698e71`; PR CI `35491459618` is in progress at this checkpoint. Inspect its actual result before continuing. No PASS is assigned yet.
+
+CI `35491459618`: Linux and MariaDB PASS; Inno compiler/build PASS; installer lifecycle FAIL with GUI exit 2 and no stdout. Next diagnostic revision adds explicit per-attempt Inno logs to the fixture; no success claim and no speculative product fix.
+
+Native diagnostic result from CI `35503912231` / source `c848490165c2d54eab69f861993e1f386a94faeb`: preflight and Inno file/shortcut/registry creation worked; post-install bridge read the wrong registry view. Inno 7 defaults to an x86 setup process even in 64-bit install mode, and Exec launched x86 PowerShell. Fix: explicit `SetupArchitecture=x64`, plus bridge rejects a non-64-bit process. Do not add a second registration key or disable registry checks. Lifecycle must pass on the new head before acceptance.
+
+CI `35504078070` confirmed the x64 fix: native installation, TLS provisioning and Runtime start succeeded. The fixture then rejected ARP DisplayName because Inno defaults to AppVerName (name plus version). Set UninstallDisplayName explicitly and independently check DisplayVersion/Publisher. Repair/uninstall assertions had not yet executed in that run.
+
+## Verified native platform preview — 2026-09-20
+- Tested source: `a3435d187717ffdc1d2fc2914ab81a341e7742b3` on `phase/8b-windows-setup`.
+- CI: https://github.com/mobaraki20/SoknaCafe/actions/runs/35504331920 — all three jobs completed SUCCESS: Windows, Linux/browser regression and Public/Local MariaDB.
+- Actual Windows lifecycle PASS: missing prerequisite blocks before extraction/registration; native x64 install starts Runtime; Installed apps name/version/publisher and cached Modify/Repair; Desktop/Start shortcuts; deleted platform module and shortcut restored by cached Repair; simulated newer active app/config/TLS preserved; foreign service command blocks uninstall; normal uninstall removes owned service/registration/shortcut/platform scripts and preserves app/business sentinel/TLS key.
+- Artifact: `sokna-platform-preview-unsigned`, ID `10603552045`, available from the CI run while retained. Contains Setup.exe, compiler license and source/hash manifest. It is unsigned, uses no paid certificate, and is only for an already configured app with PHP/OpenSSL/web stack present.
+- Fixture tests do not prove real updater execution, HTTP/database readiness through this installer, clean-machine installation, Persian-path full lifecycle, printer acceptance or human UAT.
+- This verifies the exact source above; subsequent documentation commits are not assigned that source's CI result. PR #18 remains draft/unmerged; full Phase 8B is IN PROGRESS.
+
+### Exact next action after this checkpoint
+Continue the existing branch. Complete consolidated installer/owner diagnostics and their failure-path tests, then clean-machine prerequisites/web stack/database acquisition and New/Recover orchestration using the existing owners. Full application Repair must use a complete same-version payload, never an older seed. Complete Persian installer copy and the acceptance table before promotion; require final-head and post-merge CI. Preserve the no-mandatory-cost decision. Do not restart WiX/MSI/Burn research or ask the settled budget question again.
