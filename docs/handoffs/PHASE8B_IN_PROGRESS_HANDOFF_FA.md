@@ -56,7 +56,7 @@ If interrupted, continue from the newest commit on this branch and this document
 - This update changes documentation only. The CI result above belongs to the reviewed code SHA, not this new documentation commit.
 - Every further step must persist branch/SHA, actual test results, open work and exact next action in GitHub handoffs.
 
-## Hardening batch — implemented, CI pending
+## Hardening batch — implemented; latest verification below
 Scope: Windows orchestration reliability; no POS UI/business behavior change.
 - Shared setup preflight checks empty DB/input without creating config/schema/identity.
 - Windows checks dependencies and prebuilt service host before application mutation; CI now builds the host and publishes a binary artifact.
@@ -65,7 +65,7 @@ Scope: Windows orchestration reliability; no POS UI/business behavior change.
 - Valid TLS keys/certs are reused byte-for-byte; partial/mismatched/expired identity fails closed. Conflicting hosts entries are not erased.
 - Agent payload requires SHA256 from a trusted manifest.
 - Tests added: real Windows SCM install/repair plus injected start failure rollback; native quoting, private ACL, preflight failure, diagnostics allowlist, TLS repair/partial failure; MariaDB read-only preflight.
-- Local checks: Phase 1 + Phase 8B Python contracts PASS, git diff --check PASS. PHP/Windows runtime unavailable in this Linux workspace; hosted CI is required and NOT yet claimed passed.
+- Local checks: Phase 1 + Phase 8B Python contracts PASS, git diff --check PASS. PHP/Windows runtime unavailable in this Linux workspace; hosted CI evidence is recorded in the latest verification section below.
 - Next: inspect CI for this batch, fix any failures, then complete packaging acceptance (MSI/Burn/updater ownership/shortcuts/ARP/full prerequisites/end-to-end health). Phase 8B remains IN PROGRESS.
 
 ## 2026-09-20 — PR #18 hardening continuation
@@ -79,3 +79,24 @@ Scope: Windows orchestration reliability; no POS UI/business behavior change.
 - Latest code before this checkpoint: `6701949524f44420c061f62e226381a0c7d9480e`; additional malformed-JSON fix and its test are included in this checkpoint. Read PR checks for this commit's final CI; do not inherit PASS from earlier heads.
 - Build artifact `sokna-runtime-service-host` is ONLY the Runtime service binary, not the final Setup.exe.
 - Remaining phase work: MSI/Burn packaging, updater/repair ownership, Desktop/Start shortcuts, Installed apps uninstall, full prerequisite manifest/acquisition, HTTP+DB acceptance and real-device UAT. Phase 8B is still IN PROGRESS.
+
+## Verified hardening checkpoint — 2026-09-20
+- Tested source: `2fdb500d3240a1c2adde30b291fe4377d78fca44` on `phase/8b-windows-setup`.
+- CI: https://github.com/mobaraki20/SoknaCafe/actions/runs/35477813459 — completed / SUCCESS.
+- All three gates passed: Windows runtime/TLS + SCM repair/failure-injection tests; Public/Local MariaDB including recovery and read-only preflight; full Linux/browser regression.
+- PR: https://github.com/mobaraki20/SoknaCafe/pull/18 — draft, not merged. No post-merge validation or complete installer release is claimed.
+- Source batch is verified. Full Phase 8B remains IN PROGRESS because native installer packaging and acceptance are still open.
+- This documentation records evidence for the tested source SHA above; it does not assign those results to a later documentation commit.
+
+### Exact next action
+Fetch current main's handoff and the existing 8B branch. Preserve the verified setup/service/TLS owners. Resolve MSI versus application-updater file ownership before adding package authoring: Repair must never restore an older application payload over an updated release. Then build the MSI/Burn package, its shortcut/Installed-apps lifecycle and versioned prerequisite manifest, and exercise the acceptance table. Do not mistake the CI service-host artifact for Setup.exe. Keep PR #18 draft until its declared scope is ready; recheck current head and CI before any promotion.
+
+## Packaging research checkpoint — 2026-09-20
+- Design: `docs/architecture-migration-r2/WINDOWS_PACKAGING_OWNERSHIP_FA.md`.
+- Proposed ownership: MSI owns platform tooling and an immutable seed cache; the existing updater owns the active application. Never extract an older seed over an installed application during Repair.
+- This is a documentation/design checkpoint only; ownership enforcement, native authoring and application repair from a same-version full cache are NOT implemented.
+- Audit found the runtime service is not an HTTP server. Apache currently has a template, not clean-machine deployment. Web server/PHP/DB payload versions and acquisition remain open.
+- Current WiX v7 requires explicit EULA acceptance and can carry an OSMF fee. Owner must choose whether to proceed under these terms or require a tool without mandatory fees. No EULA acceptance, purchase or CI acceptance flag has been performed.
+- Read the new design before choosing/pinning the toolchain. Do not silently use an obsolete WiX version to bypass this decision.
+- Verified code remains `2fdb500d3240a1c2adde30b291fe4377d78fca44`, CI `35477813459` SUCCESS. New documentation is not a new code/test result. Phase 8B and draft PR #18 remain IN PROGRESS.
+- Next: obtain owner's toolchain/licensing preference; then implement the documented ownership boundary, native package, prerequisite manifest/acquisition and end-to-end acceptance. Preserve all existing setup/backup/updater owners.

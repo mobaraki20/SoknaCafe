@@ -9,7 +9,11 @@ New canonical setup/platform owners on 8B:
 - `runtime/windows/SoknaRuntimeService.cs`, `build-service-host.ps1`
 - existing `runtime/windows/provision-local-https.ps1` now preserves validated TLS identity.
 
+Verified 8B hardening source: `2fdb500d3240a1c2adde30b291fe4377d78fca44`; CI `35477813459` SUCCESS (all three gates). This is a branch checkpoint, not a completed/merged Phase 8B release.
+
 Installer requirements: `docs/architecture-migration-r2/WINDOWS_INSTALLER_ACCEPTANCE_FA.md`.
+
+Packaging design checkpoint: `docs/architecture-migration-r2/WINDOWS_PACKAGING_OWNERSHIP_FA.md`. MSI/updater ownership is designed, not yet enforced. Web stack deployment and native packaging remain open. WiX v7 explicit EULA/possible fee needs owner preference before toolchain acceptance; no acceptance or purchase was made.
 
 ---
 
