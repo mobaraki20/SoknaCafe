@@ -7,7 +7,9 @@
 نصب قابل‌اعتماد، آیکن دسکتاپ و Start، نمایش در Installed apps، حذف از همان‌جا، Repair، شناسایی پیش‌نیازها پیش از نصب و اعلام روشن یا دریافت/نصب خودکار آنها، خطای واضح و لاگ متمرکز برای تشخیص بدون جمع‌آوری دستی از منابع پراکنده. این موارد شرط پذیرش بسته نهایی هستند، نه ادعای قابلیت فعلی.
 
 ## تصمیم فنی پیشنهادی برای بسته‌بندی
-برای نیاز فعلی SOKNA، مسیر منتخب طراحی **WiX MSI + Burn Setup.exe** است: MSI مالک نصب فایل‌ها، shortcut، ثبت محصول و چرخه repair/uninstall باشد؛ Burn زنجیره پیش‌نیازها و بسته رسمی Print Agent را هماهنگ کند. نسخه پشتیبانی‌شده ابزار و extensionها در زمان پیاده‌سازی pin و شرایط توزیع/مجوز آن ثبت شود. این تصمیم جایگزین ownerهای setup، backup یا updater نیست.
+**تصمیم به‌روز 2026-09-20:** مالک هزینه را رد کرده و استفاده فعلی را آزمایشی اعلام کرده است. مسیر منتخب **Inno Setup / Setup.exe** است؛ پیشنهاد اولیه WiX MSI + Burn با این تصمیم جایگزین شد. مجوز رسمی و FAQ خرید Inno بررسی شد: خرید اجباری نیست. مرجع تصمیم و مرز مالکیت: `WINDOWS_PACKAGING_OWNERSHIP_FA.md`.
+
+Inno مالک فایل‌های platform، shortcut و ثبت/uninstall می‌شود و orchestration موجود را مصرف می‌کند. Repair باید صریحاً پیاده‌سازی و آزموده شود؛ قابلیت خودکار MSI نیست. همه معیارهای WIN-01 تا WIN-12 پابرجا هستند.
 
 مقایسه مهندسی:
 - MSI + Burn: سازوکار استاندارد Windows Installer برای repair/uninstall و ترکیب چند بسته؛ نیازمند طراحی دقیق مالکیت فایل و rollback.
@@ -48,12 +50,12 @@ Repair با Recover فرق دارد: Repair فایل/سرویس نصب را اص
 - کامپایل روی دستگاه مقصد حذف شده؛ host در CI ساخته می‌شود. حفظ سرویس و rollback، ACL قبل از نوشتن اسرار، SHA256 اجباری Agent، diagnostics و TLS preservation پیاده‌سازی و آزموده شده‌اند.
 - هنوز MSI/Burn، shortcut/Installed apps، prerequisite acquisition جامع، web server/DB deployment و HTTP health نهایی ساخته نشده‌اند.
 - طرح جلوگیری از تداخل updater/Repair، مرز مالکیت و شکاف‌های هر پیش‌نیاز در `WINDOWS_PACKAGING_OWNERSHIP_FA.md` ثبت شده‌اند؛ این سند طرح است، نه ادعای اجرای آن.
-- انتخاب WiX تا روشن‌شدن پذیرش EULA و هزینه احتمالی نسخه جاری توسط مالک نهایی نیست. AcceptEula یا پرداختی انجام نشده است.
+- تصمیم هزینه حل شد: Inno Setup بدون خرید اجباری؛ WiX از مسیر اجرا کنار گذاشته شد. هیچ پرداختی انجام نشده است.
 - CI سبز orchestration به معنی تأیید نصب‌کننده نهایی نیست.
 
 ## ترتیب ادامه
 1. ادامه همان شاخه 8B و بستن شکاف‌های orchestration/امنیت فایل/diagnostics.
-2. تثبیت مرز updater/MSI و manifest پیش‌نیازها؛ سپس authoring و build Windows برای MSI + Burn.
+2. تثبیت مرز updater/MSI و manifest پیش‌نیازها؛ سپس authoring و build Windows برای Inno Setup و Repair صریح.
 3. آزمون جدول بالا و ثبت artifact/run/SHA، سپس PR و CI روی final head و دوباره پس از merge.
 4. گزارش جداگانه موارد نیازمند UAT رایانه صندوق/چاپگر؛ تکمیل takeover در 8C طبق قرارداد اصلی.
 
