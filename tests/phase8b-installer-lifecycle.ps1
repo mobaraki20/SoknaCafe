@@ -43,7 +43,9 @@ try {
     Assert ((Get-Service SoknaRuntime).Status -eq 'Running') 'Installer did not start Runtime'
     Assert (Test-Path $arp) 'Installed apps entry missing'
     $entry = Get-ItemProperty $arp
-    Assert ($entry.DisplayName -eq 'SOKNA Platform Preview') 'Wrong ARP display name'
+    Assert ($entry.DisplayName -eq 'SOKNA Platform Preview') ('Wrong ARP display name: ' + $entry.DisplayName)
+    Assert ($entry.DisplayVersion -eq '0.1.0') 'Wrong ARP version'
+    Assert ($entry.Publisher -eq 'SOKNA') 'Wrong ARP publisher'
     Assert ($entry.ModifyPath -match 'maintenance\\Setup.exe') 'ARP Modify is not the cached repair installer'
     Assert (Test-Path $desktop) 'Desktop shortcut missing'
     Assert (Test-Path (Join-Path $start 'SOKNA.url')) 'Start shortcut missing'

@@ -10,6 +10,7 @@
 SetupArchitecture=x64
 AppId={{D577EAA8-1B19-45C6-9FB0-91008FD349E3}
 AppName=SOKNA Platform Preview
+UninstallDisplayName=SOKNA Platform Preview
 AppVersion={#ProductVersion}
 AppPublisher=SOKNA
 DefaultDirName={autopf}\SOKNA Platform Preview
