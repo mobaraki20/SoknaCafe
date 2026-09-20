@@ -11,9 +11,13 @@ $arp = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D577EAA8-1B19
 $desktop = Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'SOKNA.url'
 $start = Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'SOKNA'
 $caThumb = ''
+$installAttempt = 0
 function Assert([bool]$OK,[string]$Message) { if (-not $OK) { throw $Message } }
 function Install([string]$Exe,[string[]]$Extra=@()) {
-    Invoke-SoknaProcess $Exe (@('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$platform") + $Extra) -TimeoutSeconds 300 | Out-Null
+    $script:installAttempt++
+    $log = Join-Path $root ('install-' + $script:installAttempt + '.log')
+    Write-Host ('Installer lifecycle attempt ' + $script:installAttempt)
+    Invoke-SoknaProcess $Exe (@('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$platform","/LOG=$log") + $Extra) -TimeoutSeconds 300 | Out-Null
 }
 try {
     Assert (-not (Get-Service SoknaRuntime -ErrorAction SilentlyContinue)) 'Disposable runner must not have a Runtime service'
@@ -77,7 +81,8 @@ try {
     Assert ((Get-FileHash (Join-Path $data 'secrets/tls/local-ca.key.pem')).Hash -eq $tlsHash) 'Uninstall deleted private TLS identity'
     Write-Host 'Inno lifecycle PASS: preflight, ARP, shortcuts, cached Repair, application preservation, ownership refusal, uninstall/data preservation. Fixture test only; no HTTP/DB/UAT claim.'
 } finally {
-    # This test only runs on a disposable CI machine. Preserve diagnostics until artifact upload.
+    # Fixture logs contain no real credentials. Emit evidence even when a GUI child has no stdout.
+    Get-ChildItem $root -Filter '*.log' -File | ForEach-Object { Write-Host $_.Name; Get-Content $_.FullName -Tail 100 | Write-Host }
     if (Get-Service SoknaRuntime -ErrorAction SilentlyContinue) {
         Stop-Service SoknaRuntime -ErrorAction SilentlyContinue
         & "$env:SystemRoot\System32\sc.exe" delete SoknaRuntime | Out-Null

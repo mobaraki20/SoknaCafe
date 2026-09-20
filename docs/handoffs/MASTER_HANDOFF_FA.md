@@ -15,6 +15,8 @@ Installer requirements: `docs/architecture-migration-r2/WINDOWS_INSTALLER_ACCEPT
 
 Packaging design checkpoint: `docs/architecture-migration-r2/WINDOWS_PACKAGING_OWNERSHIP_FA.md`. MSI/updater ownership is designed, not yet enforced. Web stack deployment and native packaging remain open. Owner resolved budget: no mandatory cost, current use is testing. Inno Setup replaces WiX MSI/Burn; explicit Repair remains required. No licensing question is pending and no purchase was made.
 
+Native preview implementation is now on the 8B branch at `67b32f767bd254bd26bb845302c8490223698e71`; CI `35491459618` pending at this documentation checkpoint. Read the newest phase handoff and actual CI result. The preview assumes an already configured application and is not the complete installer.
+
 ---
 
 Updated: 2026-09-19  

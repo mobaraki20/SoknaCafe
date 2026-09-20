@@ -119,3 +119,7 @@ Fetch current main's handoff and the existing 8B branch. Preserve the verified s
 - Artifact is unsigned and named `sokna-platform-preview-unsigned`, with source/hash/compiler manifest. Do not publish as final SOKNA Setup or claim UAT.
 - Local environment lacks PowerShell/Windows/Inno; compile and runtime status await this commit's CI. Earlier hardening PASS does not validate this new code.
 - Still open: clean-machine app payload/New/Recover UI, web stack/DB deployment, prerequisite acquisition, full same-version app repair, unified installer+owner support ZIP, Persian installer copy and complete acceptance/UAT.
+
+Implementation source: `67b32f767bd254bd26bb845302c8490223698e71`; PR CI `35491459618` is in progress at this checkpoint. Inspect its actual result before continuing. No PASS is assigned yet.
+
+CI `35491459618`: Linux and MariaDB PASS; Inno compiler/build PASS; installer lifecycle FAIL with GUI exit 2 and no stdout. Next diagnostic revision adds explicit per-attempt Inno logs to the fixture; no success claim and no speculative product fix.
