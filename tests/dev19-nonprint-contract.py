@@ -8,6 +8,7 @@ quick=(ROOT/'assets/css/quick-order.css').read_text(encoding='utf-8')
 maint=(ROOT/'includes/maintenance.php').read_text(encoding='utf-8')
 admin=(ROOT/'admin/maintenance.php').read_text(encoding='utf-8')
 installer=(ROOT/'install.php').read_text(encoding='utf-8')
+setup_owner=(ROOT/'includes/setup_install.php').read_text(encoding='utf-8')
 builder=(ROOT/'tools/build-release.php').read_text(encoding='utf-8')
 
 # One CSS owner for bill-edit row geometry; both steppers consume it.
@@ -34,6 +35,7 @@ assert "if (isset($_GET['download']))" not in admin
 assert '?download=' not in admin
 assert 'data-secure-export' in admin
 assert 'name="backup_passphrase"' in admin
-assert "'sodium'=>'Sodium'" in installer
+assert "'sodium'=>'Sodium'" in setup_owner
+assert "require_once __DIR__ . '/includes/setup_install.php';" in installer
 assert "'required_extensions'=>['pdo_mysql','openssl','sodium','Phar']" in builder
 print('dev19 non-print contract PASS: stepper ownership is unified, cart geometry is isolated, and off-server backup export is authenticated encrypted .skb with no raw download route.')

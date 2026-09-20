@@ -56,7 +56,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, pdo_mysql, pdo_sqlite, openssl, sodium
+          extensions: mbstring, pdo_mysql, pdo_sqlite, openssl, sodium, fileinfo
           coverage: none
 
       - name: Setup Chromium for browser gates
@@ -90,7 +90,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, pdo_mysql, pdo_sqlite, openssl, sodium
+          extensions: mbstring, pdo_mysql, pdo_sqlite, openssl, sodium, fileinfo
           coverage: none
 
       - name: Tool versions
@@ -158,12 +158,60 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Phase 8A installation identity runtime failed' }
           php tests/phase8a-recovery-metadata-runtime.php
           if ($LASTEXITCODE -ne 0) { throw 'Phase 8A recovery metadata runtime failed' }
+          python tests/phase8b-windows-setup-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B Windows setup contract failed' }
+          php tests/phase8b-setup-owner-runtime.php
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B setup owner runtime failed' }
           python tests/v1360-final-invariants.py
           if ($LASTEXITCODE -ne 0) { throw 'Final invariants failed' }
           python tests/updater-current-contract.py
           if ($LASTEXITCODE -ne 0) { throw 'Updater contract failed' }
           python tests/recovery-current-contract.py
           if ($LASTEXITCODE -ne 0) { throw 'Recovery contract failed' }
+
+      - name: Build Runtime Service Host on CI
+        shell: pwsh
+        run: |
+          ./runtime/windows/build-service-host.ps1 -OutputPath (Join-Path $PWD 'runtime/windows/bin/SoknaRuntimeService.exe')
+
+      - name: Windows setup repair and diagnostics runtime
+        shell: powershell
+        run: |
+          $openssl = (Get-Command openssl -ErrorAction SilentlyContinue).Source
+          if (-not $openssl) { $openssl = 'C:\Program Files\Git\usr\bin\openssl.exe' }
+          ./tests/phase8b-windows-setup-runtime.ps1 -PhpExe (Get-Command php).Source -ServiceHostExe (Join-Path $PWD 'runtime/windows/bin/SoknaRuntimeService.exe') -OpenSslExe $openssl
+
+      - name: Upload prebuilt Runtime Service Host
+        uses: actions/upload-artifact@v4
+        with:
+          name: sokna-runtime-service-host
+          path: runtime/windows/bin/SoknaRuntimeService.exe
+
+      - name: Build pinned Inno platform preview
+        shell: powershell
+        run: |
+          ./runtime/windows/installer/build-installer.ps1 -OutputDirectory (Join-Path $env:RUNNER_TEMP 'sokna-platform-artifact')
+
+      - name: Inno install repair and uninstall lifecycle
+        shell: powershell
+        run: |
+          $openssl = (Get-Command openssl -ErrorAction SilentlyContinue).Source
+          if (-not $openssl) { $openssl = 'C:\Program Files\Git\usr\bin\openssl.exe' }
+          ./tests/phase8b-installer-lifecycle.ps1 -Installer (Join-Path $env:RUNNER_TEMP 'sokna-platform-artifact/SOKNA-Platform-Preview-0.1.0-Setup.exe') -PhpExe (Get-Command php).Source -OpenSslExe $openssl
+
+      - name: Upload unsigned platform preview (not full installer)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sokna-platform-preview-unsigned
+          path: ${{ runner.temp }}/sokna-platform-artifact/
+          if-no-files-found: error
+
+      - name: Phase 8B Windows setup validate
+        shell: pwsh
+        run: |
+          $php = (Get-Command php).Source
+          ./runtime/windows/setup-sokna.ps1 -Mode Validate -PhpExe $php -AppRoot (Resolve-Path .).Path -DataRoot (Join-Path $env:RUNNER_TEMP 'sokna-setup-validate') -SkipHttps -SkipService
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B Windows setup validate failed' }
 
       - name: Local Runtime self-check
         shell: pwsh
@@ -188,8 +236,8 @@ jobs:
           }
           if (-not $openssl) { throw 'OpenSSL executable not found on Windows runner' }
           $tlsRoot = Join-Path $env:RUNNER_TEMP 'sokna-tls-uat'
-          & ./runtime/windows/provision-local-https.ps1 -OpenSslExe $openssl -DataRoot $tlsRoot -Hostname 'sokna.local'
-          if ($LASTEXITCODE -ne 0) { throw 'TLS provisioning script failed' }
+          $tlsResult = & ./runtime/windows/provision-local-https.ps1 -OpenSslExe $openssl -DataRoot $tlsRoot -Hostname 'sokna.local' | ConvertFrom-Json
+          if (-not $tlsResult.certificate) { throw 'TLS provisioning returned no certificate' }
           $cert = Join-Path $tlsRoot 'secrets\tls\server.crt.pem'
           $key = Join-Path $tlsRoot 'secrets\tls\server.key.pem'
           if (-not (Test-Path $cert)) { throw 'Server certificate was not created' }
@@ -225,7 +273,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, pdo_mysql, openssl, sodium
+          extensions: mbstring, pdo_mysql, openssl, sodium, fileinfo
           coverage: none
       - name: Install MariaDB client
         shell: bash
@@ -307,6 +355,8 @@ jobs:
           php tests/phase6c-table-draft-http.php
           php tests/phase6c-table-draft-local.php
           php tests/phase7c-center-projection-local.php
+          php tests/phase8b-machine-recovery-local.php
+          php tests/phase8b-setup-preflight-local.php
       - name: Public edge log on failure
         if: failure()
         shell: bash

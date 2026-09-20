@@ -4,6 +4,7 @@ import re
 root=Path(__file__).resolve().parents[1]
 schema=(root/'database/schema.sql').read_text(encoding='utf-8')
 installer=(root/'install.php').read_text(encoding='utf-8')
+setup=(root/'includes/setup_install.php').read_text(encoding='utf-8')
 functions=(root/'includes/functions.php').read_text(encoding='utf-8')
 waiter=(root/'api/waiter_call.php').read_text(encoding='utf-8')
 waiter_service=(root/'includes/waiter_call_service.php').read_text(encoding='utf-8')
@@ -19,19 +20,19 @@ assert len(re.findall(r'^CREATE TABLE IF NOT EXISTS ', schema, flags=re.M)) >= 3
 for table in ['invoice_discount_audit','subscribers','subscriber_ledger']:
     assert f'CREATE TABLE IF NOT EXISTS {table}' in schema
 assert 'user_shift_responsibilities' not in schema
-assert "extension_loaded($extension)" in installer and "'pdo_mysql'=>'PDO MySQL'" in installer
-assert "'sodium'=>'Sodium'" in installer
-assert 'install_assert_empty_database' in installer
-assert 'install_probe_privileges' in installer
-assert 'install_drop_created_tables' in installer
-assert "MySQL 5.7.8 یا MariaDB 10.2" in installer
+assert "extension_loaded($extension)" in setup and "'pdo_mysql'=>'PDO MySQL'" in setup
+assert "'sodium'=>'Sodium'" in setup and "'fileinfo'=>'Fileinfo'" in setup
+assert 'sokna_setup_assert_empty_database' in setup
+assert 'sokna_setup_probe_privileges' in setup
+assert 'sokna_setup_drop_created_tables' in setup
+assert "'10.2.0'" in setup and "'5.7.8'" in setup and 'sokna_setup_database_engine_info' in setup
 assert "live_table_guard,continued_from_session_id" in functions
 assert "status='closed',live_table_guard=NULL" in functions
 assert "active_table_guard,business_date,business_shift_key,business_shift_label,business_cutoff_snapshot) VALUES" in waiter_service
 assert "status='cancelled',active_table_guard=NULL" in waiter_service
 assert "SET table_id=?,active_table_guard=?,session_id=?" in table_api
-assert "favicon_32_path" in installer and "1.30.1-rc2-baseline" in installer
-assert "operator_user" not in installer and "operator_pass" not in installer
+assert "favicon_32_path" in setup and "1.30.1-rc2-baseline" in setup
+assert "operator_user" not in setup and "operator_pass" not in setup
 assert "waiter_table_assignments" not in schema and "staff_order_acknowledgements" not in schema
 assert "phone VARCHAR" not in schema
 print('Install compatibility checks passed.')
