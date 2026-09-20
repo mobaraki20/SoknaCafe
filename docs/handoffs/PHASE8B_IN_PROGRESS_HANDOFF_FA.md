@@ -108,3 +108,14 @@ Fetch current main's handoff and the existing 8B branch. Preserve the verified s
 - Preserve all installer acceptance requirements and updater/platform ownership separation. Inno needs explicit, tested Repair; it does not provide MSI repair semantics automatically.
 - Next: pin compiler/version/hash/license and implement native authoring plus maintenance Repair using existing owners. No paid tools/subscriptions/certificates; test unsigned status must be explicit. Native installer is not yet built.
 - Earlier sections asking for a licensing preference are historical and superseded by this decision. Verified runtime source/CI remain unchanged.
+
+## Inno platform lifecycle implementation — awaiting CI
+- Source files: `runtime/windows/installer/` and `tests/phase8b-installer-lifecycle.ps1`.
+- Compiler pinned to Inno 7.1.0 x64, official release SHA256 plus Authenticode publisher validation before execution. Existing PNG brand assets are embedded unchanged in an ICO container.
+- Preview scope is explicit: an already configured SOKNA app and installed PHP/OpenSSL/web stack. It is NOT clean-machine New/Recover packaging.
+- Platform-only file list, Desktop/Start URL shortcuts, ARP registration, cached Setup via Modify/Repair, automatic installer logs; existing Repair owner is invoked with full checks.
+- Shared setup owner adds ValidateRepair (read-only installed-target check) and RemovePlatform (exact service command ownership, remove service only, preserve app/data/TLS/Agent). No second service owner added.
+- Hosted lifecycle fixture tests missing prerequisite/no platform mutation, registration/shortcuts, deleted platform file and shortcut repair, newer active app preservation, wrong service ownership refusal and uninstall/data/key preservation.
+- Artifact is unsigned and named `sokna-platform-preview-unsigned`, with source/hash/compiler manifest. Do not publish as final SOKNA Setup or claim UAT.
+- Local environment lacks PowerShell/Windows/Inno; compile and runtime status await this commit's CI. Earlier hardening PASS does not validate this new code.
+- Still open: clean-machine app payload/New/Recover UI, web stack/DB deployment, prerequisite acquisition, full same-version app repair, unified installer+owner support ZIP, Persian installer copy and complete acceptance/UAT.

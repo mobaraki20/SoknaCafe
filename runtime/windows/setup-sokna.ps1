@@ -1,5 +1,5 @@
 ﻿param(
-    [ValidateSet('New','Recover','Repair','Validate')][string]$Mode = 'Validate',
+    [ValidateSet('New','Recover','Repair','Validate','RemovePlatform')][string]$Mode = 'Validate',
     [string]$AppRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path,
     [Parameter(Mandatory=$true)][string]$PhpExe,
     [string]$OpenSslExe = '',
@@ -11,6 +11,7 @@
     [string]$RecoveryPassphraseFile = '',
     [string]$PrintAgentSetup = '',
     [string]$PrintAgentSha256 = '',
+    [switch]$ValidateRepair,
     [switch]$SkipHttps,
     [switch]$SkipService
 )
@@ -90,6 +91,22 @@ function Install-RuntimeService([string]$Candidate) {
     } finally { Remove-Item -LiteralPath $backup -Force -ErrorAction SilentlyContinue }
 }
 
+function Remove-RuntimeService {
+    # Removing platform integration must work even if PHP/application files are
+    # damaged. Ownership is established by the complete registered command.
+    $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+    if (-not $existing) { Write-SetupEvent 'remove-platform' 'Service already absent; data preserved.'; return }
+    $hostExe = Join-Path $DataRoot 'bin\SoknaRuntimeService.exe'
+    $actual = (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName").ImagePath
+    if ($actual -ne (Get-RuntimeBinPath $hostExe)) { throw 'Service ownership mismatch; nothing was removed.' }
+    if ($existing.Status -ne 'Stopped') { Stop-Service $ServiceName -ErrorAction Stop; Wait-SoknaService $ServiceName 'Stopped' }
+    Invoke-SoknaProcess "$env:SystemRoot\System32\sc.exe" @('delete',$ServiceName) | Out-Null
+    # Deletion may remain pending while an external SCM client has a handle.
+    $existing.Dispose()
+    if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) { throw 'Service removal is pending; close service-management windows and retry uninstall.' }
+    Write-SetupEvent 'remove-platform' 'Owned service removed. Application, data, keys, TLS and Agent preserved.'
+}
+
 try {
     # Available even when preflight fails before ProgramData is writable.
     $session = New-SoknaPrivateDirectory (Join-Path $env:TEMP ('SOKNA-setup-' + $sessionId))
@@ -99,12 +116,20 @@ try {
     $DataRoot = [IO.Path]::GetFullPath($DataRoot).TrimEnd('\')
     Assert-SoknaSafePath $AppRoot
     Assert-SoknaSafePath $DataRoot
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    if ($Mode -ne 'Validate' -and -not $isAdmin) { throw 'Administrator privileges are required.' }
+    if ($ValidateRepair -and $Mode -ne 'Validate') { throw 'ValidateRepair requires Validate mode.' }
+    if ($Mode -eq 'RemovePlatform') {
+        $stage = 'remove-platform'
+        Remove-RuntimeService
+        $summary.ok = $true
+        $summary.data_preserved = $true
+        $exitCode = 0
+    } else {
     Assert-File $PhpExe 'PHP executable'
     Assert-File (Join-Path $AppRoot 'runtime\sokna-runtime.php') 'Runtime entrypoint'
     if ($Hostname -notmatch '^(?=.{1,253}$)[a-z0-9]+(?:[.-][a-z0-9]+)*$') { throw 'Invalid local hostname.' }
     if (Test-Path (Join-Path $AppRoot 'VERSION.txt')) { $summary.version = (Get-Content (Join-Path $AppRoot 'VERSION.txt') -Raw).Trim() }
-    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-    if ($Mode -ne 'Validate' -and -not $isAdmin) { throw 'Administrator privileges are required.' }
     if (-not $SkipHttps) {
         Assert-File $OpenSslExe 'OpenSSL executable'
         Invoke-SoknaProcess $OpenSslExe @('version') | Out-Null
@@ -123,7 +148,7 @@ try {
     }
     $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
     if ($Mode -in @('New','Recover') -and $existing) { throw 'Runtime service already exists; use Repair with the installed paths.' }
-    if ($Mode -eq 'Repair') {
+    if ($Mode -eq 'Repair' -or $ValidateRepair) {
         Assert-File (Join-Path $AppRoot 'config.php') 'Installed configuration'
         Assert-File (Join-Path $AppRoot 'install.lock') 'Installation lock'
         if ($existing) {
@@ -186,6 +211,7 @@ try {
         $summary.https = $(if ($SkipHttps) { 'skipped' } else { 'provisioned' })
         $summary.health_scope = 'runtime-self-check; HTTP/database/printer end-to-end acceptance remains required'
         $exitCode = $(if ($summary.reboot_required) { 3010 } else { 0 })
+    }
     }
 } catch {
     $summary.error_code = 'SOKNA_SETUP_' + $stage.Replace('-','_').ToUpperInvariant()
