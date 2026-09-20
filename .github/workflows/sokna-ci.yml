@@ -217,8 +217,8 @@ jobs:
           }
           if (-not $openssl) { throw 'OpenSSL executable not found on Windows runner' }
           $tlsRoot = Join-Path $env:RUNNER_TEMP 'sokna-tls-uat'
-          & ./runtime/windows/provision-local-https.ps1 -OpenSslExe $openssl -DataRoot $tlsRoot -Hostname 'sokna.local'
-          if ($LASTEXITCODE -ne 0) { throw 'TLS provisioning script failed' }
+          $tlsResult = & ./runtime/windows/provision-local-https.ps1 -OpenSslExe $openssl -DataRoot $tlsRoot -Hostname 'sokna.local' | ConvertFrom-Json
+          if (-not $tlsResult.certificate) { throw 'TLS provisioning returned no certificate' }
           $cert = Join-Path $tlsRoot 'secrets\tls\server.crt.pem'
           $key = Join-Path $tlsRoot 'secrets\tls\server.key.pem'
           if (-not (Test-Path $cert)) { throw 'Server certificate was not created' }

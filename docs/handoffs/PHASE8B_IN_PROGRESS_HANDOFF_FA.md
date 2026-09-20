@@ -67,3 +67,15 @@ Scope: Windows orchestration reliability; no POS UI/business behavior change.
 - Tests added: real Windows SCM install/repair plus injected start failure rollback; native quoting, private ACL, preflight failure, diagnostics allowlist, TLS repair/partial failure; MariaDB read-only preflight.
 - Local checks: Phase 1 + Phase 8B Python contracts PASS, git diff --check PASS. PHP/Windows runtime unavailable in this Linux workspace; hosted CI is required and NOT yet claimed passed.
 - Next: inspect CI for this batch, fix any failures, then complete packaging acceptance (MSI/Burn/updater ownership/shortcuts/ARP/full prerequisites/end-to-end health). Phase 8B remains IN PROGRESS.
+
+## 2026-09-20 — PR #18 hardening continuation
+- PR: https://github.com/mobaraki20/SoknaCafe/pull/18 (draft; not merged).
+- Prior source `8e5ba018` passed Linux and MariaDB, but Windows runtime tests exposed test-environment issues. Do not mistake that run for full PASS.
+- Windows PowerShell array serialization was removed from argument assertions; arguments are checked individually, including Persian and trailing backslashes.
+- SCM fixture PIDs are recorded directly because CIM CommandLine can be null for SYSTEM processes. The test checks old and new generations and requires exactly one Runtime plus one fixture child.
+- Service lifecycle now serializes monitor/stop and terminates the Runtime process tree during repair; service state/config and binary rollback are tested with an intentionally failing replacement host.
+- Actual OpenSSL Unicode-path failure was fixed by using ASCII relative file arguments with a Unicode native working directory. Do not remove the Persian-path TLS test.
+- Setup summary includes OS, service status and recent service-host events; malformed JSON errors never echo the unparsed credential file. Support export remains an explicit allowlist.
+- Latest code before this checkpoint: `6701949524f44420c061f62e226381a0c7d9480e`; additional malformed-JSON fix and its test are included in this checkpoint. Read PR checks for this commit's final CI; do not inherit PASS from earlier heads.
+- Build artifact `sokna-runtime-service-host` is ONLY the Runtime service binary, not the final Setup.exe.
+- Remaining phase work: MSI/Burn packaging, updater/repair ownership, Desktop/Start shortcuts, Installed apps uninstall, full prerequisite manifest/acquisition, HTTP+DB acceptance and real-device UAT. Phase 8B is still IN PROGRESS.

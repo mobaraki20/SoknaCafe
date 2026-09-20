@@ -135,7 +135,8 @@ try {
     if ($Mode -in @('New','Recover')) {
         Assert-File $SetupConfigFile 'Setup config'
         if ((Get-Item -LiteralPath $SetupConfigFile).Length -gt 1MB) { throw 'Setup config is too large.' }
-        $inputConfig = Get-Content -LiteralPath $SetupConfigFile -Raw | ConvertFrom-Json
+        try { $inputConfig = Get-Content -LiteralPath $SetupConfigFile -Raw | ConvertFrom-Json }
+        catch { throw 'Setup config JSON is invalid; fix the input file before installation.' }
         # Register secrets before invoking any child process that can echo an error.
         foreach ($value in @($inputConfig.db.pass,$inputConfig.admin_password,$inputConfig.relay.shared_secret)) { if ($value) { Add-SoknaSecret ([string]$value) } }
         if ($inputConfig.data_dir -and [IO.Path]::GetFullPath($inputConfig.data_dir).TrimEnd('\') -ne $DataRoot) { throw 'Config data_dir does not match DataRoot.' }

@@ -45,6 +45,13 @@ try {
     $s = Run-Setup @('-Mode','New','-AppRoot',$repo,'-DataRoot',$validateData,'-OpenSslExe',(Join-Path $root 'missing.exe')) 2
     Assert ($s.stage -eq 'preflight') 'Missing dependency not caught in preflight'
     Assert (-not (Test-Path $validateData)) 'Failed preflight changed target data root'
+    $malformed = Join-Path $root 'malformed.json'
+    [IO.File]::WriteAllText($malformed, '{"admin_password":"do-not-log-malformed-canary",broken')
+    $s = Run-Setup @('-Mode','New','-AppRoot',$repo,'-DataRoot',$validateData,'-SetupConfigFile',$malformed,'-SkipHttps','-SkipService') 2
+    Assert (($s | ConvertTo-Json -Depth 8) -notmatch 'do-not-log-malformed-canary') 'Malformed JSON error leaked a secret'
+    Assert ((Get-Content (Join-Path $s.diagnostics_directory 'events.jsonl') -Raw) -notmatch 'do-not-log-malformed-canary') 'Malformed JSON log leaked a secret'
+    Assert (-not (Test-Path $validateData)) 'Malformed input changed target data root'
+
 
     $app = Join-Path $root 'app'
     $data = Join-Path $root 'data'
