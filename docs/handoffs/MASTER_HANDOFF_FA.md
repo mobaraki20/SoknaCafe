@@ -1,5 +1,7 @@
 # SOKNA — Master Project Handoff
 
+Latest verified diagnostic extension: source `0557e64336d1ac1be958787ebe76f895df4647a2`, CI `35504980480` all three gates SUCCESS. Read CURRENT_STATUS and DELIVERY_STATUS for exact scope and outstanding deliverables. Independent Windows Agent repository: `mobaraki20/Pagent`, published v6.2.5 observed; integration still requires validation.
+
 ## Active continuation — 2026-09-20
 Phase 8B is already implemented in part on `phase/8b-windows-setup`, draft PR #18. Continue that branch, not a fresh branch from main. Read CURRENT_STATUS and PHASE8B_IN_PROGRESS_HANDOFF on the branch for the newest CI evidence. The completed release checkpoint below remains 8A; 8B and the final Windows installer are not complete.
 

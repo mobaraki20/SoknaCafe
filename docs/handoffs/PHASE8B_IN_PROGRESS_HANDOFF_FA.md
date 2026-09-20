@@ -138,3 +138,16 @@ CI `35504078070` confirmed the x64 fix: native installation, TLS provisioning an
 
 ### Exact next action after this checkpoint
 Continue the existing branch. Complete consolidated installer/owner diagnostics and their failure-path tests, then clean-machine prerequisites/web stack/database acquisition and New/Recover orchestration using the existing owners. Full application Repair must use a complete same-version payload, never an older seed. Complete Persian installer copy and the acceptance table before promotion; require final-head and post-merge CI. Preserve the no-mandatory-cost decision. Do not restart WiX/MSI/Burn research or ask the settled budget question again.
+
+## Installer diagnostic consolidation — implementation awaiting CI
+The canonical setup owner now accepts the native installer log path, reads a bounded snapshot while the log is open, redacts it and includes it alongside summary.json/events.jsonl in the existing private support.zip. Inno passes its documented {log} constant through the bridge. Summary reports bundle path/status, log inclusion status and snapshot scope. Missing/oversized/unreadable log must not replace the original setup result. This is a snapshot through owner completion, not the final Inno log; early wizard/bridge failures and post-owner file-removal failures still need coverage before claiming complete diagnostic consolidation. Windows tests exercise held-open log, credential canary, original failure preservation and real native preflight/install/Repair bundles. New code is NOT verified until its own CI passes.
+
+## Verified installer diagnostic snapshot — 2026-09-20
+Source `0557e64336d1ac1be958787ebe76f895df4647a2`; CI https://github.com/mobaraki20/SoknaCafe/actions/runs/35504980480 — Windows, Linux/browser and MariaDB all completed SUCCESS.
+
+The existing private support.zip now includes a redacted native installer log snapshot, summary.json and events.jsonl. Tests passed for a held-open log, credential canary redaction, missing-log preservation of the original setup failure, and actual native preflight/install/Repair ZIP contents. Summary exposes bundle path/status and snapshot scope. The snapshot ends at setup-owner completion; early wizard/bridge failures and later Inno finalization/removal failures remain open. Do not call this full installer diagnostic coverage.
+
+Delivery/source map: [DELIVERY_STATUS_FA.md](DELIVERY_STATUS_FA.md). Print Agent's independent repository was located at https://github.com/mobaraki20/Pagent ; published release v6.2.5 provides Setup.exe and source.zip. Release metadata reports target `11708956df922e02ad8067ad281950dae33bab64` and Setup SHA256 `d34241a4b3ed8b3d1cf5106eedee39d97d905766b067013b9402f3f18e8f0929`. These are observed release metadata, not a new binary hash verification or local-installer compatibility test. Do not recreate the Agent or assume old AGENT_DEPENDENCIES notes describe the latest release.
+
+Next: finish diagnostics outside the owner window, then complete the clean-machine prerequisite/web stack/database and New/Recover package, Public deployment bundle, exact Agent integration and same-version application repair. Full Phase 8B remains IN PROGRESS; PR #18 is draft/unmerged. User is not responsible for manually assembling missing packages. Full initial-handoff traceability and real-device UAT remain open.
+
