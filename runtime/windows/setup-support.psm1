@@ -50,9 +50,10 @@ function ConvertTo-SoknaArgument([string]$Value) {
 }
 
 function Invoke-SoknaProcess {
-    param([string]$File, [string[]]$Arguments, [int[]]$SuccessCodes = @(0), [int]$TimeoutSeconds = 120)
+    param([string]$File, [string[]]$Arguments, [int[]]$SuccessCodes = @(0), [int]$TimeoutSeconds = 120, [string]$WorkingDirectory = '')
     $info = New-Object Diagnostics.ProcessStartInfo
     $info.FileName = $File
+    if ($WorkingDirectory) { $info.WorkingDirectory = $WorkingDirectory }
     $info.Arguments = ($Arguments | ForEach-Object { ConvertTo-SoknaArgument $_ }) -join ' '
     $info.UseShellExecute = $false
     $info.CreateNoWindow = $true

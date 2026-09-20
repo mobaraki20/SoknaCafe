@@ -9,6 +9,7 @@ Import-Module (Join-Path $PSScriptRoot 'setup-support.psm1') -DisableNameCheckin
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'Administrator privileges are required.' }
 if (-not (Test-Path -LiteralPath $OpenSslExe -PathType Leaf)) { throw 'OpenSSL executable was not found.' }
 if ($Hostname -notmatch '^(?=.{1,253}$)[a-z0-9]+(?:[.-][a-z0-9]+)*$') { throw 'Invalid local hostname.' }
+$OpenSslExe = [IO.Path]::GetFullPath($OpenSslExe)
 $Secrets = Join-Path $DataRoot 'secrets\tls'
 Assert-SoknaSafePath $Secrets
 $CaKey = Join-Path $Secrets 'local-ca.key.pem'
@@ -27,16 +28,18 @@ foreach ($line in $Lines) {
     }
 }
 
+# Native OpenSSL builds may use ANSI argv. Keep file arguments ASCII/relative
+# and let CreateProcessW set the Unicode working directory.
 function Assert-TlsIdentity([string]$Directory) {
-    $ca = Join-Path $Directory 'local-ca.crt.pem'
-    $caPrivate = Join-Path $Directory 'local-ca.key.pem'
-    $server = Join-Path $Directory 'server.crt.pem'
-    $serverPrivate = Join-Path $Directory 'server.key.pem'
-    Invoke-SoknaProcess $OpenSslExe @('verify','-CAfile',$ca,'-verify_hostname',$Hostname,$server) | Out-Null
+    $ca = 'local-ca.crt.pem'
+    $caPrivate = 'local-ca.key.pem'
+    $server = 'server.crt.pem'
+    $serverPrivate = 'server.key.pem'
+    Invoke-SoknaProcess -File $OpenSslExe -WorkingDirectory $Directory -Arguments @('verify','-CAfile',$ca,'-verify_hostname',$Hostname,$server) | Out-Null
     foreach ($pair in @(@($ca,$caPrivate),@($server,$serverPrivate))) {
-        Invoke-SoknaProcess $OpenSslExe @('x509','-in',$pair[0],'-checkend','0','-noout') | Out-Null
-        $public = (Invoke-SoknaProcess $OpenSslExe @('x509','-in',$pair[0],'-pubkey','-noout')).Output.Trim()
-        $privatePublic = (Invoke-SoknaProcess $OpenSslExe @('pkey','-in',$pair[1],'-pubout')).Output.Trim()
+        Invoke-SoknaProcess -File $OpenSslExe -WorkingDirectory $Directory -Arguments @('x509','-in',$pair[0],'-checkend','0','-noout') | Out-Null
+        $public = (Invoke-SoknaProcess -File $OpenSslExe -WorkingDirectory $Directory -Arguments @('x509','-in',$pair[0],'-pubkey','-noout')).Output.Trim()
+        $privatePublic = (Invoke-SoknaProcess -File $OpenSslExe -WorkingDirectory $Directory -Arguments @('pkey','-in',$pair[1],'-pubout')).Output.Trim()
         if ($public -ne $privatePublic) { throw 'TLS certificate/private key mismatch. Existing identity was preserved.' }
     }
 }
@@ -73,16 +76,16 @@ DNS.2=localhost
 IP.1=127.0.0.1
 IP.2=::1
 "@ | Set-Content -LiteralPath $Cfg -Encoding ascii
-        $stagedCaKey = Join-Path $staging 'local-ca.key.pem'
-        $stagedCa = Join-Path $staging 'local-ca.crt.pem'
-        $stagedKey = Join-Path $staging 'server.key.pem'
-        $csr = Join-Path $staging 'server.csr.pem'
-        $stagedCert = Join-Path $staging 'server.crt.pem'
-        Invoke-SoknaProcess $OpenSslExe @('genrsa','-out',$stagedCaKey,'3072') | Out-Null
-        Invoke-SoknaProcess $OpenSslExe @('req','-x509','-new','-key',$stagedCaKey,'-sha256','-days','3650','-subj','/CN=SOKNA Local CA','-out',$stagedCa) | Out-Null
-        Invoke-SoknaProcess $OpenSslExe @('genrsa','-out',$stagedKey,'2048') | Out-Null
-        Invoke-SoknaProcess $OpenSslExe @('req','-new','-key',$stagedKey,'-out',$csr,'-config',$Cfg) | Out-Null
-        Invoke-SoknaProcess $OpenSslExe @('x509','-req','-in',$csr,'-CA',$stagedCa,'-CAkey',$stagedCaKey,'-CAcreateserial','-out',$stagedCert,'-days','825','-sha256','-extensions','v3_req','-extfile',$Cfg) | Out-Null
+        $stagedCaKey = 'local-ca.key.pem'
+        $stagedCa = 'local-ca.crt.pem'
+        $stagedKey = 'server.key.pem'
+        $csr = 'server.csr.pem'
+        $stagedCert = 'server.crt.pem'
+        Invoke-SoknaProcess -File $OpenSslExe -WorkingDirectory $staging -Arguments @('genrsa','-out',$stagedCaKey,'3072') | Out-Null
+        Invoke-SoknaProcess -File $OpenSslExe -WorkingDirectory $staging -Arguments @('req','-x509','-new','-key',$stagedCaKey,'-sha256','-days','3650','-subj','/CN=SOKNA Local CA','-out',$stagedCa) | Out-Null
+        Invoke-SoknaProcess -File $OpenSslExe -WorkingDirectory $staging -Arguments @('genrsa','-out',$stagedKey,'2048') | Out-Null
+        Invoke-SoknaProcess -File $OpenSslExe -WorkingDirectory $staging -Arguments @('req','-new','-key',$stagedKey,'-out',$csr,'-config','openssl-sokna.cnf') | Out-Null
+        Invoke-SoknaProcess -File $OpenSslExe -WorkingDirectory $staging -Arguments @('x509','-req','-in',$csr,'-CA',$stagedCa,'-CAkey',$stagedCaKey,'-CAcreateserial','-out',$stagedCert,'-days','825','-sha256','-extensions','v3_req','-extfile','openssl-sokna.cnf') | Out-Null
         Assert-TlsIdentity $staging
         if (Test-Path -LiteralPath $Secrets) {
             if (@(Get-ChildItem -LiteralPath $Secrets -Force).Count -gt 0) { throw 'TLS directory is not empty; explicit recovery is required.' }
