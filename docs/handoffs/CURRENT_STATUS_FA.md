@@ -3,6 +3,11 @@
 Updated: 2026-09-20
 Repository: `mobaraki20/SoknaCafe`
 
+## Latest continuation: native platform preview
+Source `67b32f767bd254bd26bb845302c8490223698e71` on the existing 8B branch implements the Inno platform preview and its lifecycle tests. PR CI `35491459618` is IN PROGRESS at this checkpoint; inspect current checks. No new PASS is claimed.
+
+Scope: existing configured app only; platform files, Desktop/Start shortcuts, ARP, cached Repair and owned-service uninstall/data preservation. This is not clean-machine New/Recover or the finished installer. Read the latest phase handoff for remaining acceptance.
+
 ## Completed release checkpoint
 - Phase 0–7 and Phase 8A completed: `1.36.4-dev.38`.
 - Product merge `485db60b71b40c475c931a9d6d056ce8a07d0df2`, post-merge CI `35442209529` SUCCESS.
