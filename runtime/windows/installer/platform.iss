@@ -5,6 +5,9 @@
 #define ProductVersion "0.1.0"
 
 [Setup]
+; Inno 7 defaults to an x86 setup process even with 64-bit install mode.
+; Keep the installer, PowerShell child and registered target in one native view.
+SetupArchitecture=x64
 AppId={{D577EAA8-1B19-45C6-9FB0-91008FD349E3}
 AppName=SOKNA Platform Preview
 AppVersion={#ProductVersion}

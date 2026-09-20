@@ -8,6 +8,7 @@ $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'setup-support.psm1') -DisableNameChecking -Force
 $resultCode = 2
 try {
+    if (-not [Environment]::Is64BitProcess) { throw 'Platform maintenance requires 64-bit PowerShell; run the x64 installer.' }
     if ($Operation -ne 'Validate') {
         # Installer writes machine-wide registration in an administrator-owned key.
         # Never load an elevated execution plan from a user-writable config file.
