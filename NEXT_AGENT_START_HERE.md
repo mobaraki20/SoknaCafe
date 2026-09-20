@@ -1,32 +1,18 @@
 # SOKNA — NEXT AGENT START HERE
 
-## انتقال و بازبینی 2026-09-19 — شاخه فعال را از نو نسازید
-- main مشاهده‌شده: `98607d87d50c7913a1143d621e60f807965bae53` (checkpoint محصول همچنان Phase 8A / dev.38).
-- شاخه فعال موجود: `phase/8b-windows-setup`.
-- head بررسی‌شده: `6a3e183ca0ea544046c09bf3b9c8de7ab038ca5b`.
-- CI `35445104275`: completed/success؛ هر سه job Windows runtime، Public+Local MariaDB و Linux regression موفق‌اند.
-- هنگام بازبینی PR باز وجود نداشت؛ 8B merge نشده و COMPLETE نیست.
-- کد نصب مشترک، machine recovery، service host واقعی C# و PowerShell orchestration موجود است. هنداور اولیه شاخه درباره WinSW قدیمی شده؛ کد C# منبع فعلی است.
-- الزامات مالک، انتخاب فنی پیشنهادی، شکاف‌های واقعی و معیارهای پذیرش: `docs/architecture-migration-r2/WINDOWS_INSTALLER_ACCEPTANCE_FA.md`.
-- اقدام بعدی: همان شاخه فعال را fetch و بررسی کن؛ قبل از ادامه تغییرات احتمالی جدید را بخوان. نصب‌کننده نهایی هنوز تأیید نشده است.
-- این checkpoint فقط بررسی و مستندسازی است؛ هیچ تغییر runtime یا ارتقای نسخه‌ای انجام نشده و CI فوق متعلق به head کد 8B است، نه commit مستندات جدید.
+Completed product checkpoint: Phase 8A / 1.36.4-dev.38.
+Active work: Phase 8B on `phase/8b-windows-setup`, draft PR #18.
 
-### قرارداد تحویل هر مرحله
-پیش از پایان هر گام، تغییرات را در GitHub ثبت کن؛ CURRENT_STATUS و هنداور فاز باید شامل branch/head، کار انجام‌شده، تست واقعی و run ID، موارد باز و اولین اقدام بعدی باشند. نقطه شروع root و MASTER باید به شاخه فعال اشاره کنند. شاخه‌ای با CI سبز اما بدون merge/post-merge CI را COMPLETE ننام. بسته ZIP تاریخی را بر GitHub فعلی مقدم ندان.
+Do not restart 8B from main. Fetch the existing branch and check the newest head/CI:
+https://github.com/mobaraki20/SoknaCafe/pull/18
 
----
+Read in order:
+1. `DEVELOPER_READ_FIRST_FA.md`
+2. `docs/handoffs/MASTER_HANDOFF_FA.md`
+3. `docs/handoffs/CURRENT_STATUS_FA.md`
+4. `docs/handoffs/PHASE8B_IN_PROGRESS_HANDOFF_FA.md` on the active branch
+5. `docs/architecture-migration-r2/WINDOWS_INSTALLER_ACCEPTANCE_FA.md`
+6. Phase 8 design notes and frozen R2 contracts.
 
-Current exact state: **Phase 8A complete / 1.36.4-dev.38**.
-- PR #16 merged.
-- main: `485db60b71b40c475c931a9d6d056ce8a07d0df2`.
-- post-merge CI `35442209529`: SUCCESS on all three gates.
-- next: **Phase 8B — Windows New / Recover Setup Orchestration**.
-
-Read:
-1. `docs/handoffs/MASTER_HANDOFF_FA.md`
-2. `docs/handoffs/CURRENT_STATUS_FA.md`
-3. `docs/handoffs/PHASE8A_HANDOFF_FA.md`
-4. `docs/architecture-migration-r2/PHASE8_DESIGN_NOTES_FA.md`
-5. R2 Implementation/API/Schema/Risk contracts.
-
-Start from current `main`. Preserve mature installer/updater/backup/Print Agent owners; Phase 8B composes them into Windows new/recover setup.
+Verified hardening source: `2fdb500d3240a1c2adde30b291fe4377d78fca44`; CI `35477813459` SUCCESS on all three gates. This batch implements setup preflight, service/TLS-safe repair, diagnostics and real Windows fault tests. Continue with MSI/Burn packaging after reading the acceptance contract; recheck CI if the branch has advanced. The service-host artifact is not a complete installer; shortcuts, Installed apps lifecycle, prerequisites and updater ownership remain acceptance gates.
+Persist every next step in GitHub handoffs, with tested SHA/run and the precise next action.

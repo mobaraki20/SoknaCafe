@@ -1,18 +1,17 @@
 # SOKNA — Master Project Handoff
 
-## انتقال و بازبینی 2026-09-19 — شاخه فعال را از نو نسازید
-- main مشاهده‌شده: `98607d87d50c7913a1143d621e60f807965bae53` (checkpoint محصول همچنان Phase 8A / dev.38).
-- شاخه فعال موجود: `phase/8b-windows-setup`.
-- head بررسی‌شده: `6a3e183ca0ea544046c09bf3b9c8de7ab038ca5b`.
-- CI `35445104275`: completed/success؛ هر سه job Windows runtime، Public+Local MariaDB و Linux regression موفق‌اند.
-- هنگام بازبینی PR باز وجود نداشت؛ 8B merge نشده و COMPLETE نیست.
-- کد نصب مشترک، machine recovery، service host واقعی C# و PowerShell orchestration موجود است. هنداور اولیه شاخه درباره WinSW قدیمی شده؛ کد C# منبع فعلی است.
-- الزامات مالک، انتخاب فنی پیشنهادی، شکاف‌های واقعی و معیارهای پذیرش: `docs/architecture-migration-r2/WINDOWS_INSTALLER_ACCEPTANCE_FA.md`.
-- اقدام بعدی: همان شاخه فعال را fetch و بررسی کن؛ قبل از ادامه تغییرات احتمالی جدید را بخوان. نصب‌کننده نهایی هنوز تأیید نشده است.
-- این checkpoint فقط بررسی و مستندسازی است؛ هیچ تغییر runtime یا ارتقای نسخه‌ای انجام نشده و CI فوق متعلق به head کد 8B است، نه commit مستندات جدید.
+## Active continuation — 2026-09-20
+Phase 8B is already implemented in part on `phase/8b-windows-setup`, draft PR #18. Continue that branch, not a fresh branch from main. Read CURRENT_STATUS and PHASE8B_IN_PROGRESS_HANDOFF on the branch for the newest CI evidence. The completed release checkpoint below remains 8A; 8B and the final Windows installer are not complete.
 
-### قرارداد تحویل هر مرحله
-پیش از پایان هر گام، تغییرات را در GitHub ثبت کن؛ CURRENT_STATUS و هنداور فاز باید شامل branch/head، کار انجام‌شده، تست واقعی و run ID، موارد باز و اولین اقدام بعدی باشند. نقطه شروع root و MASTER باید به شاخه فعال اشاره کنند. شاخه‌ای با CI سبز اما بدون merge/post-merge CI را COMPLETE ننام. بسته ZIP تاریخی را بر GitHub فعلی مقدم ندان.
+New canonical setup/platform owners on 8B:
+- `includes/setup_install.php`, `tools/setup-machine.php`
+- `runtime/windows/setup-sokna.ps1`, `setup-support.psm1`
+- `runtime/windows/SoknaRuntimeService.cs`, `build-service-host.ps1`
+- existing `runtime/windows/provision-local-https.ps1` now preserves validated TLS identity.
+
+Verified 8B hardening source: `2fdb500d3240a1c2adde30b291fe4377d78fca44`; CI `35477813459` SUCCESS (all three gates). This is a branch checkpoint, not a completed/merged Phase 8B release.
+
+Installer requirements: `docs/architecture-migration-r2/WINDOWS_INSTALLER_ACCEPTANCE_FA.md`.
 
 ---
 
