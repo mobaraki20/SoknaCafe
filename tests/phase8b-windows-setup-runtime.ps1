@@ -106,6 +106,23 @@ try {
     Assert ($files.Count -eq 2) 'Support bundle contains non-allowlisted files'
     Assert ((Get-Content (Join-Path $bundle '*') -Raw | Out-String) -notmatch 'secret-canary-123') 'Support bundle leaked secret'
 
+    # Read a live installer log, redact credentials, and retain the original failure.
+    $installLog = Join-Path $root 'native-installer.log'
+    [IO.File]::WriteAllText($installLog, "Installer evidence marker`r`npassword=installer-secret-canary")
+    $heldLog = [IO.File]::Open($installLog,[IO.FileMode]::Open,[IO.FileAccess]::ReadWrite,[IO.FileShare]::ReadWrite)
+    try {
+        $s = Run-Setup @('-Mode','Validate','-AppRoot',$app,'-DataRoot',$data,'-OpenSslExe',(Join-Path $root 'missing.exe'),'-InstallerLogFile',$installLog) 2
+    } finally { $heldLog.Dispose() }
+    Assert ($s.installer_log_status -eq 'included') 'Live installer log was not captured'
+    Assert ($s.support_bundle_status -eq 'created') 'Combined support ZIP missing'
+    $combined = Join-Path $root 'combined-diagnostics'
+    Expand-Archive $s.support_bundle $combined
+    Assert (@(Get-ChildItem $combined -File).Count -eq 3) 'Combined ZIP must contain only three allowlisted files'
+    $log = Get-Content (Join-Path $combined 'installer-snapshot.log') -Raw
+    Assert ($log -match 'Installer evidence marker' -and $log -notmatch 'installer-secret-canary') 'Installer evidence lost or credential leaked'
+    $s = Run-Setup @('-Mode','Validate','-AppRoot',$app,'-DataRoot',$data,'-OpenSslExe',(Join-Path $root 'missing.exe'),'-InstallerLogFile',(Join-Path $root 'missing.log')) 2
+    Assert ($s.installer_log_status -eq 'unavailable' -and $s.error_code -eq 'SOKNA_SETUP_PREFLIGHT') 'Missing log replaced the primary failure'
+
     # TLS repeat/repair must preserve exact bytes, including CA and server private keys.
     $tls = Join-Path $root 'tls-data'
     $provision = Join-Path $repo 'runtime/windows/provision-local-https.ps1'

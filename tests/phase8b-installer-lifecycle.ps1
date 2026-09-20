@@ -19,6 +19,18 @@ function Install([string]$Exe,[string[]]$Extra=@()) {
     Write-Host ('Installer lifecycle attempt ' + $script:installAttempt)
     Invoke-SoknaProcess $Exe (@('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=$platform","/LOG=$log") + $Extra) -TimeoutSeconds 300 | Out-Null
 }
+function Assert-InstallerBundle([string]$LogFile) {
+    $nativeLog = Get-Content -LiteralPath $LogFile -Raw
+    $paths = [regex]::Matches($nativeLog, '"support_bundle"\s*:\s*("[^"\r\n]+")')
+    Assert ($paths.Count -gt 0) 'Native installer did not report a support bundle path'
+    $zip = ConvertFrom-Json $paths[$paths.Count - 1].Groups[1].Value
+    $expanded = Join-Path $root ([guid]::NewGuid().ToString('N'))
+    Expand-Archive -LiteralPath $zip -DestinationPath $expanded
+    Assert (@(Get-ChildItem $expanded -File).Count -eq 3) 'Native combined bundle must contain exactly three allowlisted files'
+    $report = Get-Content (Join-Path $expanded 'summary.json') -Raw | ConvertFrom-Json
+    Assert ($report.installer_log_status -eq 'included') 'Native log snapshot unavailable'
+    Assert ((Get-Item (Join-Path $expanded 'installer-snapshot.log')).Length -gt 0) 'Native log snapshot empty'
+}
 try {
     Assert (-not (Get-Service SoknaRuntime -ErrorAction SilentlyContinue)) 'Disposable runner must not have a Runtime service'
     Assert (-not (Test-Path $registry)) 'Disposable runner must not have platform registration'
@@ -35,9 +47,11 @@ try {
     $failed = $false
     try { Install $Installer @("/AppRoot=$app","/DataRoot=$data","/PhpExe=$root\missing.exe","/OpenSslExe=$OpenSslExe") } catch { $failed=$true }
     Assert $failed 'Missing prerequisite reported successful install'
+    Assert-InstallerBundle (Join-Path $root 'install-1.log')
     Assert (-not (Test-Path $arp)) 'Failed preflight registered a product'
     Assert (-not (Test-Path $platform)) 'Failed preflight extracted platform files'
     Install $Installer $extra
+    Assert-InstallerBundle (Join-Path $root 'install-2.log')
     $caFile = Join-Path $data 'secrets/tls/local-ca.crt.pem'
     $caThumb = (New-Object Security.Cryptography.X509Certificates.X509Certificate2($caFile)).Thumbprint
     Assert ((Get-Service SoknaRuntime).Status -eq 'Running') 'Installer did not start Runtime'
@@ -58,6 +72,7 @@ try {
     Remove-Item $desktop
     $cache = Join-Path $platform 'maintenance/Setup.exe'
     Install $cache @('/REPAIR')
+    Assert-InstallerBundle (Join-Path $root 'install-3.log')
     Assert (Test-Path (Join-Path $platform 'setup-support.psm1')) 'Repair did not restore a missing platform file'
     Assert (Test-Path $desktop) 'Repair did not restore desktop shortcut'
     Assert ((Get-Content (Join-Path $app 'VERSION.txt') -Raw) -eq 'application-B') 'Repair downgraded application version'

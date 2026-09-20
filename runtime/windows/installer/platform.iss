@@ -126,7 +126,8 @@ function RunOwner(Base, Operation, Extra, ResultFile: String; var ExitCode: Inte
 begin
   Result := Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
     '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File ' + Q(Base + '\package-bridge.ps1') +
-    ' -Operation ' + Operation + ' -ResultFile ' + Q(ResultFile) + Extra,
+    ' -Operation ' + Operation + ' -ResultFile ' + Q(ResultFile) +
+    ' -InstallerLogFile ' + Q(ExpandConstant('{log}')) + Extra,
     '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
 end;
 

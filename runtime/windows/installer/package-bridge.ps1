@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory=$true)][ValidateSet('Validate','Repair','RemovePlatform')][string]$Operation,
     [string]$AppRoot='', [string]$DataRoot='', [string]$PhpExe='', [string]$OpenSslExe='', [string]$Hostname='',
+    [string]$InstallerLogFile='',
     [Parameter(Mandatory=$true)][string]$ResultFile
 )
 $ErrorActionPreference = 'Stop'
@@ -24,6 +25,7 @@ try {
     $childArgs = @('-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',(Join-Path $PSScriptRoot 'setup-sokna.ps1'),
         '-Mode',$Operation,'-AppRoot',$AppRoot,'-DataRoot',$DataRoot,'-PhpExe',$PhpExe,'-OpenSslExe',$OpenSslExe,
         '-Hostname',$Hostname,'-ServiceHostExe',(Join-Path $PSScriptRoot 'bin\SoknaRuntimeService.exe'))
+    if ($InstallerLogFile) { $childArgs += @('-InstallerLogFile',$InstallerLogFile) }
     if ($Operation -eq 'Validate') { $childArgs += '-ValidateRepair' }
     $ps = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
     $child = Invoke-SoknaProcess $ps $childArgs -SuccessCodes @(0,2,3010) -TimeoutSeconds 300

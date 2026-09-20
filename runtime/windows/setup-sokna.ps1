@@ -6,6 +6,7 @@
     [string]$ServiceHostExe = '',
     [string]$DataRoot = "$env:ProgramData\SOKNA",
     [string]$Hostname = 'sokna.local',
+    [string]$InstallerLogFile = '',
     [string]$SetupConfigFile = '',
     [string]$RecoveryFile = '',
     [string]$RecoveryPassphraseFile = '',
@@ -239,10 +240,36 @@ try {
     if ($session) {
         # Explicit allowlist: never recursively archive setup inputs, keys or backups.
         $summary.diagnostics_directory = $session
+        $bundleFiles = @((Join-Path $session 'summary.json'),(Join-Path $session 'events.jsonl'))
+        if ($InstallerLogFile) {
+            $summary.installer_log_scope = 'Snapshot through setup-owner completion; later installer finalization is not included.'
+            try {
+                Assert-SoknaSafePath $InstallerLogFile
+                $stream = [IO.File]::Open($InstallerLogFile, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+                try {
+                    if ($stream.Length -gt 8MB) { throw 'Installer log exceeds the 8 MiB diagnostic limit.' }
+                    $reader = New-Object IO.StreamReader($stream, [Text.Encoding]::UTF8, $true)
+                    try { $logText = $reader.ReadToEnd() } finally { $reader.Dispose() }
+                } finally { $stream.Dispose() }
+                $snapshot = Join-Path $session 'installer-snapshot.log'
+                [IO.File]::WriteAllText($snapshot, (Protect-SoknaLog $logText), (New-Object Text.UTF8Encoding($true)))
+                $bundleFiles += $snapshot
+                $summary.installer_log_status = 'included'
+            } catch {
+                $summary.installer_log_status = 'unavailable'
+                $summary.installer_log_warning = Protect-SoknaLog $_.Exception.Message
+            }
+        }
+        $summary.support_bundle = Join-Path $session 'support.zip'
+        $summary.support_bundle_status = 'created'
         $summary | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $session 'summary.json') -Encoding UTF8
         try {
-            Compress-Archive -LiteralPath @((Join-Path $session 'summary.json'),(Join-Path $session 'events.jsonl')) -DestinationPath (Join-Path $session 'support.zip') -Force
-        } catch { [Console]::Error.WriteLine('Support ZIP could not be created; summary.json and events.jsonl remain available.') }
+            Compress-Archive -LiteralPath $bundleFiles -DestinationPath (Join-Path $session 'support.zip') -Force
+        } catch {
+            $summary.support_bundle_status = 'unavailable'
+            $summary | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $session 'summary.json') -Encoding UTF8
+            [Console]::Error.WriteLine('Support ZIP could not be created; summary.json and events.jsonl remain available.')
+        }
     }
     $summary | ConvertTo-Json -Depth 8
 }
