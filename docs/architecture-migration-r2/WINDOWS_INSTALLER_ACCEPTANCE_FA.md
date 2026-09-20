@@ -43,13 +43,12 @@
 
 Repair با Recover فرق دارد: Repair فایل/سرویس نصب را اصلاح می‌کند؛ Recover اطلاعات را از backup بازیابی می‌کند و نباید خودکار هنگام Repair اجرا شود.
 
-## شکاف‌های مشاهده‌شده در شاخه 8B
-- حالت‌های New/Recover/Repair/Validate و service host وجود دارند، اما MSI/Burn project و shortcut/Installed apps authoring در diff بررسی‌شده نیست.
-- service host در دستگاه مقصد compile می‌شود؛ نسخه نهایی باید artifact آماده داشته باشد.
-- preflight جامع قبل از mutation، دانلود اعتبارسنجی‌شده پیش‌نیازها و support bundle یکپارچه هنوز اثبات نشده‌اند.
-- تشخیص Print Agent صرفاً از نام فایل، تأیید اصالت نیست؛ hash/signature باید اضافه شود.
-- Repair فعلی stop/delete/create سرویس دارد؛ حفظ تنظیمات و rollback خرابی میانی باید آزموده شود. sleep ثابت جای انتظار state با timeout را نمی‌گیرد.
-- پوشه موقت اسرار باید ACL محدود را پیش از Copy اعمال کند؛ private نامیدن فایل کافی نیست.
+## وضعیت بازبینی‌شده — 2026-09-20
+- source `2fdb500d3240a1c2adde30b291fe4377d78fca44` در CI `35477813459` هر سه gate را گذرانده است؛ این شاهد مربوط به hardening شاخه است، نه نصب‌کننده نهایی.
+- کامپایل روی دستگاه مقصد حذف شده؛ host در CI ساخته می‌شود. حفظ سرویس و rollback، ACL قبل از نوشتن اسرار، SHA256 اجباری Agent، diagnostics و TLS preservation پیاده‌سازی و آزموده شده‌اند.
+- هنوز MSI/Burn، shortcut/Installed apps، prerequisite acquisition جامع، web server/DB deployment و HTTP health نهایی ساخته نشده‌اند.
+- طرح جلوگیری از تداخل updater/Repair، مرز مالکیت و شکاف‌های هر پیش‌نیاز در `WINDOWS_PACKAGING_OWNERSHIP_FA.md` ثبت شده‌اند؛ این سند طرح است، نه ادعای اجرای آن.
+- انتخاب WiX تا روشن‌شدن پذیرش EULA و هزینه احتمالی نسخه جاری توسط مالک نهایی نیست. AcceptEula یا پرداختی انجام نشده است.
 - CI سبز orchestration به معنی تأیید نصب‌کننده نهایی نیست.
 
 ## ترتیب ادامه

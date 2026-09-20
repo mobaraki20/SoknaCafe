@@ -90,3 +90,13 @@ Scope: Windows orchestration reliability; no POS UI/business behavior change.
 
 ### Exact next action
 Fetch current main's handoff and the existing 8B branch. Preserve the verified setup/service/TLS owners. Resolve MSI versus application-updater file ownership before adding package authoring: Repair must never restore an older application payload over an updated release. Then build the MSI/Burn package, its shortcut/Installed-apps lifecycle and versioned prerequisite manifest, and exercise the acceptance table. Do not mistake the CI service-host artifact for Setup.exe. Keep PR #18 draft until its declared scope is ready; recheck current head and CI before any promotion.
+
+## Packaging research checkpoint — 2026-09-20
+- Design: `docs/architecture-migration-r2/WINDOWS_PACKAGING_OWNERSHIP_FA.md`.
+- Proposed ownership: MSI owns platform tooling and an immutable seed cache; the existing updater owns the active application. Never extract an older seed over an installed application during Repair.
+- This is a documentation/design checkpoint only; ownership enforcement, native authoring and application repair from a same-version full cache are NOT implemented.
+- Audit found the runtime service is not an HTTP server. Apache currently has a template, not clean-machine deployment. Web server/PHP/DB payload versions and acquisition remain open.
+- Current WiX v7 requires explicit EULA acceptance and can carry an OSMF fee. Owner must choose whether to proceed under these terms or require a tool without mandatory fees. No EULA acceptance, purchase or CI acceptance flag has been performed.
+- Read the new design before choosing/pinning the toolchain. Do not silently use an obsolete WiX version to bypass this decision.
+- Verified code remains `2fdb500d3240a1c2adde30b291fe4377d78fca44`, CI `35477813459` SUCCESS. New documentation is not a new code/test result. Phase 8B and draft PR #18 remain IN PROGRESS.
+- Next: obtain owner's toolchain/licensing preference; then implement the documented ownership boundary, native package, prerequisite manifest/acquisition and end-to-end acceptance. Preserve all existing setup/backup/updater owners.

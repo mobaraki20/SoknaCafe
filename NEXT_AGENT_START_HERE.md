@@ -12,7 +12,8 @@ Read in order:
 3. `docs/handoffs/CURRENT_STATUS_FA.md`
 4. `docs/handoffs/PHASE8B_IN_PROGRESS_HANDOFF_FA.md` on the active branch
 5. `docs/architecture-migration-r2/WINDOWS_INSTALLER_ACCEPTANCE_FA.md`
-6. Phase 8 design notes and frozen R2 contracts.
+6. `docs/architecture-migration-r2/WINDOWS_PACKAGING_OWNERSHIP_FA.md` — design and toolchain/licensing decision pending owner input.
+7. Phase 8 design notes and frozen R2 contracts.
 
 Verified hardening source: `2fdb500d3240a1c2adde30b291fe4377d78fca44`; CI `35477813459` SUCCESS on all three gates. This batch implements setup preflight, service/TLS-safe repair, diagnostics and real Windows fault tests. Continue with MSI/Burn packaging after reading the acceptance contract; recheck CI if the branch has advanced. The service-host artifact is not a complete installer; shortcuts, Installed apps lifecycle, prerequisites and updater ownership remain acceptance gates.
 Persist every next step in GitHub handoffs, with tested SHA/run and the precise next action.
