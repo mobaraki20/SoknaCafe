@@ -13,9 +13,9 @@ Verified 8B hardening source: `2fdb500d3240a1c2adde30b291fe4377d78fca44`; CI `35
 
 Installer requirements: `docs/architecture-migration-r2/WINDOWS_INSTALLER_ACCEPTANCE_FA.md`.
 
-Packaging design checkpoint: `docs/architecture-migration-r2/WINDOWS_PACKAGING_OWNERSHIP_FA.md`. MSI/updater ownership is designed, not yet enforced. Web stack deployment and native packaging remain open. Owner resolved budget: no mandatory cost, current use is testing. Inno Setup replaces WiX MSI/Burn; explicit Repair remains required. No licensing question is pending and no purchase was made.
+Packaging design checkpoint: `docs/architecture-migration-r2/WINDOWS_PACKAGING_OWNERSHIP_FA.md`. Platform-only Inno packaging enforces the separation from active application files in the verified preview. Clean-machine web stack deployment and full application repair remain open. Owner resolved budget: no mandatory cost, current use is testing. Inno Setup replaces WiX MSI/Burn; explicit Repair remains required. No licensing question is pending and no purchase was made.
 
-Native preview implementation is now on the 8B branch at `67b32f767bd254bd26bb845302c8490223698e71`; CI `35491459618` pending at this documentation checkpoint. Read the newest phase handoff and actual CI result. The preview assumes an already configured application and is not the complete installer.
+Native platform preview source `a3435d187717ffdc1d2fc2914ab81a341e7742b3` is verified by CI `35504331920`: Windows installer lifecycle, Linux and MariaDB all SUCCESS. Artifact `sokna-platform-preview-unsigned` is available in that run. Actual install/shortcuts/Installed apps/cached Repair/owned-service uninstall and data preservation passed on a disposable Windows fixture. The preview assumes an already configured application and is not the complete installer; clean-machine prerequisites, same-version full app repair, unified diagnostics and UAT remain open. Read the latest phase handoff before continuing.
 
 ---
 
