@@ -79,7 +79,7 @@ foreach($artifact in @($candidate.artifacts)){
             try {
                 # Windows inbox curl avoids PowerShell response-parser failures on some providers.
                 # Refuse HTTPS downgrades on every redirect and retain the pinned hash gate below.
-                $curl = Get-Command curl.exe -CommandType Application -ErrorAction SilentlyContinue
+                $curl = Get-Command curl.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
                 if ($curl) {
                     & $curl.Source --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --connect-timeout 30 --max-time 600 --retry 2 --output $tmp $url
                     if ($LASTEXITCODE -ne 0) { throw "HTTPS transport exited with code $LASTEXITCODE." }

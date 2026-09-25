@@ -254,20 +254,6 @@ jobs:
         run: |
           ./runtime/windows/installer/build-installer.ps1 -OutputDirectory (Join-Path $env:RUNNER_TEMP 'sokna-platform-artifact')
 
-      - name: Inno install repair and uninstall lifecycle
-        shell: powershell
-        run: |
-          $openssl = (Get-Command openssl -ErrorAction SilentlyContinue).Source
-          if (-not $openssl) { $openssl = 'C:\Program Files\Git\usr\bin\openssl.exe' }
-          ./tests/phase8b-installer-lifecycle.ps1 -Installer (Join-Path $env:RUNNER_TEMP 'sokna-platform-artifact/SOKNA-Platform-Preview-0.1.0-Setup.exe') -PhpExe (Get-Command php).Source -OpenSslExe $openssl
-
-      - name: Upload unsigned platform preview (not full installer)
-        uses: actions/upload-artifact@v4
-        with:
-          name: sokna-platform-preview-unsigned
-          path: ${{ runner.temp }}/sokna-platform-artifact/
-          if-no-files-found: error
-
       - name: Phase 8B Windows setup validate
         shell: pwsh
         run: |
@@ -316,6 +302,20 @@ jobs:
           ./tests/phase8b-apache-integration-runtime.ps1
           if ($LASTEXITCODE -ne 0) { throw 'Phase 8B Apache integration runtime failed' }
 
+
+      - name: Inno install repair and uninstall lifecycle
+        shell: powershell
+        run: |
+          $openssl = (Get-Command openssl -ErrorAction SilentlyContinue).Source
+          if (-not $openssl) { $openssl = 'C:\Program Files\Git\usr\bin\openssl.exe' }
+          ./tests/phase8b-installer-lifecycle.ps1 -Installer (Join-Path $env:RUNNER_TEMP 'sokna-platform-artifact/SOKNA-Platform-Preview-0.1.0-Setup.exe') -PhpExe (Get-Command php).Source -OpenSslExe $openssl
+
+      - name: Upload unsigned platform preview (not full installer)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sokna-platform-preview-unsigned
+          path: ${{ runner.temp }}/sokna-platform-artifact/
+          if-no-files-found: error
 
 
   windows-prerequisite-freeze:
