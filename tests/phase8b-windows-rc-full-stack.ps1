@@ -61,6 +61,28 @@ function Invoke-ScriptExit([string]$Script,[string[]]$Arguments,[int[]]$Allowed)
     $r=Invoke-SoknaProcess -File $ps -Arguments (@('-NoProfile','-ExecutionPolicy','Bypass','-File',$Script)+$Arguments) -SuccessCodes $Allowed -TimeoutSeconds 2100
     return [ordered]@{code=[int]$r.ExitCode;output=[string]$r.Output;error=[string]$r.Error}
 }
+function Invoke-MsiExit([string[]]$Arguments,[int[]]$Allowed,[int]$TimeoutSeconds=900){
+    # MSI is already silent and writes its own flushed verbose log.  Avoid redirected
+    # pipes here: Windows Installer can outlive its client process during custom actions.
+    $info=New-Object Diagnostics.ProcessStartInfo
+    $info.FileName=Join-Path $env:SystemRoot 'System32\msiexec.exe'
+    $info.Arguments=($Arguments|ForEach-Object { ConvertTo-SoknaArgument $_ }) -join ' '
+    $info.UseShellExecute=$false
+    $info.CreateNoWindow=$true
+    $process=New-Object Diagnostics.Process
+    $process.StartInfo=$info
+    try{
+        if(-not $process.Start()){throw 'Windows Installer client could not start.'}
+        if(-not $process.WaitForExit($TimeoutSeconds*1000)){
+            & "$env:SystemRoot\System32\taskkill.exe" /PID $process.Id /T /F 2>&1|Out-Null
+            $process.WaitForExit(10000)|Out-Null
+            throw "Windows Installer timed out after $TimeoutSeconds seconds."
+        }
+        $code=[int]$process.ExitCode
+        if($Allowed -notcontains $code){throw "Windows Installer exit code $code; inspect the sanitized MSI log."}
+        return $code
+    }finally{$process.Dispose()}
+}
 function Ensure-PHP([string]$Zip,[string]$Root){
     Expand-Archive -LiteralPath $Zip -DestinationPath $Root -Force
     $php=Join-Path $Root 'php.exe'
@@ -154,7 +176,7 @@ $apacheZip=Find-Artifact $manifest 'apache'
 $mariaMsi=Find-Artifact $manifest 'mariadb'
 $vcExe=Find-Artifact $manifest 'vc_runtime'
 
-$root=Join-Path $env:RUNNER_TEMP ('sokna-rc-full-stack-'+[guid]::NewGuid().ToString('N'))
+$root=Join-Path ($env:SystemDrive+'\') ('sokna-rc-'+[guid]::NewGuid().ToString('N').Substring(0,8))
 New-SoknaPrivateDirectory $root|Out-Null
 $phpRoot=Join-Path $root 'php'
 $apacheStage=Join-Path $root 'apache'
@@ -170,7 +192,7 @@ $dbPort=Get-FreePort
 $httpPort=Get-FreePort
 $httpsPort=443
 $mariaService='SoknaCiMariaDB'+[guid]::NewGuid().ToString('N').Substring(0,8)
-$dbPassword='SoknaCiRoot-'+[guid]::NewGuid().ToString('N')
+$dbPassword='SoknaCiA1'+[guid]::NewGuid().ToString('N')
 $adminPassword='SoknaCiAdmin-'+[guid]::NewGuid().ToString('N')
 Add-SoknaSecret $dbPassword
 Add-SoknaSecret $adminPassword
@@ -178,6 +200,7 @@ $dbNew='sokna_rc_new_'+[guid]::NewGuid().ToString('N').Substring(0,8)
 $dbRecover='sokna_rc_recover_'+[guid]::NewGuid().ToString('N').Substring(0,8)
 $apache=$null
 $mariaInstalled=$false
+$mariaInstallAttempted=$false
 $ownsRcServices=$false
 $rcStage='preflight'
 $evidenceRoot=Join-Path $env:RUNNER_TEMP 'sokna-rc-evidence'
@@ -201,11 +224,12 @@ try{
     $apache=Ensure-Apache $apacheZip $apacheStage $phpRoot $httpPort $httpsPort
 
     $msiLog=Join-Path $root 'mariadb-install.log'
-    $mariaArgs=@('/i',$mariaMsi,'/qn','/norestart','/l*v',$msiLog,("INSTALLDIR=$mariaInstall"),("DATADIR=$mariaData"),("PORT=$dbPort"),("PASSWORD=$dbPassword"),("SERVICENAME=$mariaService"),'STDCONFIG=1','ADDLOCAL=DBInstance,Client,MYSQLSERVER,SharedLibraries')
+    $mariaArgs=@('/i',$mariaMsi,'/qn','REBOOT=ReallySuppress','/L*V!',$msiLog,("INSTALLDIR=$mariaInstall"),("DATADIR=$mariaData"),("PORT=$dbPort"),("PASSWORD=$dbPassword"),("SERVICENAME=$mariaService"),'STDCONFIG=1','ADDLOCAL=DBInstance,Client,MYSQLSERVER,SharedLibraries')
     Set-RcStage 'mariadb-install'
-    $maria=Invoke-SoknaProcess -File 'msiexec.exe' -Arguments $mariaArgs -SuccessCodes @(0,3010) -TimeoutSeconds 600
+    $mariaInstallAttempted=$true
+    $mariaExit=Invoke-MsiExit -Arguments $mariaArgs -Allowed @(0,3010) -TimeoutSeconds 900
     $mariaInstalled=$true
-    if([int]$maria.ExitCode -eq 3010){throw 'Frozen MariaDB MSI requested reboot; RC acceptance must be rerun on a fresh/rebooted Windows runner.'}
+    if($mariaExit -eq 3010){throw 'Frozen MariaDB MSI requested reboot; RC acceptance must be rerun on a fresh/rebooted Windows runner.'}
     Wait-SoknaService $mariaService 'Running'
     $mariaClient=Join-Path $mariaInstall 'bin\mariadb.exe'
     Assert (Test-Path -LiteralPath $mariaClient -PathType Leaf) 'MariaDB client was not installed from the frozen MSI.'
@@ -269,10 +293,13 @@ try{
 catch {
     [ordered]@{stage=$rcStage;status='failed';error=(Protect-SoknaLog $_.Exception.Message)} | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $evidenceRoot 'failure.json') -Encoding UTF8
     if ($msiLog -and (Test-Path -LiteralPath $msiLog)) {
-        # Keep only a bounded sanitized tail; raw MSI logs can contain the disposable DB password.
-        $tail=(Get-Content -LiteralPath $msiLog -Tail 160 | Out-String)
-        [IO.File]::WriteAllText((Join-Path $evidenceRoot 'mariadb-install-tail.log'),(Protect-SoknaLog $tail))
-        Write-Host (Protect-SoknaLog $tail)
+        try{
+            # Keep only a bounded sanitized tail; raw MSI logs can contain the disposable DB password.
+            $tail=(Get-Content -LiteralPath $msiLog -Tail 240 -ErrorAction Stop|Out-String)
+            $safeTail=Protect-SoknaLog $tail
+            [IO.File]::WriteAllText((Join-Path $evidenceRoot 'mariadb-install-tail.log'),$safeTail)
+            Write-Host $safeTail
+        }catch{Write-Warning 'The MariaDB MSI log existed but could not be read after the failed install.'}
     }
     throw
 }
@@ -283,11 +310,11 @@ finally{
         Remove-Item 'HKLM:\SOFTWARE\Sokna\Local\PrintWorker' -Recurse -Force -ErrorAction SilentlyContinue
     }
     Stop-Apache $apache
-    if($mariaInstalled){
+    if($mariaInstallAttempted){
         try{Stop-Service -Name $mariaService -Force -ErrorAction SilentlyContinue}catch{}
         try{
-            $u=Invoke-SoknaProcess -File 'msiexec.exe' -Arguments @('/i',$mariaMsi,'REMOVE=ALL','CLEANUPDATA=1','/qn','/norestart') -SuccessCodes @(0,1605,1614,3010) -TimeoutSeconds 600
-            if([int]$u.ExitCode -eq 3010){Write-Warning 'MariaDB cleanup requested reboot on the disposable runner.'}
+            $u=Invoke-MsiExit -Arguments @('/x',$mariaMsi,'CLEANUPDATA=1','/qn','REBOOT=ReallySuppress') -Allowed @(0,1605,1614,3010) -TimeoutSeconds 300
+            if($u -eq 3010){Write-Warning 'MariaDB cleanup requested reboot on the disposable runner.'}
         }catch{Write-Warning ('MariaDB cleanup failed: '+$_.Exception.Message)}
     }
     try{Stop-And-Delete-Service $mariaService}catch{}

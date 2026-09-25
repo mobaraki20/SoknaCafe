@@ -82,8 +82,13 @@ public static class FakeApache {
     $mainText=Get-Content $main -Raw -Encoding UTF8
     $includeText=Get-Content $include -Raw -Encoding UTF8
     Assert (([regex]::Matches($mainText,'# BEGIN SOKNA LOCAL MANAGED INCLUDE v1')).Count -eq 1) 'Managed block is missing or duplicated.'
-    Assert ($includeText -match [regex]::Escape($app.Replace('\','/'))) 'Managed vhost does not point to selected AppRoot/WebRoot.'
-    Assert ($includeText -match [regex]::Escape($data.Replace('\','/'))) 'Managed vhost does not deny selected DataRoot.'
+    $documentRoot=[regex]::Match($includeText,'(?m)^\s*DocumentRoot\s+"([^"]+)"')
+    Assert $documentRoot.Success 'Managed vhost is missing DocumentRoot.'
+    $actualWebRoot=[IO.Path]::GetFullPath($documentRoot.Groups[1].Value)
+    Assert ($actualWebRoot -eq [IO.Path]::GetFullPath($app)) ('Managed vhost points to a different AppRoot: ' + $actualWebRoot)
+    $deniedRoot=[regex]::Match($includeText,'(?s)<Directory\s+"([^"]+)">\s*Require all denied\s*</Directory>')
+    Assert $deniedRoot.Success 'Managed vhost is missing the private DataRoot denial.'
+    Assert ([IO.Path]::GetFullPath($deniedRoot.Groups[1].Value) -eq [IO.Path]::GetFullPath($data)) 'Managed vhost denies a different DataRoot.'
     Assert ($includeText -notmatch '(?m)^\s*Listen\s+') 'Managed vhost took ownership of Apache listener lifecycle.'
 
     # Reapply is idempotent.

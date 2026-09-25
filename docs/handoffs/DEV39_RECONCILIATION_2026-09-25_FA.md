@@ -1,3 +1,10 @@
+# وضعیت مرجع فعلی
+
+جدول پذیرش به‌روز: `docs/architecture-migration-r2/PHASE8B_WINDOWS_ACCEPTANCE_STATUS_2026-09-25_FA.md`.
+Run `36165915622` موفقیت Linux regression و Public Relay/MariaDB را تأیید کرد، اما Windows Phase 1 در مقایسه AppRoot و full-stack در مرحله نصب MariaDB شکست خوردند. artifact `10877474564` مرحله `mariadb-install` و timeout ۶۰۰ ثانیه‌ای را ثبت کرد. اصلاح مقایسه معنایی مسیر Apache و runner/log/cleanup نصب MSI همراه checkpoint جاری است و باید در CI تأیید شود. نصب نهایی منتشر نشده است.
+
+---
+
 # به‌روزرسانی تثبیت پیش‌نیاز و اجرای full-stack
 
 Freeze واقعی Windows در run https://github.com/mobaraki20/SoknaCafe/actions/runs/36130815720 موفق شد. `release-lock.json` پس از تطبیق آرشیو شاهد، چهار hash/size و امضای Microsoft در commit `12f0cb16a8786ef0ea7f0dda56d6395a3125fa4c` ثبت شد. جزئیات بازبینی: `PREREQUISITE_FREEZE_REVIEW_2026-09-25_FA.md` و JSON شاهد کنار آن. تأیید artifact پیش‌نیاز، تأیید محصول نهایی نیست.
