@@ -131,19 +131,35 @@ function Install-RuntimeService([string]$Candidate) {
 }
 
 function Remove-RuntimeService {
-    # Removing platform integration must work even if PHP/application files are
-    # damaged. Ownership is established by the complete registered command.
-    $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
-    if (-not $existing) { Write-SetupEvent 'remove-platform' 'Service already absent; data preserved.'; return }
-    $hostExe = Join-Path $DataRoot 'bin\SoknaRuntimeService.exe'
-    $actual = (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName").ImagePath
-    if ($actual -ne (Get-RuntimeBinPath $hostExe)) { throw 'Service ownership mismatch; nothing was removed.' }
-    if ($existing.Status -ne 'Stopped') { Stop-Service $ServiceName -ErrorAction Stop; Wait-SoknaService $ServiceName 'Stopped' }
-    Invoke-SoknaProcess "$env:SystemRoot\System32\sc.exe" @('delete',$ServiceName) | Out-Null
-    # Deletion may remain pending while an external SCM client has a handle.
-    $existing.Dispose()
-    if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) { throw 'Service removal is pending; close service-management windows and retry uninstall.' }
-    Write-SetupEvent 'remove-platform' 'Owned service removed. Application, data, keys, TLS and Agent preserved.'
+    # Validate every service before stopping any: a foreign print service must
+    # not cause partial removal of an otherwise healthy runtime.
+    $owned = @(
+        @{ Name=$ServiceName; Command=(Get-RuntimeBinPath (Join-Path $DataRoot 'bin\SoknaRuntimeService.exe')) },
+        @{ Name=$PrintWorkerServiceName; Command=(ConvertTo-SoknaArgument (Join-Path $DataRoot 'bin\print-worker\Service\Sokna.PrintAgent.Service.exe')) }
+    )
+    foreach ($entry in $owned) {
+        $service = Get-Service -Name $entry.Name -ErrorAction SilentlyContinue
+        if (-not $service) { continue }
+        try {
+            $actual = (Get-ItemProperty ("HKLM:\SYSTEM\CurrentControlSet\Services\" + $entry.Name)).ImagePath
+            if ($actual -cne $entry.Command) { throw 'Service ownership mismatch; nothing was removed.' }
+        } finally { $service.Dispose() }
+    }
+    foreach ($entry in $owned) {
+        $service = Get-Service -Name $entry.Name -ErrorAction SilentlyContinue
+        if (-not $service) { continue }
+        try {
+            $actual = (Get-ItemProperty ("HKLM:\SYSTEM\CurrentControlSet\Services\" + $entry.Name)).ImagePath
+            if ($actual -cne $entry.Command) { throw 'Service ownership changed during removal; retry after inspection.' }
+            if ($service.Status -ne 'Stopped') { Stop-Service -Name $entry.Name -ErrorAction Stop; Wait-SoknaService $entry.Name 'Stopped' }
+            Invoke-SoknaProcess "$env:SystemRoot\System32\sc.exe" @('delete',$entry.Name) | Out-Null
+        } finally { $service.Dispose() }
+        $remaining = Get-Service -Name $entry.Name -ErrorAction SilentlyContinue
+        if ($remaining) { $remaining.Dispose(); throw 'Service removal is pending; close service-management windows and retry uninstall.' }
+    }
+    # Preserve queue/config/DPAPI material and legacy services. Never remove an
+    # external/shared dependency or a user's business data as part of uninstall.
+    Write-SetupEvent 'remove-platform' 'Owned runtime and print services removed; application, queue, data, keys and TLS preserved.'
 }
 
 function Resolve-PrintWorkerBundle([string]$Candidate) {

@@ -163,7 +163,9 @@ try {
     Assert ($s.support_bundle_status -eq 'created') 'Combined support ZIP missing'
     $combined = Join-Path $root 'combined-diagnostics'
     Expand-Archive $s.support_bundle $combined
-    Assert (@(Get-ChildItem $combined -File).Count -eq 3) 'Combined ZIP must contain only three allowlisted files'
+    $combinedNames = @(Get-ChildItem $combined -File | ForEach-Object { $_.Name } | Sort-Object)
+    $expectedNames = @('summary.json','events.jsonl','components.json','burn.log','msi.log','installer-snapshot.log' | Sort-Object)
+    Assert (($combinedNames -join '|') -eq ($expectedNames -join '|')) 'Combined ZIP must contain exactly the merged diagnostic allowlist'
     $log = Get-Content (Join-Path $combined 'installer-snapshot.log') -Raw
     Assert ($log -match 'Installer evidence marker' -and $log -notmatch 'installer-secret-canary') 'Installer evidence lost or credential leaked'
     $s = Run-Setup @('-Mode','Validate','-AppRoot',$app,'-DataRoot',$data,'-OpenSslExe',(Join-Path $root 'missing.exe'),'-InstallerLogFile',(Join-Path $root 'missing.log')) 2
@@ -184,6 +186,24 @@ try {
     try { & $provision -OpenSslExe $OpenSslExe -DataRoot $tls -Hostname 'sokna.local' | Out-Null } catch { $blocked = $true }
     Assert $blocked 'Partial TLS identity was silently regenerated'
     Assert ((Get-FileHash (Join-Path $tls 'secrets/tls/local-ca.key.pem')).Hash -eq $hashes['local-ca.key.pem']) 'Partial identity check changed CA key'
+    # Uninstall must reject a foreign worker before mutating either service.
+    $printKey = 'HKLM:\SYSTEM\CurrentControlSet\Services\SoknaPrintWorker'
+    $printCommand = (Get-ItemProperty $printKey).ImagePath
+    Invoke-SoknaProcess "$env:SystemRoot\System32\sc.exe" @('config','SoknaPrintWorker','binPath=','C:\foreign-print-service.exe') | Out-Null
+    try {
+        $s = Run-Setup @('-Mode','RemovePlatform','-AppRoot',$app,'-DataRoot',$data,'-SkipHttps') 2
+        Assert ((Get-Service SoknaRuntime).Status -eq 'Running') 'Foreign worker ownership changed Runtime state'
+        Assert ([bool](Get-Service SoknaPrintWorker -ErrorAction SilentlyContinue)) 'Foreign worker was removed'
+    } finally {
+        Invoke-SoknaProcess "$env:SystemRoot\System32\sc.exe" @('config','SoknaPrintWorker','binPath=',$printCommand) | Out-Null
+    }
+    $s = Run-Setup @('-Mode','RemovePlatform','-AppRoot',$app,'-DataRoot',$data,'-SkipHttps')
+    Assert (-not (Get-Service SoknaRuntime -ErrorAction SilentlyContinue)) 'Owned Runtime remains after uninstall'
+    Assert (-not (Get-Service SoknaPrintWorker -ErrorAction SilentlyContinue)) 'Owned Print Worker remains after uninstall'
+    Assert ((Get-FileHash (Join-Path $workerData 'config.json')).Hash -eq $workerConfigHash) 'Uninstall changed print configuration'
+    Assert ((Get-FileHash (Join-Path $workerData 'secret.dat')).Hash -eq $workerSecretHash) 'Uninstall changed print secret'
+    Assert ((Get-FileHash (Join-Path $app 'config.php')).Hash -eq $configHash) 'Uninstall changed application configuration'
+    $s = Run-Setup @('-Mode','RemovePlatform','-AppRoot',$app,'-DataRoot',$data,'-SkipHttps')
     Write-Host 'Phase 8B Windows setup runtime PASS: quoting, private ACL, diagnostics, preflight, real SCM repair/rollback and TLS identity preservation.'
 } finally {
     Remove-Item Env:SOKNA_BURN_LOG_PATH -ErrorAction SilentlyContinue
