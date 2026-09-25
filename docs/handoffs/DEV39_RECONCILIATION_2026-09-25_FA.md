@@ -1,3 +1,13 @@
+# به‌روزرسانی تثبیت پیش‌نیاز و اجرای full-stack
+
+Freeze واقعی Windows در run https://github.com/mobaraki20/SoknaCafe/actions/runs/36130815720 موفق شد. `release-lock.json` پس از تطبیق آرشیو شاهد، چهار hash/size و امضای Microsoft در commit `12f0cb16a8786ef0ea7f0dda56d6395a3125fa4c` ثبت شد. جزئیات بازبینی: `PREREQUISITE_FREEZE_REVIEW_2026-09-25_FA.md` و JSON شاهد کنار آن. تأیید artifact پیش‌نیاز، تأیید محصول نهایی نیست.
+
+full-stack اکنون در PR هم اجرا می‌شود و checkout همان head را دارد. اولین run: https://github.com/mobaraki20/SoknaCafe/actions/runs/36131102833 . نتیجه در زمان این ثبت هنوز در انتظار است؛ job اختیاری WiX همچنان اجرا نشده و پذیرش EULA انجام نشده است.
+
+آخرین اصلاح تست Inno در commit `5f94b61d89968dedf8e236d0a54a0727ebeb3a87`: مقایسه نام ورودی‌های خود ZIP به جای برش مسیرهای کوتاه/بلند Windows؛ چهار فایل دقیق مجاز حفظ شدند و نام فایل‌های غیرمنتظره در خطا دیده می‌شود. گذر lifecycle هنوز اثبات نشده است. تنظیمات Apache در PowerShell 5.1 اصلاح شده و تست‌های مستقل آن پیش از lifecycle اجرا می‌شوند.
+
+---
+
 # وضعیت ادامه — ۲۵ سپتامبر ۲۰۲۶، بررسی مجدد CI
 
 این بخش بر گزارش‌های تاریخی پایین اولویت دارد. PR فعال: https://github.com/mobaraki20/SoknaCafe/pull/19 . انتشار سورس مجاز و انجام شده؛ نصب نهایی منتشر نشده است.

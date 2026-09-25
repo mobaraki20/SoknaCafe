@@ -13,13 +13,16 @@ active application with an older release. Same-version application-file repair,
 automatic prerequisites and HTTP/database health are still pending.
 
 Use Modify in Programs and Features, or SOKNA Platform Repair in Start.
-Uninstall removes the owned Runtime service, platform files and shortcuts.
-Application files, data, keys, TLS trust/mapping and Print Agent are preserved.
+Uninstall verifies ownership before removing the Runtime and internal Print Worker
+services, platform files and shortcuts. Application files, print queue/configuration,
+data, keys, TLS trust/mapping and external legacy Print Agent are preserved.
 Existing application files must not be deleted while they are still needed.
 
 Setup writes an Inno log automatically. The final result displays the separate
-owner diagnostics directory and support.zip. Unified installer/owner log export
-is not yet implemented. Do not include credentials on installer command lines.
+owner diagnostics directory and support.zip. The sanitized bundle includes a
+snapshot of the installer log through setup-owner completion, plus component
+diagnostics. Later installer finalization is not in that snapshot. Do not include
+credentials on installer command lines.
 
 Built with Inno Setup: https://jrsoftware.org/
 No paid license, subscription or certificate is required for this test build.

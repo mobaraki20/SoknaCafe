@@ -147,7 +147,7 @@ function Read-InstallId([string]$DataRoot){
 
 $version=(Get-Content (Join-Path $RepoRoot 'VERSION.txt') -Raw).Trim()
 & (Join-Path $RepoRoot 'installer\windows\scripts\verify-prerequisite-bundle.ps1') -BundleRoot $PrerequisiteBundleRoot -ExpectedAppVersion $version
-if($LASTEXITCODE -ne 0){throw 'Frozen prerequisite bundle verification failed before RC acceptance.'}
+# The verifier is a throwing PowerShell script, not a native exit-code producer.
 $manifest=Get-Content (Join-Path $PrerequisiteBundleRoot 'bundle-manifest.json') -Raw|ConvertFrom-Json
 $phpZip=Find-Artifact $manifest 'php'
 $apacheZip=Find-Artifact $manifest 'apache'

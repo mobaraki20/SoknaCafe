@@ -271,8 +271,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Runtime self-check failed' }
           php runtime/sokna-runtime.php --health-json
           if ($LASTEXITCODE -ne 0) { throw 'Runtime health-json failed' }
-          php tools/print-runtime-worker.php --once
-          if ($LASTEXITCODE -ne 0) { throw 'Print Runtime supervisor self-check failed' }
+          # The preceding disposable service test removes the worker. Prove that
+          # the supervisor reports the missing component instead of false health.
+          $printProbe = (& php tools/print-runtime-worker.php --once | Out-String) | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 2 -or $printProbe.status -ne 'component_missing' -or $printProbe.service -ne 'SoknaPrintWorker') {
+            throw 'Print supervisor did not report the absent internal service correctly'
+          }
+          $global:LASTEXITCODE = 0 # Expected negative assertion passed.
+
 
       - name: Provision and validate sokna.local TLS
         shell: pwsh

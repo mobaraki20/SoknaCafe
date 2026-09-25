@@ -44,7 +44,7 @@ if(-not [string]::IsNullOrWhiteSpace($PrerequisiteBundleRoot)){
     $PrerequisiteBundleRoot=[IO.Path]::GetFullPath($PrerequisiteBundleRoot).TrimEnd('\')
     $verifyBundle=Join-Path $RepoRoot 'installer\windows\scripts\verify-prerequisite-bundle.ps1'
     & $verifyBundle -BundleRoot $PrerequisiteBundleRoot -ExpectedAppVersion $version
-    if($LASTEXITCODE -ne 0){throw 'Verified prerequisite bundle check failed.'}
+    # The PowerShell verifier throws on failure; LASTEXITCODE belongs to native commands.
     Copy-Item -LiteralPath $PrerequisiteBundleRoot -Destination (Join-Path $OutputRoot 'Prerequisites') -Recurse -Force
 }
 
@@ -53,8 +53,18 @@ $seedStage=Join-Path ([IO.Path]::GetTempPath()) ('sokna-seed-'+[guid]::NewGuid()
 New-Item -ItemType Directory $seedStage|Out-Null
 try{
     $excludeTop=@('.git','storage','uploads','installer')
-    Get-ChildItem $RepoRoot -Force|Where-Object{$excludeTop -notcontains $_.Name -and $_.Name -notin @('config.php','install.lock')}|ForEach-Object{
-        Copy-Item $_.FullName (Join-Path $seedStage $_.Name) -Recurse -Force
+    # Package tracked source only. CI builds leave bin/obj outputs under runtime;
+    # copying the workspace recursively would duplicate generated binaries in the app seed.
+    $tracked = @(& git -C $RepoRoot -c core.quotepath=false ls-files --cached)
+    if ($LASTEXITCODE -ne 0 -or $tracked.Count -eq 0) { throw 'Cannot enumerate tracked application seed files.' }
+    foreach ($relative in $tracked) {
+        $top = ($relative -split '/')[0]
+        if ($excludeTop -contains $top -or $relative -in @('config.php','install.lock')) { continue }
+        $source = Join-Path $RepoRoot $relative
+        if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw "Tracked seed source is missing: $relative" }
+        $destination = Join-Path $seedStage $relative
+        New-Item -ItemType Directory -Path ([IO.Path]::GetDirectoryName($destination)) -Force | Out-Null
+        Copy-Item -LiteralPath $source -Destination $destination -Force
     }
     $seed=Join-Path $OutputRoot 'SoknaAppPayload.zip'
     Compress-Archive -Path (Join-Path $seedStage '*') -DestinationPath $seed -CompressionLevel Optimal
