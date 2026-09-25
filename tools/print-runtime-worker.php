@@ -27,7 +27,7 @@ if (!is_file($sc)) {
     exit(2);
 }
 
-$service = sokna_runtime_print_agent_service_name();
+$service = sokna_runtime_print_worker_service_name();
 $queryService = static function() use ($sc, $service): array {
     return sokna_runtime_run_process([$sc, 'query', $service], 8);
 };
@@ -41,10 +41,10 @@ $query = $queryService();
 if ((int)$query['exit_code'] !== 0) {
     $text = (string)$query['stdout'] . "\n" . (string)$query['stderr'];
     if (preg_match('/\\b1060\\b/', $text) || stripos($text, 'does not exist') !== false) {
-        print_runtime_emit('not_installed', ['service'=>$service]);
-        exit(0);
+        print_runtime_emit('component_missing', ['service'=>$service]);
+        exit(2);
     }
-    fwrite(STDERR, "Unable to query the installed Print Agent service.\n");
+    fwrite(STDERR, "Unable to query the internal SOKNA Print Worker service.\n");
     exit(2);
 }
 
@@ -57,7 +57,7 @@ if ($state === 'RUNNING') {
 if ($state === 'STOPPED') {
     $start = sokna_runtime_run_process([$sc, 'start', $service], 8);
     if ((int)$start['exit_code'] !== 0) {
-        fwrite(STDERR, "Installed Print Agent service could not be started.\n");
+        fwrite(STDERR, "Internal SOKNA Print Worker service could not be started.\n");
         exit(2);
     }
 }
@@ -76,5 +76,5 @@ if (in_array($state, ['STOPPED','START_PENDING'], true)) {
     }
 }
 
-fwrite(STDERR, "Installed Print Agent service is not running.\n");
+fwrite(STDERR, "Internal SOKNA Print Worker service is not running.\n");
 exit(2);

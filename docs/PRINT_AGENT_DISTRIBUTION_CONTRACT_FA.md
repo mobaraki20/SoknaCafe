@@ -1,3 +1,7 @@
+# SUPERSEDED — قرارداد تاریخی توزیع Print Agent
+
+> این قرارداد متعلق به معماری قبل از reconciliation R2 است و **دیگر مرجع فعال Distribution نیست**. Download/Installer مستقل Pagent در معماری نهایی مجاز نیست. Print Worker از این پس component داخلی `SOKNA Local` است و از `runtime/print-worker/source/` build و توسط Setup/Repair خود SOKNA مدیریت می‌شود. برای مرجع فعال به `docs/architecture-migration-r2/PHASE7R_PRINTING_RECONCILIATION_FA.md` مراجعه کنید.
+
 # قرارداد توزیع Sokna Print Agent
 
 ## Source of Truth

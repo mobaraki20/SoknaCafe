@@ -12,7 +12,7 @@ function panel_header(string $title, string $section = '', array $bodyClasses = 
     $iconMap = [
         'dashboard'=>'dashboard','categories'=>'list','items'=>'coffee','tags'=>'tag','marketing'=>'megaphone',
         'transfer'=>'upload','events'=>'calendar','tables'=>'table','messages'=>'message','users'=>'users',
-        'push'=>'device','analytics'=>'chart','operations_report'=>'operations','inventory_report'=>'archive','activity_report'=>'operations','invoices'=>'ticket','financial_periods'=>'calendar',
+        'push'=>'device','analytics'=>'chart','operations_report'=>'operations','inventory_report'=>'archive','activity_report'=>'operations','invoices'=>'ticket','financial_periods'=>'calendar','expenses'=>'ticket',
         'maintenance'=>'backup','updater'=>'refresh','settings'=>'settings','modules'=>'list','printing'=>'device','operator'=>'operations','accommodation'=>'home',
         'waiter'=>'service','supply_needs'=>'list','shift'=>'clock','notification_preferences'=>'device','help'=>'info','accommodation_charge'=>'home','accommodation_settings'=>'settings','center_settings'=>'settings','personnel'=>'users','subscribers'=>'users','inventory'=>'archive','purchases'=>'list',
     ];
@@ -43,21 +43,22 @@ function panel_header(string $title, string $section = '', array $bodyClasses = 
         'inventory_report' => ['انبار و سود', 'هزینه مواد، مصرف، ضایعات و سود ناخالص تقریبی'],
         'activity_report' => ['فعالیت کاربران', 'نمای خلاصه و انسانی از اقدام‌های ثبت‌شده کاربران'],
         'users' => ['تیم و دسترسی', 'حساب‌های شخصی و مسئولیت‌های روشن اعضای تیم'],
-        'subscribers' => ['حساب مشترکین', 'ثبت بدهی فاکتورها، پرداخت‌ها و مانده هر مشترک'],
+        'subscribers' => ['حساب مشتریان', 'ثبت بدهی فاکتورها، پرداخت‌ها و مانده هر مشتری'],
         'invoices' => ['آرشیو فاکتورها', 'جست‌وجو، مشاهده کامل و چاپ مجدد اسناد مالی'],
         'financial_periods' => ['دوره‌های مالی', 'سال مالی جاری، بستن دوره و گزارش قطعی هر سال'],
+        'expenses' => ['هزینه‌های کافه', 'ثبت، اصلاح و برگشت هزینه‌های عمومی بدون حذف تاریخچه'],
         'maintenance' => ['پایداری سامانه', 'پشتیبان‌گیری، اعتبارسنجی و بازیابی نسخه‌های سالم'],
         'updater' => ['انتشار نسخه', 'بررسی و نصب کنترل‌شده بسته‌های رسمی سامانه'],
         'settings' => ['تنظیمات و ظاهر', 'هویت برند، قالب‌ها، فونت‌ها و تنظیمات پایه مجموعه'],
         'modules' => ['امکانات سامانه', 'وضعیت قابلیت‌های اختیاری و بخش‌های همیشه فعال سامانه'],
-        'printing' => ['چاپ و پرینترها', 'رایانه چاپ، پرینتر هر مقصد، صف فیش و وضعیت خطاها'],
+        'printing' => ['چاپ و پرینترها', 'سرویس چاپ داخلی، پرینتر هر مقصد، صف فیش و وضعیت خطاها'],
         'help' => ['راهنمای سکنا', 'پاسخ‌های کوتاه و عملی برای کارهای روزمره سامانه'],
     ];
     $pageGroupMap = [
         'dashboard'=>'خلاصه',
         'operator'=>'عملیات','waiter'=>'عملیات','tables'=>'عملیات',
         'items'=>'منو و مهمان','categories'=>'منو و مهمان','tags'=>'منو و مهمان','marketing'=>'منو و مهمان','events'=>'منو و مهمان','messages'=>'منو و مهمان','transfer'=>'منو و مهمان',
-        'invoices'=>'مالی','subscribers'=>'مالی','financial_periods'=>'مالی','accommodation'=>'مالی','accommodation_charge'=>'مالی',
+        'invoices'=>'مالی','subscribers'=>'مالی','financial_periods'=>'مالی','expenses'=>'مالی','tax'=>'مالی','accommodation'=>'مالی','accommodation_charge'=>'مالی',
         'operations_report'=>'گزارش‌ها','analytics'=>'گزارش‌ها','inventory_report'=>'گزارش‌ها','activity_report'=>'گزارش‌ها',
         'users'=>'سامانه و زیرساخت','printing'=>'سامانه و زیرساخت','settings'=>'سامانه و زیرساخت','modules'=>'سامانه و زیرساخت','maintenance'=>'سامانه و زیرساخت','updater'=>'سامانه و زیرساخت','push'=>'سامانه و زیرساخت','accommodation_settings'=>'سامانه و زیرساخت','center_settings'=>'سامانه و زیرساخت',
         'personnel'=>'مدیریت مجموعه','inventory'=>'مدیریت مجموعه','purchases'=>'مدیریت مجموعه','supply_needs'=>'عملیات',
@@ -96,8 +97,10 @@ function panel_header(string $title, string $section = '', array $bodyClasses = 
             ],
             'مالی' => [
                 'invoices' => [$base . '/admin/invoices.php', 'فاکتورها'],
-                'subscribers' => [$base . '/admin/subscribers.php', 'مشترکین'],
+                'subscribers' => [$base . '/admin/subscribers.php', 'مشتریان'],
                 'financial_periods' => [$base . '/admin/financial_periods.php', 'دوره‌های مالی'],
+                'expenses' => [$base . '/admin/expenses.php', 'هزینه‌های کافه'],
+                'tax' => [$base . '/admin/tax.php', 'مالیات'],
             ],
             'گزارش‌ها' => [
                 'analytics' => [$base . '/admin/analytics.php', 'فروش و عملکرد'],
@@ -128,7 +131,7 @@ function panel_header(string $title, string $section = '', array $bodyClasses = 
             $navGroups['کار روزانه']['waiter'] = [$base . '/waiter/index.php', 'آماده‌سازی'];
         }
         if (user_has_capability('cashier_accounts', $user)) {
-            $navGroups['کار روزانه']['subscribers'] = [$base . '/operator/subscribers.php', 'مشترکین'];
+            $navGroups['کار روزانه']['subscribers'] = [$base . '/operator/subscribers.php', 'مشتریان'];
             $navGroups['کار روزانه']['invoices'] = [$base . '/operator/invoices.php', 'فاکتورها'];
         }
         if (sokna_module_enabled('inventory') && user_has_inventory_access($user)) {
@@ -260,6 +263,7 @@ function panel_header(string $title, string $section = '', array $bodyClasses = 
     <?= ui_font_head($font) ?>
     <link rel="stylesheet" href="<?= e(asset('assets/css/tokens.css')) ?>">
     <link rel="stylesheet" href="<?= e(asset('assets/css/app.css')) ?>">
+    <link rel="stylesheet" href="<?= e(asset('assets/css/scds-foundation.css')) ?>">
     <link rel="stylesheet" href="<?= e(asset('assets/css/responsive.css')) ?>">
     <link rel="stylesheet" href="<?= e(asset('assets/css/panel.css')) ?>">
     <link rel="stylesheet" href="<?= e(asset('assets/css/panel-layout.css')) ?>">

@@ -1187,3 +1187,8 @@ html.guest-layer-open,html.guest-layer-open body{overscroll-behavior:none}
 /* Service menus are a lightweight layer above categories; hidden when only one menu is currently served. */
 .guest-menu-switcher{display:flex;gap:6px;width:min(100%,1180px);margin:0 auto 12px;padding:5px;border:1px solid var(--line,#e5dfd6);border-radius:14px;background:color-mix(in srgb,#fff 94%,transparent);overflow-x:auto;scrollbar-width:none}.guest-menu-switcher::-webkit-scrollbar{display:none}.guest-menu-switcher a{min-width:max-content;min-height:40px;display:grid;place-items:center;padding:7px 16px;border:1px solid transparent;border-radius:10px;color:var(--muted,#6f746f);font-weight:850;text-decoration:none}.guest-menu-switcher a.is-active{border-color:color-mix(in srgb,var(--primary) 30%,var(--line,#e5dfd6));background:#fff;color:var(--primary)}
 @media(max-width:720px){.guest-menu-switcher{margin-bottom:9px}.guest-menu-switcher a{min-height:42px;flex:1}}
+
+/* R2 Tax: pre-submit financial breakdown; values remain server-authoritative. */
+.guest-menu-page .cart-tax-breakdown{display:grid;gap:4px;margin-bottom:7px;padding-bottom:7px;border-bottom:1px solid var(--guest-line)}
+.guest-menu-page .cart-tax-breakdown.hidden{display:none}
+.guest-menu-page .cart-tax-row{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--guest-soft);font-size:.78rem;font-weight:750}

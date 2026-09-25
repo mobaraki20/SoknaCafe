@@ -66,7 +66,7 @@ function subscriber_insert_ledger_locked(
     $subscriberStmt = $pdo->prepare('SELECT id,name,active FROM subscribers WHERE id=? FOR UPDATE');
     $subscriberStmt->execute([$subscriberId]);
     $subscriber = $subscriberStmt->fetch();
-    if (!$subscriber) throw new RuntimeException('مشترک پیدا نشد.');
+    if (!$subscriber) throw new RuntimeException('مشتری پیدا نشد.');
 
     $idempotencyKey = trim((string)$idempotencyKey) ?: null;
     if ($idempotencyKey !== null) {
@@ -92,7 +92,7 @@ function subscriber_insert_ledger_locked(
     $current = subscriber_balance($pdo, $subscriberId, true);
     $next = $current + $amountDelta;
     if ($next < 0) throw new RuntimeException('مبلغ پرداخت از مانده حساب بیشتر است.');
-    if ($entryType === 'invoice' && (int)$subscriber['active'] !== 1) throw new RuntimeException('این مشترک غیرفعال است.');
+    if ($entryType === 'invoice' && (int)$subscriber['active'] !== 1) throw new RuntimeException('این مشتری غیرفعال است.');
 
     if (($financialPeriodId ?? 0) < 1) $financialPeriodId = (int)financial_period_for_date_locked($pdo, business_current_date(), $actorUserId)['id'];
 
@@ -131,7 +131,7 @@ function subscriber_reverse_entry_locked(PDO $pdo, int $entryId, string $reason,
     $stmt = $pdo->prepare('SELECT * FROM subscriber_ledger WHERE id=? FOR UPDATE');
     $stmt->execute([$entryId]);
     $entry = $stmt->fetch();
-    if (!$entry) throw new RuntimeException('سند مشترک پیدا نشد.');
+    if (!$entry) throw new RuntimeException('سند مشتری پیدا نشد.');
     if (!in_array((string)$entry['entry_type'], ['invoice','payment'], true)) throw new RuntimeException('این سند قابل برگشت نیست.');
     $check = $pdo->prepare('SELECT id FROM subscriber_ledger WHERE related_entry_id=? LIMIT 1 FOR UPDATE');
     $check->execute([$entryId]);

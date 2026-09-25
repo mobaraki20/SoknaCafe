@@ -199,6 +199,7 @@ function asset(string $path):string{
     $installation=public_guest_installation_id();
     $api=match($clean){
         'api/create_order.php'=>'/api/v1/guest/compat/create_order.php',
+        'api/order_quote.php'=>'/api/v1/guest/compat/order_quote.php',
         'api/order_status.php'=>'/api/v1/guest/compat/order_status.php',
         'api/guest_orders.php'=>'/api/v1/guest/compat/guest_orders.php',
         'api/table_context.php'=>'/api/v1/guest/compat/table_context.php',

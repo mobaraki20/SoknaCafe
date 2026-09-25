@@ -144,12 +144,19 @@ foreach (db()->query($tableSql)->fetchAll() as $row) {
     $row['unconfirmed_order_count'] = 0;
     $row['bill_subtotal'] = 0;
     $row['bill_discount'] = 0;
+    $row['bill_net'] = 0;
+    $row['bill_taxable'] = 0;
+    $row['bill_tax'] = 0;
     $row['bill_final_total'] = 0;
     $row['bill_paid_subtotal'] = 0;
     $row['bill_paid_discount'] = 0;
+    $row['bill_paid_taxable'] = 0;
+    $row['bill_paid_tax'] = 0;
     $row['bill_paid_total'] = 0;
     $row['bill_remaining_subtotal'] = 0;
     $row['bill_remaining_discount'] = 0;
+    $row['bill_remaining_taxable'] = 0;
+    $row['bill_remaining_tax'] = 0;
     $row['bill_remaining_total'] = 0;
     $row['bill_paid_receipt_count'] = 0;
     $row['bill_itemized_active'] = false;
@@ -170,18 +177,18 @@ if ($sessionIds) {
     $prepStmt->execute($sessionIds);
     foreach ($prepStmt->fetchAll() as $row) $pendingPreparationBySession[(int)$row['session_id']] = (int)$row['pending_count'];
 
-    $paidLineStmt = db()->prepare("SELECT sr.session_id,sl.order_item_id,SUM(sl.quantity) paid_quantity,SUM(sl.gross_amount) paid_gross,SUM(sl.discount_amount) paid_discount,SUM(sl.net_amount) paid_net
+    $paidLineStmt = db()->prepare("SELECT sr.session_id,sl.order_item_id,SUM(sl.quantity) paid_quantity,SUM(sl.gross_amount) paid_gross,SUM(sl.discount_amount) paid_discount,SUM(sl.net_amount) paid_net,SUM(sl.taxable_amount) paid_taxable,SUM(sl.tax_amount) paid_tax,SUM(sl.final_amount) paid_final
         FROM settlement_records sr JOIN settlement_record_lines sl ON sl.settlement_id=sr.id
-        WHERE sr.session_id IN($sessionPlaceholders) AND sr.status='completed' AND sr.allocation_version=1
+        WHERE sr.session_id IN($sessionPlaceholders) AND sr.status='completed' AND sr.allocation_version IN(1,2)
           AND NOT EXISTS(SELECT 1 FROM settlement_records rv WHERE rv.reverses_settlement_id=sr.id AND rv.status='reversal')
         GROUP BY sr.session_id,sl.order_item_id");
     $paidLineStmt->execute($sessionIds);
     foreach ($paidLineStmt->fetchAll() as $paidRow) $paidByOrderItem[(int)$paidRow['order_item_id']] = $paidRow;
 
-    $paidTotalStmt = db()->prepare("SELECT sr.session_id,COALESCE(SUM(sr.subtotal),0) paid_subtotal,COALESCE(SUM(sr.discount),0) paid_discount,COALESCE(SUM(sr.total),0) paid_total,COUNT(*) receipt_count,
+    $paidTotalStmt = db()->prepare("SELECT sr.session_id,COALESCE(SUM(sr.subtotal),0) paid_subtotal,COALESCE(SUM(sr.discount),0) paid_discount,COALESCE(SUM(sr.taxable_amount),0) paid_taxable,COALESCE(SUM(sr.tax_amount),0) paid_tax,COALESCE(SUM(sr.total),0) paid_total,COUNT(*) receipt_count,
         MAX(CASE WHEN sr.settlement_kind='itemized' THEN 1 ELSE 0 END) itemized_active
         FROM settlement_records sr
-        WHERE sr.session_id IN($sessionPlaceholders) AND sr.status='completed' AND sr.allocation_version=1
+        WHERE sr.session_id IN($sessionPlaceholders) AND sr.status='completed' AND sr.allocation_version IN(1,2)
           AND NOT EXISTS(SELECT 1 FROM settlement_records rv WHERE rv.reverses_settlement_id=sr.id AND rv.status='reversal')
         GROUP BY sr.session_id");
     $paidTotalStmt->execute($sessionIds);
@@ -196,7 +203,7 @@ if ($sessionIds) {
     $billOrderIds = array_map('intval', array_column($billOrders, 'id'));
     if ($billOrderIds) {
         $billPlaceholders = implode(',', array_fill(0, count($billOrderIds), '?'));
-        $billLineStmt = db()->prepare("SELECT oi.id,oi.order_id,oi.item_id,oi.item_name,oi.unit_price,oi.quantity,oi.ordered_quantity,oi.adjustment_reason,oi.adjusted_at,oi.item_note,oi.fulfillment_mode,oi.preparation_station,oi.line_total,u.display_name adjusted_by FROM order_items oi LEFT JOIN users u ON u.id=oi.adjusted_by_user_id WHERE oi.order_id IN($billPlaceholders) AND oi.quantity>0 ORDER BY oi.order_id,oi.id");
+        $billLineStmt = db()->prepare("SELECT oi.id,oi.order_id,oi.item_id,oi.item_name,oi.unit_price,oi.quantity,oi.ordered_quantity,oi.adjustment_reason,oi.adjusted_at,oi.item_note,oi.fulfillment_mode,oi.preparation_station,oi.line_total,oi.tax_policy_snapshot,oi.tax_rate_bps_snapshot,oi.tax_rate_version_id,oi.tax_item_policy_version_id,u.display_name adjusted_by FROM order_items oi LEFT JOIN users u ON u.id=oi.adjusted_by_user_id WHERE oi.order_id IN($billPlaceholders) AND oi.quantity>0 ORDER BY oi.order_id,oi.id");
         $billLineStmt->execute($billOrderIds);
         $billLines=$billLineStmt->fetchAll();
         $billCatalogPrices=[];
@@ -304,9 +311,17 @@ foreach ($tables as &$table) {
     $discountType = (string)($table['discount_type'] ?? '');
     $discountValue = (int)($table['discount_value'] ?? 0);
     $discountAmount = invoice_discount_amount($confirmedSubtotal, $discountType, $discountValue);
+    $taxSourceLines=[];
+    foreach($billOrders as $taxOrder){
+        if((string)$taxOrder['status']!=='accounted')continue;
+        foreach((array)$taxOrder['items'] as $taxLine)$taxSourceLines[]=['order_item_id'=>(int)$taxLine['id'],'quantity'=>(int)$taxLine['quantity'],'unit_price'=>(int)$taxLine['unit_price'],'tax_policy_snapshot'=>(string)($taxLine['tax_policy_snapshot']??'disabled'),'tax_rate_bps_snapshot'=>(int)($taxLine['tax_rate_bps_snapshot']??0)];
+    }
+    $taxCalc=tax_calculate_invoice_lines($taxSourceLines,$discountAmount);
     $paidTotals = $paidTotalsBySession[$sessionId] ?? [];
     $paidSubtotal = (int)($paidTotals['paid_subtotal'] ?? 0);
     $paidDiscount = (int)($paidTotals['paid_discount'] ?? 0);
+    $paidTaxable = (int)($paidTotals['paid_taxable'] ?? 0);
+    $paidTax = (int)($paidTotals['paid_tax'] ?? 0);
     $paidTotal = (int)($paidTotals['paid_total'] ?? 0);
     $paidQuantitiesForSignature = [];
     foreach ($billOrders as &$signatureOrder) {
@@ -323,20 +338,29 @@ foreach ($tables as &$table) {
     $table['bill_items'] = array_values($aggregated);
     $table['bill_total'] = $total;
     $table['bill_subtotal'] = $confirmedSubtotal;
-    $table['bill_discount'] = $discountAmount;
-    $table['bill_final_total'] = max(0,$confirmedSubtotal-$discountAmount);
+    $table['bill_discount'] = (int)$taxCalc['discount'];
+    $table['bill_net'] = (int)$taxCalc['net'];
+    $table['bill_taxable'] = (int)$taxCalc['taxable'];
+    $table['bill_tax'] = (int)$taxCalc['tax'];
+    $table['bill_final_total'] = (int)$taxCalc['total'];
     $table['bill_paid_subtotal'] = $paidSubtotal;
     $table['bill_paid_discount'] = $paidDiscount;
+    $table['bill_paid_taxable'] = $paidTaxable;
+    $table['bill_paid_tax'] = $paidTax;
     $table['bill_paid_total'] = $paidTotal;
     $table['bill_remaining_subtotal'] = max(0,$confirmedSubtotal-$paidSubtotal);
-    $table['bill_remaining_discount'] = max(0,$discountAmount-$paidDiscount);
-    $table['bill_remaining_total'] = max(0,$table['bill_final_total']-$paidTotal);
+    $table['bill_remaining_discount'] = max(0,(int)$taxCalc['discount']-$paidDiscount);
+    $table['bill_remaining_taxable'] = max(0,(int)$taxCalc['taxable']-$paidTaxable);
+    $table['bill_remaining_tax'] = max(0,(int)$taxCalc['tax']-$paidTax);
+    $table['bill_remaining_total'] = max(0,(int)$taxCalc['total']-$paidTotal);
     $table['bill_paid_receipt_count'] = (int)($paidTotals['receipt_count'] ?? 0);
     $table['bill_itemized_active'] = !empty($itemizedActiveBySession[$sessionId]);
     $table['bill_signature'] = settlement_review_signature($table,$billOrders,[
         'paid_quantities'=>$paidQuantitiesForSignature,
         'paid_subtotal'=>$paidSubtotal,
         'paid_discount'=>$paidDiscount,
+        'paid_taxable'=>$paidTaxable,
+        'paid_tax'=>$paidTax,
         'paid_total'=>$paidTotal,
     ]);
     $table['bill_order_count'] = count($billOrders);

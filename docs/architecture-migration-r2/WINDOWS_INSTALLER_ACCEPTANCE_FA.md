@@ -1,3 +1,5 @@
+> **مرجع فعلی تطبیق — 2026-09-25:** شاخه محلی `work/reconcile-dev39`، نسخه سورس dev.39، مبتنی بر تاریخچه گیت‌هاب و پیشرفت‌های بسته. ابتدا `docs/handoffs/DEV39_RECONCILIATION_2026-09-25_FA.md` را بخوانید (مسیر نسبت به ریشه مخزن). ادامه‌ها و دستورهای متعارض زیر سوابق تاریخی‌اند؛ Phase8B کامل نشده، WiX مجوز اجرا نگرفته و Windows CI جدید انجام نشده است.
+
 # قرارداد نصب‌کننده ویندوز SOKNA
 
 تاریخ: 2026-09-19 | وضعیت: الزامات ثبت‌شده؛ بسته نهایی هنوز ساخته/تأیید نشده است.
@@ -11,6 +13,10 @@
 
 Inno مالک فایل‌های platform، shortcut و ثبت/uninstall می‌شود و orchestration موجود را مصرف می‌کند. Repair باید صریحاً پیاده‌سازی و آزموده شود؛ قابلیت خودکار MSI نیست. همه معیارهای WIN-01 تا WIN-12 پابرجا هستند.
 
+برای نیاز فعلی SOKNA، مسیر منتخب طراحی **WiX MSI + Burn Setup.exe** است: MSI مالک لایه پایدار نصب، shortcut، ثبت محصول و چرخه repair/uninstall باشد؛ Burn prerequisiteهای نسخه‌دار و MSI خود SOKNA را هماهنگ کند. **Print Worker داخل خود SOKNA Local bundle می‌شود و Pagent مستقل در Chain ممنوع است.** Live application payload تحت مالکیت Updater است و MSI Repair نباید آن را harvest/overwrite کند؛ مرجع جزئیات `PHASE8B_PACKAGE_OWNERSHIP_FA.md` است.
+
+Pin انتخاب‌شده برای authoring جدید: **WiX Toolset 7.0.0**. Build pipeline نباید پذیرش EULA/OSMF ابزار را به‌صورت پنهانی داخل سورس انجام دهد؛ پذیرش لازم باید در محیط Build/Release به‌صورت صریح انجام شود. این تصمیم جایگزین ownerهای setup، backup یا updater نیست.
+
 مقایسه مهندسی:
 - MSI + Burn: سازوکار استاندارد Windows Installer برای repair/uninstall و ترکیب چند بسته؛ نیازمند طراحی دقیق مالکیت فایل و rollback.
 - Inno Setup: نصب و uninstall مناسب دارد؛ repair هم‌سطح نیاز پروژه باید جداگانه طراحی و آزموده شود. صرف نام‌گذاری مجدد نصب به Repair قابل‌قبول نیست.
@@ -22,7 +28,7 @@ Inno مالک فایل‌های platform، shortcut و ثبت/uninstall می‌�
 ## مرز مالکیت و جلوگیری از تداخل
 - `includes/setup_install.php` و `tools/setup-machine.php` در شاخه 8B مالک نصب اولیه و orchestration برنامه هستند؛ `includes/maintenance.php` مالک restore است.
 - `runtime/windows/setup-sokna.ps1` هماهنگ‌کننده Windows و `SoknaRuntimeService.cs` میزبان واقعی SCM هستند. هنداور قدیمی 8B که از WinSW می‌گوید با کد فعلی همخوان نیست؛ فعلاً wrapper دوم اضافه نشود.
-- installer رسمی `mobaraki20/Pagent` مالک Print Agent می‌ماند؛ lifecycle چاپ بازنویسی نشود.
+- Print Worker همراه SOKNA Local build/install/repair می‌شود؛ Installer مستقل Pagent مجاز نیست. lifecycle/state-machine بالغ 6.2.5 بازنویسی نمی‌شود و فقط ownership/packaging به SOKNA Local منتقل می‌شود.
 - پیش از authoring MSI، تکلیف فایل‌هایی که updater فعلی تغییر می‌دهد مشخص و مستند شود: MSI repair نباید نسخه قدیمی را روی payload جدید updater بازنویسی کند. manifest نسخه فعال، package cache و upgrade/repair باید هم‌نسخه بمانند. برای حل این تعارض owner موازی ساخته نشود.
 - binary سرویس در CI ساخته و همراه بسته توزیع شود؛ نیاز به کامپایلر C# روی رایانه صندوق از مسیر نهایی حذف شود.
 - فایل برنامه و داده mutable جدا؛ data root فعلی ProgramData حفظ و دسترسی اسرار قبل از نوشتن محدود شود.

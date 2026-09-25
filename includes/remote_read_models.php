@@ -137,10 +137,10 @@ function sokna_remote_reports_model(PDO $pdo):array
     $from30=(new DateTimeImmutable($today))->modify('-29 days')->format('Y-m-d');
     $valid=report_valid_settlement_sql('sr');
     $sum=function(string $from,string $to)use($pdo,$valid):array{
-        $st=$pdo->prepare("SELECT COUNT(*) receipts,COALESCE(SUM(sr.total),0) revenue,COALESCE(SUM(sr.discount),0) discount
+        $st=$pdo->prepare("SELECT COUNT(*) receipts,COALESCE(SUM(sr.total-sr.tax_amount),0) revenue,COALESCE(SUM(sr.tax_amount),0) tax,COALESCE(SUM(sr.total),0) collected,COALESCE(SUM(sr.discount),0) discount
             FROM settlement_records sr WHERE $valid AND sr.business_date BETWEEN ? AND ?");
         $st->execute([$from,$to]);$r=$st->fetch(PDO::FETCH_ASSOC)?:[];
-        return ['receipts'=>(int)($r['receipts']??0),'revenue'=>(int)($r['revenue']??0),'discount'=>(int)($r['discount']??0)];
+        return ['receipts'=>(int)($r['receipts']??0),'revenue'=>(int)($r['revenue']??0),'tax'=>(int)($r['tax']??0),'collected'=>(int)($r['collected']??0),'discount'=>(int)($r['discount']??0)];
     };
     $todaySummary=$sum($today,$today);$summary30=$sum($from30,$today);
     $orders=$pdo->prepare("SELECT COUNT(*) c,COALESCE(SUM(total_amount),0) total FROM orders WHERE status<>'cancelled' AND business_date BETWEEN ? AND ?");

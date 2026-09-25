@@ -1,3 +1,5 @@
+> **Historical printing handoff.** Deployment/ownership statements below that describe a separately installed Print Agent were superseded on 2026-09-24 by `docs/architecture-migration-r2/PHASE7R_PRINTING_RECONCILIATION_FA.md`. Current authority: Print Worker is an internal SOKNA Local component; preserve protocol/state-machine semantics but do not revive a separate installer/product.
+
 # Phase 7 Handoff — Printing / Notifications / Integrations
 
 Status: COMPLETE

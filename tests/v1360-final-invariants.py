@@ -21,7 +21,7 @@ assert 'function fa_datetime(' not in functions
 assert 'guest_order_commit(db(),$data)' in create_order
 for needle in ['normalize_order_request_payload','WHERE client_token=? LIMIT 1 FOR UPDATE','order_status_history',"'items_unavailable'", "'prices_changed'", 'FOR UPDATE']:
     assert needle in guest_order_service
-assert 'data.client_token || submittedTarget?.client_token || pendingToken' in menu
+assert 'data.client_token || context.submittedTarget?.client_token || pendingToken' in menu
 assert 'live_table_guard INT UNSIGNED NULL' in schema and 'uq_table_sessions_one_live_table' in schema
 assert "status IN('active','pending')" in table_session and 'sort($lockIds, SORT_NUMERIC)' in table_session
 assert 'START TRANSACTION WITH CONSISTENT SNAPSHOT' in maintenance
@@ -115,11 +115,12 @@ assert 'user_shift_responsibilities' not in schema and 'user_shift_responsibilit
 assert 'table-state-card' not in queue
 assert 'staff/quick-order.php' in panel_layout and 'data-open-quick-order' not in panel_layout
 
-# Agent distribution is external and version-pinned; Cafe owns API/DB/Admin only.
+# R2 Phase7R: Print Worker is version-pinned provenance but owned and distributed inside SOKNA Local.
 printing = read('includes/printing.php')
 assert not (ROOT/'print-agent-v6').exists()
 assert not list((ROOT/'print-agent').glob('Sokna-Print-Agent-*'))
-assert 'mobaraki20/Pagent' in printing and '/releases/download/' in printing
+assert (ROOT/'runtime/print-worker/source/PROVENANCE.json').is_file()
+assert 'print_worker_component_metadata' in printing and 'mobaraki20/Pagent' not in printing
 assert 'latest/download' not in printing
 assert (ROOT/'print-agent/v4/api.php').is_file()
 assert not (ROOT/'print-agent/api.php').exists()

@@ -189,11 +189,11 @@ function sokna_deferred_apply_locked(PDO $pdo,array $envelope,array $user,?array
 
     if($kind==='subscriber.payment'){
         $subscriberId=(int)($payload['subscriber_id']??0);$amount=(int)($payload['amount']??0);
-        if($subscriberId<1||$amount<1)throw new RuntimeException('اطلاعات پرداخت مشترک کامل نیست.');
+        if($subscriberId<1||$amount<1)throw new RuntimeException('اطلاعات پرداخت مشتری کامل نیست.');
         $current=subscriber_balance($pdo,$subscriberId,true);
         $hasExpected=array_key_exists('expected_balance',$payload);
         if(!$allowConflict&&$hasExpected&&$current!==(int)$payload['expected_balance']){
-            throw new SoknaDeferredNeedsReview('conflict','subscriber_balance_changed','مانده حساب مشترک بعد از نسخه راه‌دور تغییر کرده است.',$period['id']??null);
+            throw new SoknaDeferredNeedsReview('conflict','subscriber_balance_changed','مانده حساب مشتری بعد از نسخه راه‌دور تغییر کرده است.',$period['id']??null);
         }
         try{
             $entry=subscriber_insert_ledger_locked(
@@ -212,7 +212,7 @@ function sokna_deferred_apply_locked(PDO $pdo,array $envelope,array $user,?array
     if($kind==='expense.create'){
         $entry=expense_create_locked(
             $pdo,trim((string)($payload['category_key']??'')),(int)($payload['amount']??0),$occurredAt,
-            (string)($payload['description']??''),$actor,'deferred:'.(string)$envelope['request_id'],(int)($period['id']??0)
+            (string)($payload['description']??''),$actor,'deferred:'.(string)$envelope['request_id'],(int)($period['id']??0),(bool)($options['allow_closed_period']??false)
         );
         return ['expense_id'=>(int)$entry['id'],'financial_period_id'=>(int)$entry['financial_period_id']];
     }

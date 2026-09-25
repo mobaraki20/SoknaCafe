@@ -55,13 +55,13 @@ sprite=read('assets/icons/ui-sprite.svg')
 ok('id="icon-adjust"' in sprite and "spriteIcon('adjust')" in op,'adjust icon for line correction')
 ok("icon('message')" in quick,'note uses message icon')
 
-# Print Agent distribution has a separate owner: Cafe ships API only, Agent ships from pinned Pagent release.
+# Historical RC8 print distribution was superseded by R2 Phase7R: the mature worker is now an internal SOKNA Local component.
 ok(not (ROOT/'print-agent-v6').exists(),'Cafe package does not bundle Agent source')
 ok(not list((ROOT/'print-agent').glob('Sokna-Print-Agent-*')),'Cafe package does not bundle Agent binaries')
 ok((ROOT/'print-agent/v4/api.php').is_file() and not (ROOT/'print-agent/api.php').exists(),'Cafe ships only the server-owned Print API v4 endpoint')
-ok('mobaraki20/Pagent' in printing and '/releases/latest' in printing and '/releases/download/' in printing and 'latest/download' not in printing,'server resolves latest stable Agent from Pagent GitHub Release')
+ok('print_worker_component_metadata' in printing and 'mobaraki20/Pagent' not in printing,'server resolves the SOKNA-owned internal Print Worker component')
 admin_print=read('admin/printing.php');print_css=read('assets/css/panel-components.css')
-ok('print_agent_download_url()' in admin_print and 'جزئیات نسخه' in admin_print,'printing page downloads the pinned external Agent release')
+ok('print_agent_download_url()' not in admin_print and 'برنامه جداگانه‌ای برای دانلود ندارد' in admin_print,'printing page exposes integrated SOKNA ownership, not an external Agent download')
 ok('print-settings-tabs' not in admin_print and '.print-settings-tabs' not in print_css,'legacy printing tab UI removed')
 ok('.print5-status-strip' in print_css and '.print5-overview-grid' in print_css and '.printing-intro' not in print_css and '.print-agent-grid' not in print_css,'one canonical printing operations CSS owner')
 

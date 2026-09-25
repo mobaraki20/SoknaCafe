@@ -1,0 +1,8 @@
+{
+  "format": "sokna-windows-upgrade-baseline-v1",
+  "schema_version": 1,
+  "app_version": "1.36.4-dev.38",
+  "msi_version": "1.36.4038",
+  "source_checkpoint": "a579fcf21878413998deb7158eb9a5a29fd8d32a",
+  "purpose": "Synthetic MSI predecessor identity for package major-upgrade acceptance only; live application updater migration is tested separately."
+}

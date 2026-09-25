@@ -2,8 +2,7 @@
 from pathlib import Path
 import hashlib, json, os, re, sys
 ROOT=Path(__file__).resolve().parents[1]
-BASELINE=Path(os.environ.get('SOKNA_BASELINE_ZIP','/mnt/data/Sokna-CLEAN-INSTALL-1.36.4-dev.19.zip'))
-EXPECTED_BASELINE='9a37c1276f61d8199860f093cb312701f938e7805c79f7b2202bb27fc1b72993'
+EXPECTED_WORKER_ARCHIVE='c9c205fe0efb08c5d3a270b1065b0e320489b0e7f3c8764d2295724fb01c102a'
 checks=[]
 def check(name,cond,detail=''):
     checks.append((name,bool(cond),detail))
@@ -13,12 +12,12 @@ version=text('VERSION.txt').strip(); sw=text('service-worker.js'); schema=text('
 printing=text('includes/printing.php'); agent_api=text('includes/print_agent_api.php'); bridge=text('api/print_bridge_capability.php')
 push=text('assets/js/push-runtime.js'); designer=text('assets/js/print-template-designer.js'); templates=text('admin/print_templates.php')
 admin=text('admin/printing.php'); snapshot=text('api/print_status_snapshot.php'); migration=text('release/1.36.4-dev.20-print-web.sql')
+setup=text('runtime/windows/setup-sokna.ps1'); provenance=json.loads(text('runtime/print-worker/source/PROVENANCE.json'))
 
-check('target_version', version=='1.36.4-dev.20', version)
-check('service_worker_release', "const RELEASE='1.36.4-dev.20'" in sw and "cafe-staff-v1.36.4-dev.20" in sw)
-if BASELINE.is_file():
-    h=hashlib.sha256(BASELINE.read_bytes()).hexdigest(); check('baseline_zip_sha256',h==EXPECTED_BASELINE,h)
-else: check('baseline_zip_sha256',False,'baseline zip missing')
+version_match=re.fullmatch(r'1\.36\.4-dev\.(\d+)', version)
+check('target_version', bool(version_match) and int(version_match.group(1))>=20, version)
+check('service_worker_release', f"const RELEASE='{version}'" in sw and f"cafe-staff-v{version}" in sw)
+check('internal_worker_provenance', provenance.get('upstream_version')=='6.2.5' and provenance.get('upstream_archive_sha256')==EXPECTED_WORKER_ARCHIVE and provenance.get('component')=='SOKNA Local internal Print Worker', str(provenance.get('upstream_archive_sha256','')))
 check('schema_bridge_runtime',all(x in schema for x in ['bridge_protocol_version','bridge_pairing_id','bridge_runtime_seen_at']))
 check('schema_request_hashes',all(x in schema for x in ['accept_request_hash','start_request_hash','renew_request_hash','report_request_hash','request_hash CHAR(64) NOT NULL']))
 check('schema_admin_action_identity',all(x in schema for x in ['last_admin_action_id','last_admin_action_type','last_admin_action_hash']))
@@ -40,7 +39,7 @@ check('preview_session_revision',all(x in designer for x in ['const revision=++e
 check('wake_coalescing_deadline',all(x in push for x in ['pendingPrintWake','mergeWake','fetchWithDeadline','queueMicrotask(()=>void drainPrintWake())']))
 check('wake_commit_check',all(x in printing for x in ['$pdo->inTransaction()','SELECT id,destination_key,status FROM print_jobs','status=\'pending\'']))
 check('admin_action_idempotency',all(x in printing for x in ['print_admin_action_id','print_admin_action_hash','print_admin_action_is_replay','last_admin_action_id']))
-check('retirement_drain_policy',all(x in admin for x in ['printing_agent_unsettled_attempt_count','پیش از بازنشستگی باید Drain کامل شود']))
+check('legacy_worker_takeover_policy', all(x in setup for x in ['Both legacy and internal Print Worker data roots contain state. Automatic merge is unsafe', "Stop-Service $LegacyPrintWorkerServiceName", "Internal Print Worker RUNNING. legacy_data_migrated=", "config',$LegacyPrintWorkerServiceName,'start=','disabled'"]))
 check('safe_import_limits',all(x in printing+templates for x in ['1048576','786432','array_key_exists($name,$files)','JSON object']))
 check('snapshot_utc', 'print_database_time_to_utc' in snapshot)
 check('agent_binary_not_bundled', not any((ROOT/'print-agent').glob('Sokna-Print-Agent-*')))

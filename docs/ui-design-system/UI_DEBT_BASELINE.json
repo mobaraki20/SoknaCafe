@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "captured_from": "phase/8b-windows-setup snapshot, VERSION 1.36.4-dev.38",
+  "captured_at": "2026-09-24",
+  "policy": "temporary_ceiling_ratchet_down_only",
+  "metrics": {
+    "css_files": 14,
+    "css_lines": 5043,
+    "important_count_max": 284,
+    "direct_hex_colors_max": 1474,
+    "direct_rgb_functions_max": 238,
+    "media_queries_max": 234,
+    "unique_media_conditions_max": 63,
+    "physical_direction_properties_max": 46,
+    "inline_style_attributes_max": 45,
+    "style_blocks_max": 18
+  },
+  "notes": [
+    "These are debt ceilings, not acceptable target values.",
+    "New work may not increase them unless a reviewed exception updates this file with rationale.",
+    "Migration checkpoints must lower relevant ceilings after legacy owner removal.",
+    "Direct colors in the future canonical foundation token owner will be excluded from the non-foundation color debt metric once that migration begins."
+  ]
+}

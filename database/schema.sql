@@ -128,6 +128,29 @@ CREATE TABLE IF NOT EXISTS items (
     CONSTRAINT fk_items_suggested FOREIGN KEY (suggested_item_id) REFERENCES items(id) ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS tax_rate_versions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    rate_bps SMALLINT UNSIGNED NOT NULL,
+    effective_from DATETIME NOT NULL,
+    created_by_user_id INT UNSIGNED NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_tax_rate_created_by FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL,
+    INDEX idx_tax_rate_effective (effective_from,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS tax_item_policy_versions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    item_id INT UNSIGNED NOT NULL,
+    policy VARCHAR(24) NOT NULL DEFAULT 'inherit_default',
+    custom_rate_bps SMALLINT UNSIGNED NULL,
+    effective_from DATETIME NOT NULL,
+    created_by_user_id INT UNSIGNED NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_tax_item_policy_item FOREIGN KEY (item_id) REFERENCES items(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_tax_item_policy_created_by FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL,
+    INDEX idx_tax_item_policy_effective (item_id,effective_from,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS menu_items (
     menu_id INT UNSIGNED NOT NULL,
     item_id INT UNSIGNED NOT NULL,
@@ -175,6 +198,8 @@ CREATE TABLE IF NOT EXISTS table_sessions (
     discount_updated_at DATETIME NULL,
     checkout_subtotal BIGINT UNSIGNED NULL,
     checkout_discount BIGINT UNSIGNED NULL,
+    checkout_taxable BIGINT UNSIGNED NULL,
+    checkout_tax BIGINT UNSIGNED NULL,
     checkout_total BIGINT UNSIGNED NULL,
     settlement_destination VARCHAR(30) NULL,
     checkout_voided_at DATETIME NULL,
@@ -269,10 +294,16 @@ CREATE TABLE IF NOT EXISTS order_items (
     fulfillment_mode VARCHAR(16) NOT NULL DEFAULT 'dine_in',
     preparation_station VARCHAR(30) NOT NULL DEFAULT 'other',
     line_total BIGINT UNSIGNED NOT NULL,
+    tax_policy_snapshot VARCHAR(24) NOT NULL DEFAULT 'disabled',
+    tax_rate_bps_snapshot SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    tax_rate_version_id BIGINT UNSIGNED NULL,
+    tax_item_policy_version_id BIGINT UNSIGNED NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_order_items_item FOREIGN KEY (item_id) REFERENCES items(id) ON UPDATE CASCADE ON DELETE SET NULL,
     CONSTRAINT fk_order_items_adjusted_by FOREIGN KEY (adjusted_by_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL,
+    CONSTRAINT fk_order_items_tax_rate FOREIGN KEY (tax_rate_version_id) REFERENCES tax_rate_versions(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_order_items_tax_policy FOREIGN KEY (tax_item_policy_version_id) REFERENCES tax_item_policy_versions(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     INDEX idx_order_items_order (order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -623,6 +654,8 @@ CREATE TABLE IF NOT EXISTS settlement_records (
     table_name_snapshot VARCHAR(160) NOT NULL,
     subtotal BIGINT UNSIGNED NOT NULL,
     discount BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    taxable_amount BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    tax_amount BIGINT UNSIGNED NOT NULL DEFAULT 0,
     total BIGINT UNSIGNED NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'completed',
     reverses_settlement_id BIGINT UNSIGNED NULL,
@@ -636,6 +669,7 @@ CREATE TABLE IF NOT EXISTS settlement_records (
     closes_session TINYINT(1) NOT NULL DEFAULT 1,
     remaining_subtotal BIGINT UNSIGNED NOT NULL DEFAULT 0,
     remaining_discount BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    remaining_tax BIGINT UNSIGNED NOT NULL DEFAULT 0,
     remaining_total BIGINT UNSIGNED NOT NULL DEFAULT 0,
     allocation_version SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     settled_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -677,6 +711,10 @@ CREATE TABLE IF NOT EXISTS settlement_record_lines (
     gross_amount BIGINT UNSIGNED NOT NULL,
     discount_amount BIGINT UNSIGNED NOT NULL DEFAULT 0,
     net_amount BIGINT UNSIGNED NOT NULL,
+    taxable_amount BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    tax_rate_bps SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    tax_amount BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    final_amount BIGINT UNSIGNED NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_settlement_line_record FOREIGN KEY (settlement_id) REFERENCES settlement_records(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     UNIQUE KEY uq_settlement_line_item (settlement_id,order_item_id),

@@ -155,6 +155,8 @@ function accommodation_contract_error_codes(): array
 }
 function accommodation_normalize_invoice_snapshot(array $snapshot): array
 {
+    $version = (int)($snapshot['version'] ?? 1);
+    if ($version === 3) accommodation_validate_tax_snapshot($snapshot);
     $items = [];
     foreach ((array)($snapshot['items'] ?? []) as $item) {
         if (!is_array($item)) continue;
@@ -166,9 +168,12 @@ function accommodation_normalize_invoice_snapshot(array $snapshot): array
             'line_total' => (int)($item['line_total'] ?? 0),
             'note' => $note === '' ? null : text_substr($note, 0, 500),
         ];
+        if ($version === 3) {
+            foreach (['line_discount','line_net','taxable_amount','tax_rate_bps','tax_amount','line_final'] as $field) $items[count($items)-1][$field] = $item[$field];
+        }
     }
-    return [
-        'version' => (int)($snapshot['version'] ?? 1),
+    $normalized = [
+        'version' => $version,
         'number' => text_substr(trim((string)($snapshot['number'] ?? '')), 0, 40),
         'issued_at' => text_substr(trim((string)($snapshot['issued_at'] ?? '')), 0, 60),
         'table_name' => text_substr(trim((string)($snapshot['table_name'] ?? '')), 0, 160),
@@ -177,9 +182,16 @@ function accommodation_normalize_invoice_snapshot(array $snapshot): array
         'total' => (int)($snapshot['total'] ?? 0),
         'items' => $items,
     ];
+    if ($version === 3) foreach (['net','taxable','tax'] as $field) $normalized[$field] = $snapshot[$field];
+    return $normalized;
 }
 function accommodation_validate_invoice_snapshot(array $snapshot): void
 {
+    if ((int)$snapshot['version'] === 3) {
+        accommodation_validate_tax_snapshot($snapshot);
+        if (trim((string)($snapshot['number'] ?? '')) === '' || trim((string)($snapshot['issued_at'] ?? '')) === '' || trim((string)($snapshot['table_name'] ?? '')) === '') throw new RuntimeException('مشخصات ثبت‌شده فاکتور کامل نیست.');
+        return;
+    }
     if ((int)$snapshot['version'] !== 1) throw new RuntimeException('نسخه اطلاعات ثبت‌شده فاکتور برای اتصال اقامتگاه معتبر نیست.');
     if (trim((string)$snapshot['number']) === '' || trim((string)$snapshot['issued_at']) === '' || trim((string)$snapshot['table_name']) === '') throw new RuntimeException('مشخصات ثبت‌شده فاکتور کامل نیست.');
     if (!$snapshot['items']) throw new RuntimeException('فاکتور ثبت‌شده هیچ ردیفی ندارد.');
@@ -189,6 +201,52 @@ function accommodation_validate_invoice_snapshot(array $snapshot): void
         $subtotal += (int)$item['line_total'];
     }
     if ($subtotal !== (int)$snapshot['subtotal'] || (int)$snapshot['subtotal'] - (int)$snapshot['discount'] !== (int)$snapshot['total'] || (int)$snapshot['total'] < 0) throw new RuntimeException('جمع اطلاعات ثبت‌شده فاکتور با حساب اقامتگاه سازگار نیست.');
+}
+
+/** Validate immutable v3 amounts before normalization can discard malformed input. */
+function accommodation_validate_tax_snapshot(array $snapshot): void
+{
+    $invalid = static function(): void { throw new RuntimeException('جزئیات مالیات فاکتور یا جمع مبالغ معتبر نیست.'); };
+    foreach (['version','subtotal','discount','net','taxable','tax','total'] as $field) {
+        if (!isset($snapshot[$field]) || !is_int($snapshot[$field]) || $snapshot[$field] < 0) $invalid();
+    }
+    if ($snapshot['version'] !== 3 || !is_array($snapshot['items'] ?? null) || !$snapshot['items']) $invalid();
+    $sum = ['subtotal'=>0,'discount'=>0,'net'=>0,'taxable'=>0,'tax'=>0,'total'=>0];
+    foreach ($snapshot['items'] as $item) {
+        if (!is_array($item)) $invalid();
+        foreach (['quantity','unit_price','line_total','line_discount','line_net','taxable_amount','tax_rate_bps','tax_amount','line_final'] as $field) {
+            if (!isset($item[$field]) || !is_int($item[$field]) || $item[$field] < 0) $invalid();
+        }
+        if ($item['quantity'] < 1 || $item['unit_price'] > intdiv(PHP_INT_MAX,$item['quantity'])) $invalid();
+        if ($item['line_total'] !== $item['quantity']*$item['unit_price'] || $item['line_discount'] > $item['line_total']) $invalid();
+        if ($item['line_net'] !== $item['line_total']-$item['line_discount'] || $item['taxable_amount'] > $item['line_net'] || $item['tax_rate_bps'] > 10000) $invalid();
+        $base=$item['taxable_amount']; $rate=$item['tax_rate_bps'];
+        $tax=intdiv($base,10000)*$rate+intdiv(($base%10000)*$rate+5000,10000);
+        if ($item['tax_amount'] !== $tax || $item['tax_amount'] > PHP_INT_MAX-$item['line_net'] || $item['line_final'] !== $item['line_net']+$item['tax_amount']) $invalid();
+        foreach (['subtotal'=>'line_total','discount'=>'line_discount','net'=>'line_net','taxable'=>'taxable_amount','tax'=>'tax_amount','total'=>'line_final'] as $key=>$field) {
+            if ($item[$field] > PHP_INT_MAX-$sum[$key]) $invalid();
+            $sum[$key]+=$item[$field];
+        }
+    }
+    foreach ($sum as $key=>$amount) if ($snapshot[$key] !== $amount) $invalid();
+    if ($snapshot['discount'] > $snapshot['subtotal'] || $snapshot['net'] !== $snapshot['subtotal']-$snapshot['discount'] || $snapshot['tax'] > PHP_INT_MAX-$snapshot['net'] || $snapshot['total'] !== $snapshot['net']+$snapshot['tax']) $invalid();
+}
+
+/** Called after the local transfer transaction commits; no remote IO under DB locks. */
+function accommodation_tax_capability_gate(): array
+{
+    $r=accommodation_result_from_response(accommodation_http_request('capabilities','GET',[],5),'capabilities');
+    if (!$r['success']) {
+        // This request cannot have charged the destination. Keep it retryable without
+        // misclassifying a capabilities timeout as an ambiguous charge.
+        return ['success'=>false,'ambiguous'=>false,'retryable'=>true,'code'=>'capabilities_unavailable','message'=>'بررسی پشتیبانی مالیات اقامتگاه ممکن نشد؛ دوباره تلاش کنید.'];
+    }
+    $p=$r['payload']; $caps=$p['capabilities']??[];
+    $versions=$caps['invoice_snapshot_versions']??[];
+    if (($p['api_version']??'') !== '2.0' || ($caps['invoice_tax_snapshot']??false) !== true || !is_array($versions) || !in_array(3,$versions,true)) {
+        return ['success'=>false,'ambiguous'=>false,'retryable'=>false,'code'=>'unsupported_invoice_version','message'=>'اقامتگاه هنوز قرارداد فاکتور مالیاتی نسخه ۳ را پشتیبانی نمی‌کند؛ اتصال اقامتگاه باید به‌روز شود.'];
+    }
+    return ['success'=>true];
 }
 
 function accommodation_charge_remote(array $transfer): array
@@ -209,6 +267,10 @@ function accommodation_charge_remote(array $transfer): array
         'invoice'=>$snapshot,
     ];
     if ((int)$payload['amount'] !== (int)$snapshot['total']) return ['success'=>false,'ambiguous'=>false,'code'=>'invoice_total_mismatch','message'=>'مبلغ انتقال با جمع فاکتور ثبت‌شده یکسان نیست.'];
+    if ((int)$snapshot['version'] === 3) {
+        $gate = accommodation_tax_capability_gate();
+        if (!$gate['success']) return $gate;
+    }
     return accommodation_result_from_response(accommodation_http_request('charge','POST',$payload,10),'charge');
 }
 function accommodation_void_remote(array $transfer,string $reason): array{return accommodation_result_from_response(accommodation_http_request('void','POST',['external_order_id'=>(string)$transfer['external_order_id'],'reason'=>text_substr(trim($reason),0,300),'requested_at'=>date(DATE_ATOM)],10),'void');}
@@ -319,7 +381,8 @@ function accommodation_attention_rows(?int $limit=50): array
 function accommodation_calculate_session_invoice_locked(PDO $pdo,int $sessionId): array{return settlement_calculate_session_invoice_locked($pdo,$sessionId);}
 function accommodation_invoice_snapshot_locked(PDO $pdo,array $invoice,string $tableName,?string $invoiceNumber=null): array{
  $invoice['session']['table_name']=$tableName;
- return settlement_invoice_snapshot_locked($pdo,$invoice,$invoiceNumber?:('I-'.(int)$invoice['session']['id']));
+ $snapshot=settlement_invoice_snapshot_locked($pdo,$invoice,$invoiceNumber?:('I-'.(int)$invoice['session']['id']));
+ return $snapshot;
 }
 function accommodation_prepare_transfer_for_table(int $tableId,int $userId,array $reservation,bool $printFinal=false,int $expectedSessionId=0,int $expectedTotal=-1,string $expectedSignature=''): array{
  accommodation_require_live_operations();

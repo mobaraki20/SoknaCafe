@@ -20,6 +20,7 @@
     currentCount: $('quickOrderCurrentCount'), currentLines: $('quickOrderCurrentLines'), note: $('quickOrderNote'),
     noteToggle: $('quickOrderNoteToggle'), noteWrap: $('quickOrderNoteWrap'), total: $('quickOrderTotal'),
     previousRow: $('quickOrderPreviousRow'), previousTotal: $('quickOrderPreviousTotal'), projected: $('quickOrderProjectedTotal'),
+    newTaxHint: $('quickOrderNewTaxHint'), projectedTaxHint: $('quickOrderProjectedTaxHint'),
     projectedRow: $('quickOrderProjectedRow'), submit: $('quickOrderSubmit'), mobileBar: $('quickOrderMobileCartBar'),
     mobileCount: $('quickOrderMobileCartCount'), mobileTotal: $('quickOrderMobileCartTotal'),
   };
@@ -476,6 +477,66 @@
     return 0;
   }
 
+  function taxAmountFor(amount, rateBps) {
+    const taxable = Math.max(0, Math.trunc(Number(amount) || 0));
+    const rate = Math.max(0, Math.min(10000, Math.trunc(Number(rateBps) || 0)));
+    if (!taxable || !rate) return 0;
+    const whole = Math.floor(taxable / 10000) * rate;
+    const remainder = taxable % 10000;
+    return whole + Math.floor(((remainder * rate) + 5000) / 10000);
+  }
+
+  function proportionalTarget(totalValue, basisTotal, cumulativeBasis, final = false) {
+    const total = Math.max(0, Math.trunc(Number(totalValue) || 0));
+    const basis = Math.max(0, Math.trunc(Number(basisTotal) || 0));
+    const cumulative = Math.max(0, Math.trunc(Number(cumulativeBasis) || 0));
+    if (!total || !basis || !cumulative) return 0;
+    if (final || cumulative >= basis) return total;
+    const whole = Math.floor(total / basis) * cumulative;
+    const remainder = total % basis;
+    return Math.max(0, Math.min(total, whole + Math.floor(((remainder * cumulative) + Math.floor(basis / 2)) / basis)));
+  }
+
+  function calculateTaxFinancials(lines, requestedDiscount = 0) {
+    const rows = (Array.isArray(lines) ? lines : []).map((line) => ({...line})).sort((a,b)=>Number(a.order_item_id||0)-Number(b.order_item_id||0));
+    const subtotal = rows.reduce((sum,line)=>sum + Math.max(0,Number(line.unit_price||0))*Math.max(0,Number(line.quantity||0)),0);
+    const discount = Math.max(0, Math.min(Math.trunc(Number(requestedDiscount)||0), subtotal));
+    let runningGross = 0, allocated = 0, tax = 0, taxable = 0;
+    rows.forEach((line,index)=>{
+      const gross=Math.max(0,Number(line.unit_price||0))*Math.max(0,Number(line.quantity||0));
+      runningGross += gross;
+      const target=index===rows.length-1?discount:proportionalTarget(discount,subtotal,runningGross,false);
+      const lineDiscount=Math.max(0,Math.min(gross,target-allocated));
+      allocated += lineDiscount;
+      const net=gross-lineDiscount;
+      const policy=String(line.tax_policy_snapshot||line.tax_policy||'disabled');
+      const rate=policy==='disabled'||policy==='exempt'?0:Number(line.tax_rate_bps_snapshot??line.tax_rate_bps??0);
+      const lineTaxable=rate>0?net:0;
+      taxable += lineTaxable;
+      tax += taxAmountFor(lineTaxable,rate);
+    });
+    const net=subtotal-allocated;
+    return {subtotal,discount:allocated,net,taxable,tax,total:net+tax};
+  }
+
+  function cartTaxLines() {
+    const existingIds=(selectedTable()?.current_tax_lines||[]).map((line)=>Number(line.order_item_id||0));
+    let synthetic=Math.max(0,...existingIds)+1;
+    const rows=[];
+    for(const line of selectedLines()){
+      clampTakeaway(line);
+      const totalQty=Math.max(0,Number(line.quantity||0));
+      const takeaway=Math.max(0,Math.min(totalQty,Number(line.takeaway_quantity||0)));
+      const dine=totalQty-takeaway;
+      const item=state.items.find((row)=>Number(row.id)===Number(line.id))||line;
+      for(const qty of [dine,takeaway]){
+        if(!qty)continue;
+        rows.push({order_item_id:synthetic++,quantity:qty,unit_price:Number(line.price||0),tax_policy_snapshot:String(item.tax_policy||'disabled'),tax_rate_bps_snapshot:Number(item.tax_rate_bps||0)});
+      }
+    }
+    return rows;
+  }
+
   function displayTableCode(table) {
     const canonical = Number(table?.table_number || 0);
     if (canonical > 0) return canonical.toLocaleString('fa-IR');
@@ -618,7 +679,7 @@
       els.mobilePending?.classList.add('hidden');
       return;
     }
-    els.pending.innerHTML = `<div class="quick-order-pending-head"><strong>${digits(orders.length)} سفارش مهمان منتظر است</strong><small>هر سفارش را جداگانه تأیید یا رد کنید.</small></div><div class="quick-order-pending-orders">${orders.map((order) => { const busy = state.pendingReview.has(Number(order.id)); return `<article><header><strong>سفارش ${digits(order.number || order.id)}</strong><span>${money(order.total)}</span></header>${(order.items || []).map((item) => `<p>${digits(item.quantity)} × ${esc(item.name)}</p>`).join('')}<div class="quick-order-pending-actions"><button type="button" data-qo-pending-order="${Number(order.id)}" data-qo-pending-status="accounted" class="is-active"${busy ? ' disabled' : ''}>${busy ? 'در حال بررسی…' : 'تأیید سفارش'}</button><button type="button" data-qo-pending-order="${Number(order.id)}" data-qo-pending-status="cancelled"${busy ? ' disabled' : ''}>رد سفارش</button></div></article>`; }).join('')}</div>`;
+    els.pending.innerHTML = `<div class="quick-order-pending-head"><strong>${digits(orders.length)} سفارش مهمان منتظر است</strong><small>هر سفارش را جداگانه تأیید یا رد کنید.</small></div><div class="quick-order-pending-orders">${orders.map((order) => { const busy = state.pendingReview.has(Number(order.id)); return `<article><header><strong>سفارش ${digits(order.number || order.id)}</strong><span>جمع اقلام ${money(order.subtotal)}</span></header>${(order.items || []).map((item) => `<p>${digits(item.quantity)} × ${esc(item.name)}</p>`).join('')}<div class="quick-order-pending-actions"><button type="button" data-qo-pending-order="${Number(order.id)}" data-qo-pending-status="accounted" class="is-active"${busy ? ' disabled' : ''}>${busy ? 'در حال بررسی…' : 'تأیید سفارش'}</button><button type="button" data-qo-pending-order="${Number(order.id)}" data-qo-pending-status="cancelled"${busy ? ' disabled' : ''}>رد سفارش</button></div></article>`; }).join('')}</div>`;
     els.pending.classList.remove('hidden');
     els.mobilePending?.classList.toggle('hidden', !mobileMedia.matches);
     if (els.mobilePendingCount) els.mobilePendingCount.textContent = `${digits(orders.length)} سفارش مهمان منتظر بررسی است`;
@@ -752,12 +813,15 @@
     const table = selectedTable();
     const distinct = state.cart.size;
     const quantity = cartQuantity();
-    const total = cartTotal();
+    const cartSubtotal = cartTotal();
+    const cartFinancials = calculateTaxFinancials(cartTaxLines(),0);
     const pending = Number(table?.pending_order_count || 0) > 0;
     const currentSubtotal = Number(table?.current_total || 0);
     const currentFinal = Number(lateAccounting ? (table?.remaining_total ?? table?.current_final_total ?? 0) : (table?.current_final_total || 0));
-    const projectedSubtotal = currentSubtotal + total;
-    const projected = Math.max(0, projectedSubtotal - discountAmount(projectedSubtotal, table));
+    const projectedLines=[...(Array.isArray(table?.current_tax_lines)?table.current_tax_lines:[]),...cartTaxLines()];
+    const projectedSubtotal = currentSubtotal + cartSubtotal;
+    const projectedFinancials=calculateTaxFinancials(projectedLines,discountAmount(projectedSubtotal,table));
+    const projected = projectedFinancials.total;
     const countText = distinct ? `${digits(distinct)} قلم${distinct !== quantity ? ` · ${digits(quantity)} عدد` : ''}` : 'هنوز آیتمی انتخاب نشده';
     const hasPrevious = currentFinal > 0 || Number(table?.current_order_count || 0) > 0;
     const totalTakeaway = cartTakeawayQuantity();
@@ -772,11 +836,13 @@
     if (fulfillmentSummary) { fulfillmentSummary.textContent=totalTakeaway>0?`${digits(totalTakeaway)} بیرون‌بر`:''; fulfillmentSummary.classList.toggle('hidden', totalTakeaway===0); }
 
     els.cartTitle.textContent = countText;
-    els.total.textContent = money(total);
+    els.total.textContent = money(cartFinancials.total);
+    if(els.newTaxHint){els.newTaxHint.textContent=cartFinancials.tax>0?`شامل ${money(cartFinancials.tax)} مالیات`:'';els.newTaxHint.classList.toggle('hidden',cartFinancials.tax<=0);}
     els.previousTotal.textContent = money(currentFinal);
     els.projected.textContent = money(projected);
+    if(els.projectedTaxHint){els.projectedTaxHint.textContent=projectedFinancials.tax>0?`شامل ${money(projectedFinancials.tax)} مالیات`:'';els.projectedTaxHint.classList.toggle('hidden',projectedFinancials.tax<=0);}
     els.mobileCount.textContent = countText;
-    els.mobileTotal.textContent = money(total);
+    els.mobileTotal.textContent = money(cartFinancials.total);
     els.previousRow.classList.toggle('hidden', !hasPrevious);
     els.projectedRow.classList.toggle('hidden', !hasPrevious);
     els.mobileBar.disabled = !distinct && Number(table?.pending_order_count || 0) <= 0;

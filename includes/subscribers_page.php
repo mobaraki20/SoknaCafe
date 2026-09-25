@@ -85,7 +85,7 @@ function render_subscribers_page(): void
         $redirect = $basePath . $viewSuffix;
         try {
             if ($action === 'save') {
-                if (!$isAdmin) throw new RuntimeException('فقط مدیر می‌تواند مشترک بسازد یا ویرایش کند.');
+                if (!$isAdmin) throw new RuntimeException('فقط مدیر می‌تواند مشتری بسازد یا ویرایش کند.');
                 $id = (int)($_POST['id'] ?? 0);
                 $name = text_substr(trim((string)($_POST['name'] ?? '')), 0, 160);
                 $mobile = text_substr(trim((string)($_POST['mobile'] ?? '')), 0, 30);
@@ -104,14 +104,14 @@ function render_subscribers_page(): void
                     $redirectId=(int)$pdo->lastInsertId();
                     audit_log_write('subscriber.created','subscriber',$redirectId,[],$userId);
                 }
-                flash('success','اطلاعات مشترک ذخیره شد.');
+                flash('success','اطلاعات مشتری ذخیره شد.');
                 $redirect=$basePath.'?view='.$redirectId;
             } elseif ($action === 'payment') {
                 $subscriberId=(int)($_POST['subscriber_id']??0);
                 $amount=parse_toman_amount_text((string)($_POST['amount']??''));
                 $reference=text_substr(trim((string)($_POST['reference']??'')),0,120);
                 $requestToken=trim((string)($_POST['request_token']??''));
-                if($subscriberId<1||$amount===null||$amount<1)throw new RuntimeException('مشترک و مبلغ معتبر را انتخاب کن.');
+                if($subscriberId<1||$amount===null||$amount<1)throw new RuntimeException('مشتری و مبلغ معتبر را انتخاب کن.');
                 if(!preg_match('/^[a-f0-9]{32}$/',$requestToken))throw new RuntimeException('فرم پرداخت منقضی شده است؛ صفحه را تازه کنید.');
                 $idempotencyKey='subscriber:payment:'.$subscriberId.':'.$requestToken;
                 $pdo->beginTransaction();
@@ -132,7 +132,7 @@ function render_subscribers_page(): void
                 flash('success','پرداخت با سند برگشتی خنثی شد.');
                 $redirect=$basePath.'?view='.(int)$entry['subscriber_id'];
             } else {
-                throw new RuntimeException('عملیات مشترک شناخته نشد.');
+                throw new RuntimeException('عملیات مشتری شناخته نشد.');
             }
         } catch (PDOException $e) {
             if($pdo->inTransaction())$pdo->rollBack();
@@ -154,7 +154,7 @@ function render_subscribers_page(): void
         } catch(Throwable $e) {
             if($pdo->inTransaction())$pdo->rollBack();
             error_log('subscriber action: '.$e->getMessage());
-            flash('error',safe_business_error_message($e,'عملیات حساب مشترک انجام نشد. دوباره تلاش کن.'));
+            flash('error',safe_business_error_message($e,'عملیات حساب مشتری انجام نشد. دوباره تلاش کن.'));
             if($action==='payment')form_state_store('subscriber_payment',$_POST);
         }
         redirect($redirect);
@@ -165,7 +165,7 @@ function render_subscribers_page(): void
         $st=$pdo->prepare('SELECT s.*,COALESCE((SELECT l.balance_after FROM subscriber_ledger l WHERE l.subscriber_id=s.id ORDER BY l.id DESC LIMIT 1),0) balance,(SELECT MAX(l2.created_at) FROM subscriber_ledger l2 WHERE l2.subscriber_id=s.id) last_activity FROM subscribers s WHERE s.id=?');
         $st->execute([$viewId]);
         $view=$st->fetch()?:null;
-        if(!$view){flash('error','مشترک پیدا نشد.');redirect($basePath);}
+        if(!$view){flash('error','مشتری پیدا نشد.');redirect($basePath);}
 
         $allowedLedgerTypes=['invoice','payment','invoice_reversal','payment_reversal'];
         $ledgerType=(string)($_GET['ledger_type']??'');
@@ -193,11 +193,11 @@ function render_subscribers_page(): void
         $ledger=subscriber_ledger_enrich_settlements($pdo,$ledger);
         $paymentState=form_state_pull('subscriber_payment');$paymentRequestToken=(string)form_old($paymentState,'request_token',bin2hex(random_bytes(16)));if(!preg_match('/^[a-f0-9]{32}$/',$paymentRequestToken))$paymentRequestToken=bin2hex(random_bytes(16));
         $ledgerUrl=static function(int $target,string $type) use($viewId):string{$p=['view'=>$viewId];if($type!=='')$p['ledger_type']=$type;if($target>1)$p['ledger_page']=$target;return 'subscribers.php?'.http_build_query($p);};
-        panel_header('پرونده مشترک','subscribers');?>
+        panel_header('پرونده مشتری','subscribers');?>
         <div class="financial-workspace subscriber-profile-workspace panel-page-flow" data-visual-quality-page="subscriber_profile">
-        <div class="panel-detail-nav"><a class="panel-back-link" href="subscribers.php"><?= ui_icon('chevron-right') ?> بازگشت به مشترکین</a></div>
+        <div class="panel-detail-nav"><a class="panel-back-link" href="subscribers.php"><?= ui_icon('chevron-right') ?> بازگشت به مشتریان</a></div>
         <div class="subscriber-profile-stack panel-page-flow">
-        <section class="card subscriber-profile-head financial-record-hero"><div class="subscriber-profile-top"><div class="subscriber-profile-identity"><div class="subscriber-profile-name-row"><h2><?= e($view['name']) ?></h2><?php if((int)$view['active']!==1): ?><span class="panel-status-badge is-muted">غیرفعال</span><?php endif; ?></div><p dir="ltr"><?= e(fa_digits((string)$view['mobile'])) ?></p></div><?php if($isAdmin): ?><div class="panel-utility-actions"><a class="panel-icon-action" href="?edit=<?= (int)$view['id'] ?>" aria-label="ویرایش اطلاعات مشترک" title="ویرایش اطلاعات"><?= ui_icon('edit') ?></a></div><?php endif; ?></div><div class="subscriber-balance-block"><span>مانده حساب</span><strong><?= e(toman((int)$view['balance'])) ?></strong></div><div class="subscriber-profile-foot"><span><?= $view['last_activity']?'آخرین فعالیت: '.e(format_jalali_human_datetime((string)$view['last_activity'])):'هنوز گردش حسابی ثبت نشده است.' ?></span></div></section>
+        <section class="card subscriber-profile-head financial-record-hero"><div class="subscriber-profile-top"><div class="subscriber-profile-identity"><div class="subscriber-profile-name-row"><h2><?= e($view['name']) ?></h2><?php if((int)$view['active']!==1): ?><span class="panel-status-badge is-muted">غیرفعال</span><?php endif; ?></div><p dir="ltr"><?= e(fa_digits((string)$view['mobile'])) ?></p></div><?php if($isAdmin): ?><div class="panel-utility-actions"><a class="panel-icon-action" href="?edit=<?= (int)$view['id'] ?>" aria-label="ویرایش اطلاعات مشتری" title="ویرایش اطلاعات"><?= ui_icon('edit') ?></a></div><?php endif; ?></div><div class="subscriber-balance-block"><span>مانده حساب</span><strong><?= e(toman((int)$view['balance'])) ?></strong></div><div class="subscriber-profile-foot"><span><?= $view['last_activity']?'آخرین فعالیت: '.e(format_jalali_human_datetime((string)$view['last_activity'])):'هنوز گردش حسابی ثبت نشده است.' ?></span></div></section>
         <?php if((int)$view['balance']>0): ?><details class="card panel-disclosure subscriber-payment-card" id="subscriberPaymentPanel" <?= !empty($paymentState['values'])?'open':'' ?>><summary><span><strong>ثبت پرداخت</strong><small>پرداخت کامل یا جزئی از مانده حساب</small></span><?= ui_icon('chevron-down') ?></summary><div class="card-body"><form method="post" class="subscriber-payment-form"><?= csrf_field() ?><input type="hidden" name="subscriber_id" value="<?= (int)$view['id'] ?>"><input type="hidden" name="request_token" value="<?= e($paymentRequestToken) ?>"><label class="form-group"><span>مبلغ پرداخت</span><input class="form-control" id="subscriberPaymentAmount" type="text" inputmode="numeric" enterkeyhint="next" name="amount" value="<?= e(money_input_display_value((string)form_old($paymentState,'amount',''))) ?>" data-money-input required><small class="muted">مبلغ به تومان</small></label><button class="btn btn-sm btn-light subscriber-pay-full" type="button" data-fill-money-target="subscriberPaymentAmount" data-fill-money-value="<?= (int)$view['balance'] ?>">پرداخت کل مانده · <?= e(toman((int)$view['balance'])) ?></button><label class="form-group"><span>مرجع، اختیاری</span><input class="form-control" name="reference" enterkeyhint="done" maxlength="120" value="<?= e((string)form_old($paymentState,'reference','')) ?>" placeholder="مثلاً شماره رسید"></label><button class="btn btn-primary subscriber-payment-submit" name="action" value="payment">ثبت پرداخت</button></form></div></details><?php endif; ?>
         <section class="card subscriber-ledger-card financial-record-section"><div class="card-head subscriber-ledger-head"><div><h2>گردش حساب</h2><small><?= e(fa_digits($ledgerTotal)) ?> سند</small></div><form method="get" class="subscriber-ledger-filter"><input type="hidden" name="view" value="<?= (int)$viewId ?>"><label><span class="sr-only">نوع سند</span><select class="form-control" name="ledger_type" data-choice-mode="compact" data-auto-submit><option value="">همه اسناد</option><?php foreach($allowedLedgerTypes as $type): ?><option value="<?= e($type) ?>" <?= $ledgerType===$type?'selected':'' ?>><?= e(subscriber_entry_type_label($type)) ?></option><?php endforeach; ?></select></label></form></div><div class="subscriber-timeline">
         <?php if(!$ledger): ?><div class="empty-state">گردش حسابی با این فیلتر ثبت نشده است.</div><?php endif; ?>
@@ -263,17 +263,17 @@ function render_subscribers_page(): void
     $sumSql="SELECT COALESCE(SUM(GREATEST(COALESCE((SELECT l4.balance_after FROM subscriber_ledger l4 WHERE l4.subscriber_id=s.id ORDER BY l4.id DESC LIMIT 1),0),0)),0) FROM subscribers s";$totalBalance=(int)$pdo->query($sumSql)->fetchColumn();
     $listParams=[];if($q!=='')$listParams['q']=$q;if($debtOnly)$listParams['debt']='1';if($statusFilter!=='all')$listParams['status']=$statusFilter;
     $pageUrl=static function(int $target)use($listParams):string{$p=$listParams;if($target>1)$p['page']=$target;return 'subscribers.php'.($p?'?'.http_build_query($p):'');};
-    panel_header('مشترکین','subscribers');?>
+    panel_header('مشتریان','subscribers');?>
     <div class="financial-workspace subscriber-directory-workspace panel-page-flow" data-visual-quality-page="subscriber_directory">
-    <?php if($isAdmin&&(isset($_GET['new'])||$edit)): ?><section class="card subscriber-editor-card"><div class="card-head"><div><h2><?= $editId?'ویرایش مشترک':'مشترک جدید' ?></h2><small>برای این مشترک، بدهی فاکتورها و پرداخت‌ها در همین حساب ثبت می‌شود.</small></div></div><div class="card-body"><?php if($formState['errors']): ?><div class="alert alert-error">اطلاعات مشخص‌شده را اصلاح کن.</div><?php endif; ?><form method="post" class="form-grid"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)($edit['id']??0) ?>"><div class="form-group"><label>نام یا عنوان</label><input class="form-control <?= form_field_error($formState,'name')?'is-invalid':'' ?>" name="name" value="<?= e($edit['name']??'') ?>" maxlength="160" required><?php if(form_field_error($formState,'name')): ?><small class="field-error"><?= e(form_field_error($formState,'name')) ?></small><?php endif; ?></div><div class="form-group"><label>شماره موبایل</label><input class="form-control ltr-input <?= form_field_error($formState,'mobile')?'is-invalid':'' ?>" dir="ltr" type="tel" inputmode="tel" autocomplete="tel" name="mobile" value="<?= e($edit['mobile']??'') ?>" maxlength="30" required><?php if(form_field_error($formState,'mobile')): ?><small class="field-error"><?= e(form_field_error($formState,'mobile')) ?></small><?php endif; ?></div><div class="form-group full"><label class="check-line"><input type="checkbox" name="active" <?= !isset($edit['active'])||(int)$edit['active']===1||isset($edit['active'])&&$edit['active']==='on'?'checked':'' ?>><span>فعال باشد</span></label></div><div class="form-group full actions"><button class="btn btn-primary" name="action" value="save">ذخیره</button><a class="btn btn-light" href="subscribers.php">انصراف</a></div></form></div></section><?php endif; ?>
+    <?php if($isAdmin&&(isset($_GET['new'])||$edit)): ?><section class="card subscriber-editor-card"><div class="card-head"><div><h2><?= $editId?'ویرایش مشتری':'مشتری جدید' ?></h2><small>برای این مشتری، بدهی فاکتورها و پرداخت‌ها در همین حساب ثبت می‌شود.</small></div></div><div class="card-body"><?php if($formState['errors']): ?><div class="alert alert-error">اطلاعات مشخص‌شده را اصلاح کن.</div><?php endif; ?><form method="post" class="form-grid"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)($edit['id']??0) ?>"><div class="form-group"><label>نام یا عنوان</label><input class="form-control <?= form_field_error($formState,'name')?'is-invalid':'' ?>" name="name" value="<?= e($edit['name']??'') ?>" maxlength="160" required><?php if(form_field_error($formState,'name')): ?><small class="field-error"><?= e(form_field_error($formState,'name')) ?></small><?php endif; ?></div><div class="form-group"><label>شماره موبایل</label><input class="form-control ltr-input <?= form_field_error($formState,'mobile')?'is-invalid':'' ?>" dir="ltr" type="tel" inputmode="tel" autocomplete="tel" name="mobile" value="<?= e($edit['mobile']??'') ?>" maxlength="30" required><?php if(form_field_error($formState,'mobile')): ?><small class="field-error"><?= e(form_field_error($formState,'mobile')) ?></small><?php endif; ?></div><div class="form-group full"><label class="check-line"><input type="checkbox" name="active" <?= !isset($edit['active'])||(int)$edit['active']===1||isset($edit['active'])&&$edit['active']==='on'?'checked':'' ?>><span>فعال باشد</span></label></div><div class="form-group full actions"><button class="btn btn-primary" name="action" value="save">ذخیره</button><a class="btn btn-light" href="subscribers.php">انصراف</a></div></form></div></section><?php endif; ?>
     <section class="card subscriber-directory-card financial-page-shell financial-index-surface" data-financial-index-shell="subscribers">
       <div class="financial-page-head">
-        <div class="financial-page-summary"><span>مانده کل بدهکاران</span><strong><?= e(toman($totalBalance)) ?></strong><small><?= e(fa_digits($total)) ?> <?= ($q!==''||$debtOnly||$statusFilter!=='all')?'نتیجه':'مشترک' ?></small></div>
-        <?php if($isAdmin): ?><a class="financial-head-action" href="?new=1"><?= ui_icon('add') ?><span>مشترک جدید</span></a><?php endif; ?>
+        <div class="financial-page-summary"><span>مانده کل بدهکاران</span><strong><?= e(toman($totalBalance)) ?></strong><small><?= e(fa_digits($total)) ?> <?= ($q!==''||$debtOnly||$statusFilter!=='all')?'نتیجه':'مشتری' ?></small></div>
+        <?php if($isAdmin): ?><a class="financial-head-action" href="?new=1"><?= ui_icon('add') ?><span>مشتری جدید</span></a><?php endif; ?>
       </div>
       <div class="financial-page-toolbar">
         <form method="get" class="subscriber-search-form financial-filter-form">
-          <label class="financial-search-field"><span class="sr-only">جست‌وجوی مشترکین</span><input class="form-control" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" name="q" value="<?= e($q) ?>" placeholder="جست‌وجوی نام یا موبایل"></label>
+          <label class="financial-search-field"><span class="sr-only">جست‌وجوی مشتریان</span><input class="form-control" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" name="q" value="<?= e($q) ?>" placeholder="جست‌وجوی نام یا موبایل"></label>
           <div class="subscriber-filter-row financial-filter-inline">
             <select class="form-control financial-compact-select" name="status" data-choice-mode="compact" data-auto-submit><option value="all" <?= $statusFilter==='all'?'selected':'' ?>>همه وضعیت‌ها</option><option value="active" <?= $statusFilter==='active'?'selected':'' ?>>فعال</option><option value="inactive" <?= $statusFilter==='inactive'?'selected':'' ?>>غیرفعال</option></select>
             <label class="financial-filter-toggle"><input type="checkbox" name="debt" value="1" <?= $debtOnly?'checked':'' ?> data-auto-submit><span>فقط بدهکار</span></label>
@@ -282,11 +282,11 @@ function render_subscribers_page(): void
         </form>
       </div>
       <div class="subscriber-card-list financial-list">
-        <?php if(!$rows): ?><div class="financial-empty-state"><strong>مشترکی پیدا نشد</strong><span><?= $q!==''||$debtOnly||$statusFilter!=='all'?'فیلترها یا عبارت جست‌وجو را تغییر بده.':'برای شروع، اولین مشترک را ثبت کن.' ?></span><?php if($q!==''||$debtOnly||$statusFilter!=='all'): ?><a class="document-open-link" href="subscribers.php">پاک‌کردن فیلترها</a><?php endif; ?></div><?php endif; ?>
+        <?php if(!$rows): ?><div class="financial-empty-state"><strong>مشتری پیدا نشد</strong><span><?= $q!==''||$debtOnly||$statusFilter!=='all'?'فیلترها یا عبارت جست‌وجو را تغییر بده.':'برای شروع، اولین مشتری را ثبت کن.' ?></span><?php if($q!==''||$debtOnly||$statusFilter!=='all'): ?><a class="document-open-link" href="subscribers.php">پاک‌کردن فیلترها</a><?php endif; ?></div><?php endif; ?>
         <?php foreach($rows as $row): ?><a class="subscriber-list-card financial-row" href="?view=<?= (int)$row['id'] ?>"><div class="subscriber-list-identity financial-row-main"><strong><?= e($row['name']) ?></strong><span dir="ltr"><?= e(fa_digits((string)$row['mobile'])) ?></span><small><?= $row['last_activity']?e(format_jalali_human_datetime((string)$row['last_activity'])):'بدون گردش' ?></small></div><div class="subscriber-list-balance financial-row-amount"><?php if((int)$row['balance']===0): ?><strong class="is-zero">بدون مانده</strong><?php else: ?><strong><?= e(toman((int)$row['balance'])) ?></strong><?php endif; ?><?php if((int)$row['active']!==1): ?><span class="panel-status-badge is-muted">غیرفعال</span><?php endif; ?></div><span class="subscriber-list-chevron"><?= ui_icon('chevron-left') ?></span></a><?php endforeach; ?>
       </div>
     </section>
-    <?php if($pages>1): ?><nav class="panel-pagination financial-pagination" aria-label="صفحه‌بندی مشترکین"><a class="btn btn-light" href="<?= e($pageUrl(max(1,$page-1))) ?>" <?= $page<=1?'aria-disabled="true" tabindex="-1"':'' ?>>قبلی</a><span>صفحه <?= e(fa_digits($page)) ?> از <?= e(fa_digits($pages)) ?></span><a class="btn btn-light" href="<?= e($pageUrl(min($pages,$page+1))) ?>" <?= $page>=$pages?'aria-disabled="true" tabindex="-1"':'' ?>>بعدی</a></nav><?php endif; ?>
+    <?php if($pages>1): ?><nav class="panel-pagination financial-pagination" aria-label="صفحه‌بندی مشتریان"><a class="btn btn-light" href="<?= e($pageUrl(max(1,$page-1))) ?>" <?= $page<=1?'aria-disabled="true" tabindex="-1"':'' ?>>قبلی</a><span>صفحه <?= e(fa_digits($page)) ?> از <?= e(fa_digits($pages)) ?></span><a class="btn btn-light" href="<?= e($pageUrl(min($pages,$page+1))) ?>" <?= $page>=$pages?'aria-disabled="true" tabindex="-1"':'' ?>>بعدی</a></nav><?php endif; ?>
     </div>
     <?php panel_footer();
 }

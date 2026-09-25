@@ -39,7 +39,7 @@ assert "order_acceptance_blocked_scope_for_station" in guest
 assert "action: 'update'" in menu and "action: 'append'" not in menu
 assert 'mergeDraftIntoMutableOrder' in menu and 'fullEditableOrderPayload' not in menu
 assert "submittedMode = explicitOrder ? 'edit' : appendTarget ? 'append' : 'create'" in menu
-assert "if (submittedMode === 'edit'" in menu and "submittedMode === 'append'" in menu
+assert "context.submittedMode === 'edit'" in menu and "context.submittedMode === 'append'" in menu
 
 # Confirmed-item decrease separates physical preparation from financial correction.
 assert 'prepared_before_adjustment' not in schema

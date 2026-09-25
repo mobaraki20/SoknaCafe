@@ -42,6 +42,38 @@ function guest_order_normalize_or_throw(array $data): array
     catch(InvalidArgumentException $e){ throw new GuestOrderException('invalid_order',$e->getMessage(),422); }
 }
 
+/** Validate a new guest-order draft against current catalog/service state without mutating business data. */
+function guest_order_validate_new_lines_locked(PDO $pdo,array $payload):array
+{
+    if(!$pdo->inTransaction())throw new LogicException('guest_order_validate_new_lines_locked requires an open transaction.');
+    $itemsById=order_catalog_items_locked($pdo,array_column($payload['items'],'id'));
+    $unavailable=[];$serviceBlocked=[];$priceChanges=[];
+    foreach($payload['items'] as $line){
+        $item=$itemsById[$line['id']]??null;
+        if(!order_catalog_item_is_orderable($item,'guest')){$unavailable[]=$item?(string)$item['name']:('آیتم '.fa_digits($line['id']));continue;}
+        $blockedScope=order_acceptance_blocked_scope_for_station((string)$item['preparation_station']);
+        if($blockedScope!==null){$serviceBlocked[]=['name'=>(string)$item['name'],'scope'=>$blockedScope];continue;}
+        if($line['expected_price']===null||(int)$line['expected_price']!==(int)$item['price'])$priceChanges[]=(string)$item['name'];
+    }
+    if($unavailable)throw new GuestOrderException('items_unavailable',customer_message('items_unavailable',['items'=>implode('، ',$unavailable)]),409,['items'=>$unavailable]);
+    if($serviceBlocked){
+        $names=array_values(array_unique(array_column($serviceBlocked,'name')));
+        $scopes=array_values(array_unique(array_column($serviceBlocked,'scope')));$scope=count($scopes)===1?$scopes[0]:'cafe';
+        throw new GuestOrderException('service_unavailable',order_acceptance_message($scope),409,['items'=>$names,'scope'=>$scope]);
+    }
+    if($priceChanges)throw new GuestOrderException('prices_changed',customer_message('prices_changed'),409,['items'=>$priceChanges]);
+
+    $orderItems=[];$total=0;
+    foreach($payload['items'] as $line){
+        $item=$itemsById[$line['id']];$mode=normalize_fulfillment_mode((string)($line['fulfillment_mode']??'dine_in'));
+        if(!order_catalog_item_allows_fulfillment($item,$mode))throw new GuestOrderException('takeaway_not_allowed','«'.(string)$item['name'].'» فقط داخل کافه قابل سرو است.',409,['item_id'=>(int)$item['id'],'item_name'=>(string)$item['name']]);
+        $unit=(int)$item['price'];$lineTotal=$unit*(int)$line['quantity'];$total+=$lineTotal;
+        $tax=tax_order_line_snapshot($pdo,(int)$item['id']);
+        $orderItems[]=['item_id'=>(int)$item['id'],'item_name'=>(string)$item['name'],'unit_price'=>$unit,'quantity'=>(int)$line['quantity'],'item_note'=>(string)$line['note'],'fulfillment_mode'=>$mode,'line_total'=>$lineTotal,'station'=>normalize_preparation_station((string)($item['preparation_station']??'cold_bar')),'sellable_kind'=>normalize_sellable_kind($item['sellable_kind']??null),'tax'=>$tax];
+    }
+    return ['lines'=>$orderItems,'total'=>$total];
+}
+
 /** Canonical business mutation. Caller MUST own an open transaction. */
 function guest_order_commit_tx(PDO $pdo, array $data): array
 {
@@ -92,32 +124,8 @@ function guest_order_commit_tx(PDO $pdo, array $data): array
         }
     }
 
-    $itemsById=order_catalog_items_locked($pdo,array_column($payload['items'],'id'));
-    $unavailable=[];$serviceBlocked=[];$priceChanges=[];
-    foreach($payload['items'] as $line){
-        $item=$itemsById[$line['id']]??null;
-        if(!order_catalog_item_is_orderable($item,'guest')){$unavailable[]=$item?(string)$item['name']:('آیتم '.fa_digits($line['id']));continue;}
-        $blockedScope=order_acceptance_blocked_scope_for_station((string)$item['preparation_station']);
-        if($blockedScope!==null){$serviceBlocked[]=['name'=>(string)$item['name'],'scope'=>$blockedScope];continue;}
-        if($line['expected_price']===null||(int)$line['expected_price']!==(int)$item['price'])$priceChanges[]=(string)$item['name'];
-    }
-    if($unavailable) throw new GuestOrderException('items_unavailable',customer_message('items_unavailable',['items'=>implode('، ',$unavailable)]),409,['items'=>$unavailable]);
-    if($serviceBlocked){
-        $names=array_values(array_unique(array_column($serviceBlocked,'name')));
-        $scopes=array_values(array_unique(array_column($serviceBlocked,'scope')));
-        $scope=count($scopes)===1?$scopes[0]:'cafe';
-        throw new GuestOrderException('service_unavailable',order_acceptance_message($scope),409,['items'=>$names,'scope'=>$scope]);
-    }
-    if($priceChanges) throw new GuestOrderException('prices_changed',customer_message('prices_changed'),409,['items'=>$priceChanges]);
-
-    $orderItems=[];$total=0;
-    foreach($payload['items'] as $line){
-        $item=$itemsById[$line['id']];
-        $mode=normalize_fulfillment_mode((string)($line['fulfillment_mode']??'dine_in'));
-        if(!order_catalog_item_allows_fulfillment($item,$mode)) throw new GuestOrderException('takeaway_not_allowed','«'.(string)$item['name'].'» فقط داخل کافه قابل سرو است.',409,['item_id'=>(int)$item['id'],'item_name'=>(string)$item['name']]);
-        $unit=(int)$item['price'];$lineTotal=$unit*(int)$line['quantity'];$total+=$lineTotal;
-        $orderItems[]=['item_id'=>(int)$item['id'],'item_name'=>(string)$item['name'],'unit_price'=>$unit,'quantity'=>(int)$line['quantity'],'item_note'=>(string)$line['note'],'fulfillment_mode'=>$mode,'line_total'=>$lineTotal,'station'=>normalize_preparation_station((string)($item['preparation_station']??'cold_bar')),'sellable_kind'=>normalize_sellable_kind($item['sellable_kind']??null)];
-    }
+    $validated=guest_order_validate_new_lines_locked($pdo,$payload);
+    $orderItems=(array)$validated['lines'];$total=(int)$validated['total'];
 
     $publicCode=strtoupper(bin2hex(random_bytes(8)));$business=business_assignment();
     $number=order_allocate_business_number($pdo,(string)$business['business_date']);
@@ -125,8 +133,8 @@ function guest_order_commit_tx(PDO $pdo, array $data): array
     $insert->execute([$publicCode,$payload['client_token'],$payload['device_token']!==''?$payload['device_token']:null,$tableId,$sessionId,$orderStatus,$payload['customer_note'],$total,$number,(string)$business['business_date'],(string)$business['shift_key'],(string)$business['shift_label'],(string)$business['cutoff']]);
     $orderId=(int)$pdo->lastInsertId();
 
-    $lineStmt=$pdo->prepare('INSERT INTO order_items(order_id,item_id,item_name,sellable_kind_snapshot,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total) VALUES(?,?,?,?,?,?,?,?,?,?,?)');
-    foreach($orderItems as $line)$lineStmt->execute([$orderId,$line['item_id'],$line['item_name'],$line['sellable_kind'],$line['unit_price'],$line['quantity'],$line['quantity'],$line['item_note'],$line['fulfillment_mode'],$line['station'],$line['line_total']]);
+    $lineStmt=$pdo->prepare('INSERT INTO order_items(order_id,item_id,item_name,sellable_kind_snapshot,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total,tax_policy_snapshot,tax_rate_bps_snapshot,tax_rate_version_id,tax_item_policy_version_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    foreach($orderItems as $line)$lineStmt->execute([$orderId,$line['item_id'],$line['item_name'],$line['sellable_kind'],$line['unit_price'],$line['quantity'],$line['quantity'],$line['item_note'],$line['fulfillment_mode'],$line['station'],$line['line_total'],$line['tax']['policy'],$line['tax']['rate_bps'],$line['tax']['rate_version_id'],$line['tax']['policy_version_id']]);
     $pdo->prepare('INSERT INTO order_status_history(order_id,from_status,to_status,actor_user_id) VALUES(?,NULL,?,NULL)')->execute([$orderId,$orderStatus]);
 
     $created=['id'=>$orderId,'public_code'=>$publicCode,'client_token'=>$payload['client_token'],'table_id'=>$tableId,'status'=>$orderStatus,'created_at'=>date('Y-m-d H:i:s')];

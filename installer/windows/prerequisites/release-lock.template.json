@@ -1,0 +1,23 @@
+{
+  "format": "sokna-windows-prerequisite-lock-v1",
+  "schema_version": 1,
+  "release_frozen": false,
+  "app_version": "REPLACE_WITH_EXACT_SOKNA_VERSION",
+  "artifacts": [
+    {
+      "id": "REPLACE_WITH_STABLE_ID",
+      "dependency": "php|apache|openssl|mariadb|vc_runtime",
+      "version": "REPLACE_WITH_EXACT_VERSION",
+      "filename": "REPLACE_WITH_EXACT_FILENAME",
+      "source_url": "https://REPLACE_WITH_APPROVED_IMMUTABLE_SOURCE",
+      "sha256": "REPLACE_WITH_64_HEX_SHA256",
+      "size": 1,
+      "installation": "manual-external",
+      "authenticode": {
+        "required": false,
+        "publisher_contains": ""
+      },
+      "instructions_fa": "راهنمای دقیق نصب آفلاین این پیش‌نیاز در زمان Freeze انتشار ثبت شود."
+    }
+  ]
+}

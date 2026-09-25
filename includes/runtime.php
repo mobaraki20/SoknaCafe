@@ -23,14 +23,22 @@ function sokna_runtime_local_hostname(): string
     return $configured !== '' ? strtolower($configured) : 'sokna.local';
 }
 
-function sokna_runtime_print_agent_service_name(): string
+function sokna_runtime_print_worker_service_name(): string
 {
     $configured = '';
     if (isset($GLOBALS['config']) && is_array($GLOBALS['config'])) {
-        $configured = trim((string)($GLOBALS['config']['app']['print_agent_service_name'] ?? ''));
+        $configured = trim((string)($GLOBALS['config']['app']['print_worker_service_name'] ?? ''));
+        if ($configured === '') $configured = trim((string)($GLOBALS['config']['app']['print_agent_service_name'] ?? ''));
     }
+    if ($configured === '') $configured = trim((string)(getenv('SOKNA_PRINT_WORKER_SERVICE') ?: ''));
     if ($configured === '') $configured = trim((string)(getenv('SOKNA_PRINT_AGENT_SERVICE') ?: ''));
-    return $configured !== '' ? $configured : 'Sokna Print Agent 6';
+    return $configured !== '' ? $configured : 'SoknaPrintWorker';
+}
+
+/** Legacy technical alias kept only while older runtime callers are migrated. */
+function sokna_runtime_print_agent_service_name(): string
+{
+    return sokna_runtime_print_worker_service_name();
 }
 
 function sokna_runtime_worker_registry(): array

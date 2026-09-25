@@ -1,0 +1,18 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal"
+     RequiredVersion="7.0.0">
+  <Bundle Name="SOKNA Cafe Setup"
+          Version="$(ProductVersion)"
+          Manufacturer="SOKNA"
+          UpgradeCode="{7E9981A3-9B61-4E49-9237-40B84AA65A8B}"
+          Compressed="yes">
+    <Log Prefix="SOKNA-Cafe-Setup" PathVariable="SoknaBundleLog" />
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication LicenseUrl="" Theme="hyperlinkLicense" LaunchTarget="[ProgramFiles64Folder]SOKNA\Cafe Local\Installer\SoknaSetupUi.exe" />
+    </BootstrapperApplication>
+    <Chain>
+      <!-- Prerequisite packages will be inserted here only after their ownership/version/hash contracts are frozen. -->
+      <MsiPackage Id="SoknaShellMsi" SourceFile="$(MsiPath)" Visible="yes" LogPathVariable="SoknaMsiLog" />
+    </Chain>
+  </Bundle>
+</Wix>

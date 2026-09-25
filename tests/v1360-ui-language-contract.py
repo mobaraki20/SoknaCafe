@@ -22,7 +22,7 @@ for rel, forbidden in {
 printing=read('admin/printing.php')
 for old in ['کلید اتصال Agent','دانلود Agent','جزئیات نسخه Agent','Agent آنلاین','مدیریت Agent','حذف Agent','Agent انتخاب نشده','Agent آفلاین','پرینتر Windows','هنوز به Windows متصل نشده','Preview ۵۸/۸۰ میلی‌متر','Import/Export']:
     need(old not in printing, f'printing manager UI still exposes implementation term: {old}')
-need('رایانه چاپ' in printing and 'سرویس چاپ' in printing, 'printing operational vocabulary missing')
+need('سرویس چاپ داخلی' in printing and 'پرینتر' in printing, 'printing operational vocabulary missing')
 printing_domain=read('includes/printing.php')
 need('Attempt فعال برای این Job' not in printing_domain, 'printing recovery error still exposes implementation vocabulary')
 

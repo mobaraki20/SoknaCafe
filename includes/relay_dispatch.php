@@ -13,6 +13,7 @@ final class SoknaRelayBusinessRejection extends RuntimeException
 function sokna_relay_dispatch_registry(): array
 {
     require_once __DIR__ . '/guest_order_service.php';
+    require_once __DIR__ . '/guest_order_quote_service.php';
     require_once __DIR__ . '/guest_order_manage_service.php';
     require_once __DIR__ . '/guest_order_status_service.php';
     require_once __DIR__ . '/guest_table_context_service.php';
@@ -28,6 +29,15 @@ function sokna_relay_dispatch_registry(): array
                     $e->errorCode,
                     array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details)
                 );
+            }
+        },
+        'guest_order.quote' => static function(PDO $pdo, array $envelope): array {
+            try {
+                return guest_order_quote_tx($pdo, is_array($envelope['payload'] ?? null) ? $envelope['payload'] : []);
+            } catch (GuestOrderEditException $e) {
+                throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
+            } catch (GuestOrderException $e) {
+                throw new SoknaRelayBusinessRejection($e->errorCode,array_merge(['success'=>false,'code'=>$e->errorCode,'message'=>$e->getMessage()],$e->details));
             }
         },
         'guest_order.list' => static function(PDO $pdo, array $envelope): array {

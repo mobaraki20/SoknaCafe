@@ -81,10 +81,10 @@ function report_valid_settlement_sql(string $alias = 'sr'): string
 function report_settlement_line_source_sql(string $alias = 'sale_line'): string
 {
     $a = preg_replace('/[^a-zA-Z0-9_]/', '', $alias) ?: 'sale_line';
-    return "(SELECT sl.settlement_id,sl.order_item_id,sl.order_id,sl.item_id_snapshot item_id,sl.item_name_snapshot item_name,sl.unit_price_snapshot unit_price,sl.quantity,sl.gross_amount line_total,sl.discount_amount,sl.net_amount
+    return "(SELECT sl.settlement_id,sl.order_item_id,sl.order_id,sl.item_id_snapshot item_id,sl.item_name_snapshot item_name,sl.unit_price_snapshot unit_price,sl.quantity,sl.gross_amount line_total,sl.discount_amount,sl.net_amount,sl.taxable_amount,sl.tax_rate_bps,sl.tax_amount,sl.final_amount
         FROM settlement_record_lines sl
         UNION ALL
-        SELECT sr0.id settlement_id,oi.id order_item_id,o.id order_id,oi.item_id,oi.item_name,oi.unit_price,oi.quantity,oi.line_total,0 discount_amount,oi.line_total net_amount
+        SELECT sr0.id settlement_id,oi.id order_item_id,o.id order_id,oi.item_id,oi.item_name,oi.unit_price,oi.quantity,oi.line_total,0 discount_amount,oi.line_total net_amount,0 taxable_amount,0 tax_rate_bps,0 tax_amount,oi.line_total final_amount
         FROM settlement_records sr0 JOIN orders o ON o.session_id=sr0.session_id JOIN order_items oi ON oi.order_id=o.id
         WHERE sr0.allocation_version=0) $a";
 }

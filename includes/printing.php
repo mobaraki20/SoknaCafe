@@ -1,250 +1,63 @@
 <?php
 declare(strict_types=1);
 
-function print_agent_distribution_repository(): string
+function print_worker_component_metadata(): array
 {
-    return 'mobaraki20/Pagent';
-}
-
-function print_agent_release_cache_ttl_seconds(): int
-{
-    return 6 * 3600;
-}
-
-function print_agent_release_cache_file(): string
-{
-    return dirname(__DIR__) . '/storage/cache/print-agent-release.json';
-}
-
-/**
- * Last known stable release embedded only as a fail-soft bootstrap.
- * Normal operation resolves the latest published full release from GitHub.
- */
-function print_agent_release_fallback(): array
-{
-    $version = '6.2.2';
-    $tag = 'v' . $version;
-    $filename = 'Sokna-Print-Agent-' . $version . '-Setup.exe';
-    $repository = print_agent_distribution_repository();
-    return [
-        'version' => $version,
-        'tag' => $tag,
-        'setup_filename' => $filename,
-        'download_url' => 'https://github.com/' . $repository . '/releases/download/' . rawurlencode($tag) . '/' . rawurlencode($filename),
-        'release_url' => 'https://github.com/' . $repository . '/releases/tag/' . rawurlencode($tag),
-        'published_at' => '',
-        'asset_sha256' => '',
-        'source' => 'fallback',
-        'checked_at' => 0,
-    ];
-}
-
-/** @return array{status:int,body:string,error:string} */
-function print_agent_release_http_get(string $url, int $timeoutSeconds = 3): array
-{
-    $headers = [
-        'Accept: application/vnd.github+json',
-        'User-Agent: Sokna-Cafe/' . app_release_version(),
-    ];
-    if (function_exists('curl_init')) {
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CONNECTTIMEOUT => min(2, $timeoutSeconds),
-            CURLOPT_TIMEOUT => $timeoutSeconds,
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_FOLLOWLOCATION => false,
-        ]);
-        $response = curl_exec($ch);
-        $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        $error = $response === false ? trim((string)curl_error($ch)) : '';
-        curl_close($ch);
-        return ['status' => $status, 'body' => is_string($response) ? $response : '', 'error' => $error];
-    }
-
-    $context = stream_context_create([
-        'http' => [
-            'method' => 'GET',
-            'header' => implode("\r\n", $headers),
-            'timeout' => $timeoutSeconds,
-            'ignore_errors' => true,
-            'follow_location' => 0,
-        ],
-        'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
-    ]);
-    $body = @file_get_contents($url, false, $context);
-    $status = 0;
-    foreach (($http_response_header ?? []) as $line) {
-        if (preg_match('#^HTTP/\S+\s+(\d{3})#', $line, $match)) $status = (int)$match[1];
-    }
-    return [
-        'status' => $status,
-        'body' => is_string($body) ? $body : '',
-        'error' => $body === false ? 'github_request_failed' : '',
-    ];
-}
-
-function print_agent_release_normalize(array $release, int $checkedAt): ?array
-{
-    if (($release['draft'] ?? false) === true || ($release['prerelease'] ?? false) === true) return null;
-    $tag = trim((string)($release['tag_name'] ?? ''));
-    if (!preg_match('/^v?(\d+\.\d+\.\d+)$/', $tag, $match)) return null;
-    $version = $match[1];
-    $filename = 'Sokna-Print-Agent-' . $version . '-Setup.exe';
-    $asset = null;
-    foreach ((array)($release['assets'] ?? []) as $candidate) {
-        if (!is_array($candidate)) continue;
-        if ((string)($candidate['name'] ?? '') !== $filename) continue;
-        if (isset($candidate['state']) && (string)$candidate['state'] !== 'uploaded') continue;
-        $asset = $candidate;
-        break;
-    }
-    if (!is_array($asset)) return null;
-
-    $repository = print_agent_distribution_repository();
-    $digest = trim((string)($asset['digest'] ?? ''));
-    $sha256 = preg_match('/^sha256:([a-f0-9]{64})$/i', $digest, $digestMatch) ? strtolower($digestMatch[1]) : '';
-    return [
-        'version' => $version,
-        'tag' => $tag,
-        'setup_filename' => $filename,
-        // Derive URLs from the fixed repository + validated semver/asset name instead of trusting arbitrary API URLs.
-        'download_url' => 'https://github.com/' . $repository . '/releases/download/' . rawurlencode($tag) . '/' . rawurlencode($filename),
-        'release_url' => 'https://github.com/' . $repository . '/releases/tag/' . rawurlencode($tag),
-        'published_at' => trim((string)($release['published_at'] ?? '')),
-        'asset_sha256' => $sha256,
-        'source' => 'github',
-        'checked_at' => $checkedAt,
-    ];
-}
-
-function print_agent_release_cache_read(string $file): ?array
-{
-    if (!is_file($file)) return null;
-    $raw = @file_get_contents($file);
-    if (!is_string($raw) || $raw === '') return null;
-    $decoded = json_decode($raw, true);
-    if (!is_array($decoded)) return null;
-    $normalized = print_agent_release_normalize([
-        'tag_name' => (string)($decoded['tag'] ?? ''),
-        'draft' => false,
-        'prerelease' => false,
-        'published_at' => (string)($decoded['published_at'] ?? ''),
-        'assets' => [[
-            'name' => (string)($decoded['setup_filename'] ?? ''),
-            'state' => 'uploaded',
-            'digest' => ($decoded['asset_sha256'] ?? '') !== '' ? 'sha256:' . (string)$decoded['asset_sha256'] : '',
-        ]],
-    ], max(0, (int)($decoded['checked_at'] ?? 0)));
-    if ($normalized === null) return null;
-    $normalized['source'] = 'cache';
-    return $normalized;
-}
-
-function print_agent_release_cache_write(string $file, array $metadata): void
-{
-    $directory = dirname($file);
-    if (!is_dir($directory) && !@mkdir($directory, 0700, true) && !is_dir($directory)) return;
-    if (!is_writable($directory)) return;
-    $payload = json_encode([
-        'version' => (string)$metadata['version'],
-        'tag' => (string)$metadata['tag'],
-        'setup_filename' => (string)$metadata['setup_filename'],
-        'published_at' => (string)($metadata['published_at'] ?? ''),
-        'asset_sha256' => (string)($metadata['asset_sha256'] ?? ''),
-        'checked_at' => (int)($metadata['checked_at'] ?? time()),
-    ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-    if (!is_string($payload)) return;
-    $temp = $file . '.tmp-' . bin2hex(random_bytes(4));
-    if (@file_put_contents($temp, $payload . "\n", LOCK_EX) === false) return;
-    @chmod($temp, 0600);
-    if (!@rename($temp, $file)) @unlink($temp);
-}
-
-/**
- * Resolve latest stable Agent release with a six-hour cache and stale-cache fallback.
- * A custom fetcher/cache path exists for deterministic contract tests; production callers use defaults.
- *
- * @param null|callable(string):array{status:int,body:string,error?:string} $httpGet
- */
-function print_agent_release_metadata(bool $forceRefresh = false, ?callable $httpGet = null, ?string $cacheFile = null): array
-{
-    static $runtime = null;
-    $productionCall = $httpGet === null && $cacheFile === null && !$forceRefresh;
-    if ($productionCall && is_array($runtime)) return $runtime;
-
-    $cacheFile ??= print_agent_release_cache_file();
-    $now = time();
-    $cached = print_agent_release_cache_read($cacheFile);
-    if (!$forceRefresh && is_array($cached) && ($now - (int)$cached['checked_at']) < print_agent_release_cache_ttl_seconds()) {
-        if ($productionCall) $runtime = $cached;
-        return $cached;
-    }
-
-    $fetch = $httpGet ?? static fn(string $url): array => print_agent_release_http_get($url, 3);
-    $url = 'https://api.github.com/repos/' . print_agent_distribution_repository() . '/releases/latest';
-    try {
-        $response = $fetch($url);
-        $status = (int)($response['status'] ?? 0);
-        $body = (string)($response['body'] ?? '');
-        if ($status === 200 && $body !== '') {
-            $decoded = json_decode($body, true);
-            if (is_array($decoded)) {
-                $metadata = print_agent_release_normalize($decoded, $now);
-                if (is_array($metadata)) {
-                    print_agent_release_cache_write($cacheFile, $metadata);
-                    if ($productionCall) $runtime = $metadata;
-                    return $metadata;
-                }
-            }
+    static $metadata = null;
+    if (is_array($metadata)) return $metadata;
+    $file = dirname(__DIR__) . '/runtime/print-worker/source/PROVENANCE.json';
+    $version = '6.2.5';
+    $sourceSha256 = '';
+    if (is_file($file)) {
+        $decoded = json_decode((string)@file_get_contents($file), true);
+        if (is_array($decoded)) {
+            $candidate = trim((string)($decoded['upstream_version'] ?? ''));
+            if (preg_match('/^\d+\.\d+\.\d+$/', $candidate)) $version = $candidate;
+            $sourceSha256 = trim((string)($decoded['upstream_archive_sha256'] ?? ''));
         }
-    } catch (Throwable) {
-        // Fail soft: stale last-known-good or embedded bootstrap below.
     }
-
-    if (is_array($cached)) {
-        $cached['source'] = 'cache-stale';
-        if ($productionCall) $runtime = $cached;
-        return $cached;
-    }
-    $fallback = print_agent_release_fallback();
-    if ($productionCall) $runtime = $fallback;
-    return $fallback;
+    return $metadata = [
+        'version' => $version,
+        'source_sha256' => $sourceSha256,
+        'ownership' => 'sokna-local-internal',
+    ];
 }
 
+/** Protocol-v4 compatibility alias. The binary is now an internal SOKNA component. */
 function print_agent_recommended_version(): string
 {
-    return (string)print_agent_release_metadata()['version'];
+    return (string)print_worker_component_metadata()['version'];
 }
-
-function print_agent_release_tag(): string
-{
-    return (string)print_agent_release_metadata()['tag'];
-}
-
-function print_agent_setup_filename(): string
-{
-    return (string)print_agent_release_metadata()['setup_filename'];
-}
-
-function print_agent_download_url(): string
-{
-    return (string)print_agent_release_metadata()['download_url'];
-}
-
-function print_agent_release_page_url(): string
-{
-    return (string)print_agent_release_metadata()['release_url'];
-}
-
 
 function print_agent_minimum_version(): string
 {
-    return '6.0.0';
+    return (string)print_worker_component_metadata()['version'];
 }
 
+function print_internal_worker_agent_id(PDO $pdo, bool $forUpdate = false): int
+{
+    $sql = "SELECT setting_value FROM settings WHERE setting_key='print_internal_worker_agent_id' LIMIT 1";
+    if ($forUpdate) $sql .= ' FOR UPDATE';
+    $value = trim((string)($pdo->query($sql)->fetchColumn() ?: ''));
+    return ctype_digit($value) ? (int)$value : 0;
+}
+
+function print_internal_worker_agent(PDO $pdo, bool $forUpdate = false): ?array
+{
+    $agentId = print_internal_worker_agent_id($pdo, $forUpdate);
+    if ($agentId < 1) return null;
+    $sql = 'SELECT * FROM print_agents WHERE id=? AND active=1 AND retired_at IS NULL';
+    if ($forUpdate) $sql .= ' FOR UPDATE';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$agentId]);
+    return $stmt->fetch() ?: null;
+}
+
+function print_agent_needs_update(array $agent): bool
+{
+    $version = trim((string)($agent['agent_version'] ?? ''));
+    return $version !== '' && version_compare($version, print_agent_recommended_version(), '<');
+}
 
 function print_database_time_to_utc(?string $databaseTime): ?string
 {
@@ -253,12 +66,6 @@ function print_database_time_to_utc(?string $databaseTime): ?string
     $dt=DateTimeImmutable::createFromFormat('Y-m-d H:i:s',$databaseTime,$zone);
     if(!$dt){try{$dt=new DateTimeImmutable($databaseTime,$zone);}catch(Throwable){return null;}}
     return $dt->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s.v\Z');
-}
-
-function print_agent_needs_update(array $agent): bool
-{
-    $version = trim((string)($agent['agent_version'] ?? ''));
-    return $version !== '' && version_compare($version, print_agent_recommended_version(), '<');
 }
 
 /** Built-in destinations are defaults, not a closed allow-list. */
@@ -273,13 +80,13 @@ function print_destination_definitions(): array
 function print_job_error_human(string $code, string $raw=''): string
 {
     return match($code){
-        'reservation_retry_exhausted'=>'رایانه چاپ یا پرینتر چند بار درخواست را نپذیرفت؛ اتصال و صف چاپ را بررسی کنید.',
+        'reservation_retry_exhausted'=>'سرویس چاپ داخلی یا پرینتر چند بار درخواست را نپذیرفت؛ اتصال و صف چاپ را بررسی کنید.',
         'destination_inactive'=>'مقصد چاپ غیرفعال است و درخواست تا رفع تنظیمات نگه داشته شده است.',
-        'destination_unmapped'=>'برای این مقصد، رایانه چاپ یا پرینتر مشخص نشده است.',
-        'agent_disabled'=>'رایانه چاپ متصل به این مقصد غیرفعال است.',
+        'destination_unmapped'=>'برای این مقصد، پرینتر مشخص نشده است.',
+        'agent_disabled'=>'سرویس چاپ داخلی این مقصد آماده نیست.',
         'preparation_area_unmapped'=>'بخش آماده‌سازی به مقصد چاپ مشخصی متصل نیست.',
-        'recovery_hold'=>'درخواست چاپ روی رایانه چاپ ثبت شده، اما ادامه خودکار ممکن است چاپ تکراری ایجاد کند.',
-        'reservation_expired'=>'رایانه چاپ درخواست را در زمان مقرر نپذیرفت.',
+        'recovery_hold'=>'درخواست چاپ روی سرویس چاپ ثبت شده، اما ادامه خودکار ممکن است چاپ تکراری ایجاد کند.',
+        'reservation_expired'=>'سرویس چاپ درخواست را در زمان مقرر نپذیرفت.',
         'operator_unknown'=>'نتیجه چاپ مشخص نیست؛ وضعیت پرینتر را بررسی کنید.',
         'cancelled_by_admin'=>'درخواست توسط مدیر لغو شده است.',
         default=>trim($raw)!==''?'چاپ انجام نشد؛ جزئیات فنی را بررسی کنید.':'چاپ انجام نشد.',
@@ -291,8 +98,8 @@ function print_job_status_labels(): array
     return [
         'pending' => 'در صف چاپ',
         'blocked' => 'نیازمند تنظیم',
-        'reserved' => 'در انتظار پذیرش رایانه چاپ',
-        'claimed' => 'تحویل به رایانه چاپ',
+        'reserved' => 'در انتظار پذیرش سرویس چاپ',
+        'claimed' => 'تحویل به سرویس چاپ',
         'submitted' => 'ارسال به چاپگر انجام شد',
         'failed' => 'ناموفق',
         'unknown' => 'نتیجه نامشخص',
@@ -362,20 +169,20 @@ function print_destination_block_reason(array $destination): ?string
 
 function print_agent_runtime_readiness(array $agent,int $heartbeatMaxAgeSeconds=45,int $discoveryMaxAgeSeconds=90): array
 {
-    if ((int)($agent['active'] ?? 0) !== 1) return ['eligible'=>false,'code'=>'inactive','message'=>'رایانه چاپ غیرفعال است','heartbeat_age_seconds'=>null,'discovery_age_seconds'=>null,'printer_discovery_at'=>null];
-    if (!empty($agent['retired_at'])) return ['eligible'=>false,'code'=>'retired','message'=>'رایانه چاپ بازنشسته شده است','heartbeat_age_seconds'=>null,'discovery_age_seconds'=>null,'printer_discovery_at'=>null];
+    if ((int)($agent['active'] ?? 0) !== 1) return ['eligible'=>false,'code'=>'inactive','message'=>'سرویس چاپ داخلی غیرفعال است','heartbeat_age_seconds'=>null,'discovery_age_seconds'=>null,'printer_discovery_at'=>null];
+    if (!empty($agent['retired_at'])) return ['eligible'=>false,'code'=>'retired','message'=>'هویت سرویس چاپ داخلی بازنشسته شده است','heartbeat_age_seconds'=>null,'discovery_age_seconds'=>null,'printer_discovery_at'=>null];
     $heartbeatRaw=trim((string)($agent['last_heartbeat_at']??''));
-    if($heartbeatRaw==='')return ['eligible'=>false,'code'=>'heartbeat_missing','message'=>'از این رایانه هنوز Heartbeat معتبر دریافت نشده است','heartbeat_age_seconds'=>null,'discovery_age_seconds'=>null,'printer_discovery_at'=>null];
+    if($heartbeatRaw==='')return ['eligible'=>false,'code'=>'heartbeat_missing','message'=>'از سرویس چاپ داخلی هنوز Heartbeat معتبر دریافت نشده است','heartbeat_age_seconds'=>null,'discovery_age_seconds'=>null,'printer_discovery_at'=>null];
     $heartbeatTs=strtotime($heartbeatRaw);$heartbeatAge=$heartbeatTs===false?null:max(0,time()-$heartbeatTs);
-    if($heartbeatAge===null||$heartbeatAge>$heartbeatMaxAgeSeconds)return ['eligible'=>false,'code'=>'heartbeat_stale','message'=>'آخرین Heartbeat رایانه چاپ تازه نیست','heartbeat_age_seconds'=>$heartbeatAge,'discovery_age_seconds'=>null,'printer_discovery_at'=>null];
+    if($heartbeatAge===null||$heartbeatAge>$heartbeatMaxAgeSeconds)return ['eligible'=>false,'code'=>'heartbeat_stale','message'=>'آخرین Heartbeat سرویس چاپ داخلی تازه نیست','heartbeat_age_seconds'=>$heartbeatAge,'discovery_age_seconds'=>null,'printer_discovery_at'=>null];
     $health=json_decode((string)($agent['health_json']??'{}'),true);if(!is_array($health))$health=[];
     $discoveryRaw=trim((string)($health['printer_discovery_at']??''));
-    if($discoveryRaw==='')return ['eligible'=>false,'code'=>'discovery_missing','message'=>'فهرست پرینترهای رایانه هنوز دریافت نشده است','heartbeat_age_seconds'=>$heartbeatAge,'discovery_age_seconds'=>null,'printer_discovery_at'=>null];
+    if($discoveryRaw==='')return ['eligible'=>false,'code'=>'discovery_missing','message'=>'فهرست پرینترهای Windows هنوز دریافت نشده است','heartbeat_age_seconds'=>$heartbeatAge,'discovery_age_seconds'=>null,'printer_discovery_at'=>null];
     $discoveryTs=strtotime($discoveryRaw);$discoveryAge=$discoveryTs===false?null:max(0,time()-$discoveryTs);
-    if($discoveryAge===null||$discoveryAge>$discoveryMaxAgeSeconds)return ['eligible'=>false,'code'=>'discovery_stale','message'=>'فهرست پرینترهای رایانه تازه نیست','heartbeat_age_seconds'=>$heartbeatAge,'discovery_age_seconds'=>$discoveryAge,'printer_discovery_at'=>$discoveryRaw];
+    if($discoveryAge===null||$discoveryAge>$discoveryMaxAgeSeconds)return ['eligible'=>false,'code'=>'discovery_stale','message'=>'فهرست پرینترهای Windows تازه نیست','heartbeat_age_seconds'=>$heartbeatAge,'discovery_age_seconds'=>$discoveryAge,'printer_discovery_at'=>$discoveryRaw];
     $printers=json_decode((string)($agent['printers_json']??'[]'),true);
-    if(!is_array($printers)||!array_is_list($printers))return ['eligible'=>false,'code'=>'inventory_invalid','message'=>'فهرست پرینترهای رایانه معتبر نیست','heartbeat_age_seconds'=>$heartbeatAge,'discovery_age_seconds'=>$discoveryAge,'printer_discovery_at'=>$discoveryRaw];
-    return ['eligible'=>true,'code'=>'ok','message'=>'رایانه و فهرست پرینترها تازه هستند','heartbeat_age_seconds'=>$heartbeatAge,'discovery_age_seconds'=>$discoveryAge,'printer_discovery_at'=>$discoveryRaw];
+    if(!is_array($printers)||!array_is_list($printers))return ['eligible'=>false,'code'=>'inventory_invalid','message'=>'فهرست پرینترهای Windows معتبر نیست','heartbeat_age_seconds'=>$heartbeatAge,'discovery_age_seconds'=>$discoveryAge,'printer_discovery_at'=>$discoveryRaw];
+    return ['eligible'=>true,'code'=>'ok','message'=>'سرویس چاپ و فهرست پرینترها تازه هستند','heartbeat_age_seconds'=>$heartbeatAge,'discovery_age_seconds'=>$discoveryAge,'printer_discovery_at'=>$discoveryRaw];
 }
 
 function print_agent_queue_readiness(array $agent, string $queueName, int $maxAgeSeconds = 45): array
@@ -393,7 +200,7 @@ function print_agent_queue_readiness(array $agent, string $queueName, int $maxAg
         if(bool_from_mixed($printer['error']??false))return ['known'=>true,'ready'=>false,'reason'=>'queue_error','label'=>'صف چاپ خطا دارد','printer_discovery_at'=>$runtime['printer_discovery_at']];
         return ['known'=>true,'ready'=>true,'reason'=>'ok','label'=>'آماده','printer_discovery_at'=>$runtime['printer_discovery_at']];
     }
-    return ['known'=>false,'ready'=>false,'reason'=>'queue_not_found','label'=>'صف چاپ روی رایانه انتخاب‌شده پیدا نشد','printer_discovery_at'=>$runtime['printer_discovery_at']];
+    return ['known'=>false,'ready'=>false,'reason'=>'queue_not_found','label'=>'پرینتر در Windows پیدا نشد','printer_discovery_at'=>$runtime['printer_discovery_at']];
 }
 
 function print_agent_queue_ready(array $agent, string $queueName, int $maxAgeSeconds = 45): bool
@@ -508,6 +315,8 @@ function print_template_design_defaults(string $templateKey): array
             'items'=>'اقلام',
             'subtotal'=>'جمع اقلام',
             'discount'=>'تخفیف',
+            'taxable'=>'مبلغ مشمول مالیات',
+            'tax'=>'مالیات',
             'total'=>'جمع نهایی',
             'settlement'=>'نحوه ثبت',
         ],
@@ -675,7 +484,7 @@ function print_template_sample_data(string $templateKey, string $scenario = 'def
     }
     $discount = $scenario === 'discount' ? 200000 : 0;
     return [
-        'document_kind'=>'customer_final','title'=>'کافه سکنا','badge'=>'فاکتور نهایی','document_status'=>'پرداخت‌شده · تسویه مستقیم','table_name'=>'میز ۸','invoice_number'=>'فاکتور ۲۸','display_date'=>'۱۶ مرداد ۱۴۰۵ · ۱۴:۳۶','actor_name'=>'مدیر کافه','settlement_label'=>'تسویه مستقیم','settlement_party'=>null,
+        'document_kind'=>'customer_final','title'=>'کافه سکنا','badge'=>'فاکتور نهایی','document_status'=>'پرداخت‌شده · تسویه','table_name'=>'میز ۸','invoice_number'=>'فاکتور ۲۸','display_date'=>'۱۶ مرداد ۱۴۰۵ · ۱۴:۳۶','actor_name'=>'مدیر کافه','settlement_label'=>'تسویه','settlement_party'=>null,
         'sections'=>[['title'=>'اقلام فاکتور','items'=>[
             ['name'=>'پاستا چیکن آلفردو','quantity'=>2,'unit_price'=>580000,'line_total'=>1160000],
             ['name'=>'آب دوغ خیار','quantity'=>1,'unit_price'=>260000,'line_total'=>260000],
@@ -1071,20 +880,25 @@ function print_session_invoice_snapshot(PDO $pdo, int $sessionId): array
     $sessionStmt->execute([$sessionId]);
     $session = $sessionStmt->fetch();
     if (!$session) throw new RuntimeException('حساب میز پیدا نشد.');
-
     $ordersStmt = $pdo->prepare("SELECT id,status,total_amount,created_at FROM orders WHERE session_id=? AND status IN('accounted','completed') ORDER BY created_at,id");
     $ordersStmt->execute([$sessionId]);
     $orders = $ordersStmt->fetchAll();
     if (!$orders) throw new RuntimeException('حساب تأییدشده‌ای برای چاپ وجود ندارد.');
-    $ids = array_map('intval', array_column($orders, 'id'));
-    $ph = implode(',', array_fill(0, count($ids), '?'));
-    $lineStmt = $pdo->prepare("SELECT oi.item_name,SUM(oi.quantity) quantity,oi.unit_price,SUM(oi.line_total) line_total,MIN(oi.id) first_id FROM order_items oi WHERE oi.order_id IN($ph) AND oi.quantity>0 GROUP BY oi.item_name,oi.unit_price ORDER BY first_id");
-    $lineStmt->execute($ids);
-    $items = $lineStmt->fetchAll();
-    $subtotal = array_sum(array_map(static fn(array $o): int => (int)$o['total_amount'], $orders));
-    $discount = $session['checkout_discount'] !== null ? (int)$session['checkout_discount'] : invoice_discount_amount($subtotal, (string)($session['discount_type'] ?? ''), (int)($session['discount_value'] ?? 0));
-    $total = $session['checkout_total'] !== null ? (int)$session['checkout_total'] : max(0, $subtotal - $discount);
-    return ['session' => $session, 'items' => $items, 'subtotal' => $subtotal, 'discount' => $discount, 'total' => $total];
+    $ids=array_map('intval',array_column($orders,'id'));$ph=implode(',',array_fill(0,count($ids),'?'));
+    $rawStmt=$pdo->prepare("SELECT oi.id order_item_id,oi.item_name,oi.quantity,oi.unit_price,oi.line_total,oi.tax_policy_snapshot,oi.tax_rate_bps_snapshot FROM order_items oi WHERE oi.order_id IN($ph) AND oi.quantity>0 ORDER BY oi.id");
+    $rawStmt->execute($ids);$raw=$rawStmt->fetchAll();
+    $subtotal=array_sum(array_map(static fn(array $o):int=>(int)$o['total_amount'],$orders));
+    $discount=$session['checkout_discount']!==null?(int)$session['checkout_discount']:invoice_discount_amount($subtotal,(string)($session['discount_type']??''),(int)($session['discount_value']??0));
+    $calc=tax_calculate_invoice_lines($raw,$discount);
+    $items=[];$groups=[];
+    foreach($raw as $row){$key=(string)$row['item_name']."\0".(string)$row['unit_price'];if(!isset($groups[$key]))$groups[$key]=['item_name'=>(string)$row['item_name'],'quantity'=>0,'unit_price'=>(int)$row['unit_price'],'line_total'=>0];$groups[$key]['quantity']+=(int)$row['quantity'];$groups[$key]['line_total']+=(int)$row['line_total'];}
+    $items=array_values($groups);
+    $taxable=$session['checkout_taxable']!==null?(int)$session['checkout_taxable']:(int)$calc['taxable'];
+    $tax=$session['checkout_tax']!==null?(int)$session['checkout_tax']:(int)$calc['tax'];
+    $total=$session['checkout_total']!==null?(int)$session['checkout_total']:(int)$calc['total'];
+    $taxRates=[];
+    foreach((array)$calc['lines'] as $line){$rate=(int)($line['tax_rate_bps_snapshot']??0);if((int)($line['invoice_tax_amount']??0)>0&&$rate>0)$taxRates[$rate]=true;}
+    return ['session'=>$session,'items'=>$items,'subtotal'=>$subtotal,'discount'=>(int)$calc['discount'],'net'=>(int)$calc['net'],'taxable'=>$taxable,'tax'=>$tax,'tax_rates_bps'=>array_map('intval',array_keys($taxRates)),'total'=>$total];
 }
 
 function print_invoice_party(PDO $pdo, int $sessionId, string $destination): ?array
@@ -1099,7 +913,7 @@ function print_invoice_party(PDO $pdo, int $sessionId, string $destination): ?ar
         $stmt = $pdo->prepare("SELECT s.name,s.mobile,sl.balance_after FROM subscriber_ledger sl JOIN subscribers s ON s.id=sl.subscriber_id WHERE sl.table_session_id=? AND sl.entry_type='invoice' ORDER BY sl.id DESC LIMIT 1");
         $stmt->execute([$sessionId]);
         $row = $stmt->fetch();
-        return $row ? ['label'=>'مشترک','name'=>(string)$row['name'],'detail'=>(string)$row['mobile'],'balance_after'=>(int)$row['balance_after']] : null;
+        return $row ? ['label'=>'مشتری','name'=>(string)$row['name'],'detail'=>(string)$row['mobile'],'balance_after'=>(int)$row['balance_after']] : null;
     }
     return null;
 }
@@ -1125,9 +939,9 @@ function print_invoice_payload(PDO $pdo, int $sessionId, bool $final, ?string $s
         if (!is_array($snapshot)) throw new RuntimeException('اطلاعات ثبت‌شده فاکتور نهایی معتبر نیست.');
         $destination = (string)$record['destination'];
         $badges = [
-            'direct' => 'فاکتور نهایی — تسویه مستقیم',
+            'direct' => 'فاکتور نهایی — تسویه',
             'accommodation' => 'فاکتور نهایی کافه — ثبت در حساب اقامتگاه',
-            'subscriber' => 'فاکتور نهایی کافه — ثبت در حساب مشترک',
+            'subscriber' => 'فاکتور نهایی کافه — ثبت در حساب مشتری',
         ];
         $items = [];
         foreach ((array)($snapshot['items'] ?? []) as $index => $row) {
@@ -1137,8 +951,19 @@ function print_invoice_payload(PDO $pdo, int $sessionId, bool $final, ?string $s
                 'quantity' => (int)($row['quantity'] ?? 0),
                 'unit_price' => (int)($row['unit_price'] ?? 0),
                 'line_total' => (int)($row['line_total'] ?? 0),
+                'line_discount' => (int)($row['line_discount'] ?? 0),
+                'line_net' => (int)($row['line_net'] ?? ($row['line_total'] ?? 0)),
+                'taxable_amount' => (int)($row['taxable_amount'] ?? 0),
+                'tax_rate_bps' => (int)($row['tax_rate_bps'] ?? 0),
+                'tax_amount' => (int)($row['tax_amount'] ?? 0),
+                'line_final' => (int)($row['line_final'] ?? ($row['line_total'] ?? 0)),
                 'note' => $row['note'] ?? null,
             ];
+        }
+        $taxRates = [];
+        foreach ((array)($snapshot['items'] ?? []) as $row) {
+            $rate=(int)($row['tax_rate_bps'] ?? 0);
+            if ((int)($row['tax_amount'] ?? 0) > 0 && $rate > 0) $taxRates[$rate]=true;
         }
         return [
             'document_kind' => 'customer_final',
@@ -1156,6 +981,9 @@ function print_invoice_payload(PDO $pdo, int $sessionId, bool $final, ?string $s
             'sections' => [['title' => (string)($customerLabels['items'] ?? 'اقلام'), 'items' => $items]],
             'subtotal' => (int)($snapshot['subtotal'] ?? $record['subtotal']),
             'discount' => (int)($snapshot['discount'] ?? $record['discount']),
+            'taxable' => (int)($snapshot['taxable'] ?? $record['taxable_amount'] ?? 0),
+            'tax' => (int)($snapshot['tax'] ?? $record['tax_amount'] ?? 0),
+            'tax_rates_bps' => array_map('intval',array_keys($taxRates)),
             'total' => (int)($snapshot['total'] ?? $record['total']),
             'currency' => 'تومان',
             'show_prices' => true,
@@ -1190,6 +1018,9 @@ function print_invoice_payload(PDO $pdo, int $sessionId, bool $final, ?string $s
         'sections' => [['title' => (string)($customerLabels['items'] ?? 'اقلام'), 'items' => $items]],
         'subtotal' => (int)$snapshot['subtotal'],
         'discount' => (int)$snapshot['discount'],
+        'taxable' => (int)($snapshot['taxable'] ?? 0),
+        'tax' => (int)($snapshot['tax'] ?? 0),
+        'tax_rates_bps' => array_values(array_map('intval',(array)($snapshot['tax_rates_bps'] ?? []))),
         'total' => (int)$snapshot['total'],
         'currency' => 'تومان',
         'show_prices' => true,
@@ -1318,7 +1149,7 @@ function print_job_stale_ownership_threshold_seconds(): int
 function print_job_hold_stale_ownership(PDO $pdo,int $jobId,int $actorUserId,string $reason=''): string
 {
     $reason=text_substr(trim($reason),0,300);
-    if($reason==='')$reason='درخواست مدت زیادی روی رایانه چاپ بدون پیشرفت مانده و ادامه خودکار ممکن است چاپ تکراری ایجاد کند.';
+    if($reason==='')$reason='درخواست مدت زیادی روی سرویس چاپ بدون پیشرفت مانده و ادامه خودکار ممکن است چاپ تکراری ایجاد کند.';
     $jobStmt=$pdo->prepare("SELECT id,status,claimed_at,resolved_at,TIMESTAMPDIFF(SECOND,claimed_at,NOW()) claimed_age_seconds FROM print_jobs WHERE id=? FOR UPDATE");
     $jobStmt->execute([$jobId]);$job=$jobStmt->fetch();
     if(!$job||(string)$job['status']!=='claimed'||!empty($job['resolved_at']))throw new RuntimeException('فقط درخواست چاپِ تحویل‌شده به رایانه و تعیین‌تکلیف‌نشده قابل توقف است.');
@@ -1374,7 +1205,7 @@ function print_job_safe_retry(PDO $pdo,int $jobId,int $actorUserId,string $reaso
     if((string)$job['status']==='blocked'){
         print_reconcile_blocked_jobs($pdo);
         $chk=$pdo->prepare('SELECT status FROM print_jobs WHERE id=?');$chk->execute([$jobId]);
-        if((string)$chk->fetchColumn()==='blocked')throw new RuntimeException('ابتدا تنظیم مقصد یا رایانه چاپ را اصلاح کنید.');
+        if((string)$chk->fetchColumn()==='blocked')throw new RuntimeException('ابتدا تنظیم مقصد یا سرویس چاپ داخلی را اصلاح کنید.');
         $pdo->prepare("UPDATE print_jobs SET last_admin_action_id=?,last_admin_action_type='safe_retry',last_admin_action_hash=? WHERE id=?")->execute([$actionRequestId,$requestHash,$jobId]);
         return;
     }

@@ -32,7 +32,7 @@ checks={
  'immutable line insert': 'settlement_record_lines_create_locked' in alloc and 'INSERT INTO settlement_record_lines' in alloc,
  'server selection review': 'function settlement_review_selection' in alloc and "checkout_itemized_review" in session,
  'single settlement engine': 'settlement_finalize_review_locked' in settlement and 'settlement_finalize_itemized_locked' in settlement,
- 'new allocation version': "'allocation_version'=>1" in settlement or ',1,' in settlement,
+ 'allocation version remains legacy=1 unless tax snapshot requires v2': "!empty($invoice['tax_document_active']) ? 2 : 1" in settlement and "?? 1" in settlement,
  'idempotency fingerprint': 'settlement_request_fingerprint' in alloc and 'settlement_assert_request_match' in settlement and 'uq_settlement_request_id' in schema,
  'account signature paid state': 'paid_quantities' in alloc and 'paid_total' in alloc and 'bill_signature' in orders,
  'conflict response': "code'=>'settlement_changed'" in session and '409' in session,

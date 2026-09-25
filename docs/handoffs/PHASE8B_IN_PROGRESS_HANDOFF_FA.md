@@ -1,4 +1,9 @@
+> **مرجع فعلی تطبیق — 2026-09-25:** شاخه محلی `work/reconcile-dev39`، نسخه سورس dev.39، مبتنی بر تاریخچه گیت‌هاب و پیشرفت‌های بسته. ابتدا `docs/handoffs/DEV39_RECONCILIATION_2026-09-25_FA.md` را بخوانید (مسیر نسبت به ریشه مخزن). ادامه‌ها و دستورهای متعارض زیر سوابق تاریخی‌اند؛ Phase8B کامل نشده، WiX مجوز اجرا نگرفته و Windows CI جدید انجام نشده است.
+
 # Phase 8B In-Progress Handoff — Windows New / Recover Setup
+
+## Reconciliation addendum — 2026-09-24
+Printing ownership in the older text below has been superseded by R2 reconciliation: **Print Worker is an internal SOKNA Local component, not an optional separately installed Pagent product.** See `docs/architecture-migration-r2/PHASE7R_PRINTING_RECONCILIATION_FA.md`. Protocol/state-machine behavior is preserved; packaging/provisioning ownership moves into SOKNA Setup/Repair/Recovery.
 
 Status: IN PROGRESS
 Base main: `98607d87d50c7913a1143d621e60f807965bae53`
@@ -15,7 +20,7 @@ Branch: `phase/8b-windows-setup`
 - Windows SCM must never point directly at `php.exe`.
 - Runtime service will use a real Windows Service host that supervises only `runtime/sokna-runtime.php`.
 - DB password and recovery passphrase must come from protected files, not CLI secret arguments.
-- Optional Public pairing / Print Agent / off-server backup / Push setup are orchestration concerns, not new state machines.
+- Optional Public pairing / **internal Print Worker provisioning** / off-server backup / Push setup are orchestration concerns, not new business state machines.
 
 ## Planned durable commits
 1. shared setup owner + web installer delegation.
@@ -30,7 +35,7 @@ Branch: `phase/8b-windows-setup`
 - Current Phase 8B uses the in-repository C# Windows Service host, not WinSW. Preserve this owner; build the release binary in CI rather than requiring compilation on the cashier PC.
 - Recover will use a protected plan file; DB password and recovery passphrase are file-backed secrets and never command-line values.
 - `includes/maintenance.php` remains restore owner; 8B only adds an explicit fresh-target compatibility path so an empty replacement DB does not pretend to have the old migration fingerprint.
-- Print Agent optional installation delegates to the official Pagent installer package and never recreates its service/rollback logic.
+- Print Worker is bundled internally with SOKNA Local; Setup/Repair/Recover owns its service lifecycle while preserving the audited 6.2.5 queue/reconciliation/Winspool semantics.
 
 ## Current audit result
 Existing owners to compose:
@@ -39,7 +44,7 @@ Existing owners to compose:
 - `runtime/windows/provision-local-https.ps1`
 - `includes/maintenance.php`
 - `includes/updater_engine/1.5.3/`
-- stable Print Agent Setup contract from `mobaraki20/Pagent`.
+- internal Print Worker source/provenance under `runtime/print-worker/source/` plus the Phase7R reconciliation contract.
 
 If interrupted, continue from the newest commit on this branch and this document; do not restart Phase 8A.
 
@@ -52,7 +57,7 @@ If interrupted, continue from the newest commit on this branch and this document
   https://github.com/mobaraki20/SoknaCafe/blob/main/docs/architecture-migration-r2/WINDOWS_INSTALLER_ACCEPTANCE_FA.md
 - Bring main's documentation changes into this branch before finalization; do not recreate existing 8B code.
 - Proposed packaging: WiX MSI + Burn Setup.exe. Required: Desktop/Start icons, Installed apps uninstall, genuine non-destructive Repair, preflight/prerequisite handling and unified redacted diagnostics.
-- Open risks: updater/MSI file ownership, target-side compilation, secret-file ACL before copy, authenticated Agent payload, service repair failure recovery and diagnostics. See the acceptance contract for evidence requirements.
+- Open risks: updater/MSI file ownership, target-side compilation, secret-file ACL before copy, private internal Print Worker provisioning, service repair failure recovery and diagnostics. See the acceptance contract for evidence requirements.
 - This update changes documentation only. The CI result above belongs to the reviewed code SHA, not this new documentation commit.
 - Every further step must persist branch/SHA, actual test results, open work and exact next action in GitHub handoffs.
 
@@ -63,7 +68,7 @@ Scope: Windows orchestration reliability; no POS UI/business behavior change.
 - Private ACL before credential file writes; redacted per-session JSON summary/events and allowlisted support ZIP.
 - Repair preserves existing service configuration; failure restores previous service binary and running state. No delete/recreate of an existing service.
 - Valid TLS keys/certs are reused byte-for-byte; partial/mismatched/expired identity fails closed. Conflicting hosts entries are not erased.
-- Agent payload requires SHA256 from a trusted manifest.
+- Internal Print Worker build output requires a trusted component manifest/provenance; credentials travel only through private ACL-protected provision files, never CLI secrets.
 - Tests added: real Windows SCM install/repair plus injected start failure rollback; native quoting, private ACL, preflight failure, diagnostics allowlist, TLS repair/partial failure; MariaDB read-only preflight.
 - Local checks: Phase 1 + Phase 8B Python contracts PASS, git diff --check PASS. PHP/Windows runtime unavailable in this Linux workspace; hosted CI evidence is recorded in the latest verification section below.
 - Next: inspect CI for this batch, fix any failures, then complete packaging acceptance (MSI/Burn/updater ownership/shortcuts/ARP/full prerequisites/end-to-end health). Phase 8B remains IN PROGRESS.
@@ -151,3 +156,32 @@ Delivery/source map: [DELIVERY_STATUS_FA.md](DELIVERY_STATUS_FA.md). Print Agent
 
 Next: finish diagnostics outside the owner window, then complete the clean-machine prerequisite/web stack/database and New/Recover package, Public deployment bundle, exact Agent integration and same-version application repair. Full Phase 8B remains IN PROGRESS; PR #18 is draft/unmerged. User is not responsible for manually assembling missing packages. Full initial-handoff traceability and real-device UAT remain open.
 
+
+## Local checkpoint addendum — 2026-09-24 (support + package acceptance hardening)
+- Structured setup support snapshot now records allowlisted service/version/health state; optional Burn/MSI logs are copied only after redaction.
+- `installer/windows/scripts/collect-support.ps1` is the one-step read-only support collector and is included in the immutable installer shell; Persian Start Menu support action is authored.
+- WiX authoring now uses a stable `SOKNA-Cafe-Setup` log prefix and an explicit MSI package log variable.
+- A real Windows package acceptance script now covers MSI install, ARP, shortcuts, deliberate resource loss + `/fa` Repair, updater-owned Live/Data preservation, MSI uninstall, Burn install/uninstall.
+- `windows-installer-package` workflow must run that acceptance before uploading the package artifact.
+- Source contracts pass locally; actual Windows MSI/Burn run has NOT been executed in this Linux workspace and must remain CI pending.
+- Exact gate mapping and remaining work: `docs/architecture-migration-r2/PHASE8B_WINDOWS_ACCEPTANCE_STATUS_2026-09-24_FA.md`.
+
+## Local checkpoint addendum — Setup UI + bounded Apache integration — 2026-09-24
+- `SoknaSetupUi.exe` اکنون UI رسمی فارسی/RTL برای New/Recover/Repair است؛ خودش mutation مالکانه انجام نمی‌دهد و فقط config/plan امن می‌سازد.
+- UI با `asInvoker` اجرا می‌شود؛ تنها `SoknaSetupHost.exe` با UAC/elevation وارد orchestration canonical می‌شود.
+- secretهای DB/admin/recovery فقط پس از ایجاد پوشه ACL-private نوشته می‌شوند و در `finally` پاک می‌شوند؛ CLI secret جدیدی اضافه نشده است.
+- UI نهایی گزینه خاموش‌کردن HTTPS یا Apache preflight را expose نمی‌کند؛ `SkipHttps` فقط contract داخلی/test باقی می‌ماند.
+- `runtime/windows/configure-apache.ps1` configuration owner محدود SOKNA است: Apache root/config را از `httpd -V` کشف می‌کند، module/root/syntax را قبل از mutation می‌سنجد، managed include اتمیک/قابل rollback دارد و lifecycle را اجرا نمی‌کند.
+- CI source contract برای Setup UI و Apache integration اضافه شده است؛ Windows runtime/build/MSI run در این Linux workspace اجرا نشده و همچنان CI/UAT pending است.
+- package acceptance حالا وجود و target میانبر «راه‌اندازی و تعمیر سکنا» و restore آن با MSI Repair را نیز الزام می‌کند.
+- مرجع وضعیت دقیق WIN-01..WIN-12: `docs/architecture-migration-r2/PHASE8B_WINDOWS_ACCEPTANCE_STATUS_2026-09-24_FA.md`.
+
+## Local checkpoint addendum — 2026-09-24 (Persian Setup UI + bounded Apache integration)
+- `runtime/windows/configure-apache.ps1` owner محدود پیکربندی Apache است: config واقعی را از `httpd -V` کشف می‌کند، moduleها را verify می‌کند، managed include اختصاصی SOKNA می‌نویسد، candidate/real syntax check دارد و در failure rollback byte-preserving انجام می‌دهد. SOKNA هیچ lifecycle action روی Apache اجرا نمی‌کند؛ فقط `reload_required` گزارش می‌کند.
+- Apache apply اکنون idempotent change detection دارد. اگر bytes تغییر کند Setup با exit `20` incomplete می‌ماند تا مالک خارجی Apache را reload کند؛ Repair بعدی فقط وقتی Success می‌شود که HTTPS `/login.php` marker واقعی SOKNA را برگرداند. health failure exit `21` است.
+- `WebRoot = AppRoot` برای ساختار فعلی برنامه است؛ `AppRoot` قابل انتخاب و `DataRoot` باید non-overlapping باشد. مقدار `C:\SOKNA\Cafe` فقط default UI است و contract مسیر نصب نیست.
+- Setup UI رسمی تحت `installer/windows/setup-ui/` فارسی/RTL و non-elevated است. فقط New/Recover/Repair را ارائه می‌دهد، ورودی‌های secret را در ACL-private temp می‌نویسد و `SoknaSetupHost.exe` را با `runas` اجرا می‌کند.
+- UI عملیاتی اجازه خاموش‌کردن HTTPS یا Apache را نمی‌دهد؛ bypassهای فنی فقط برای test/CI در ownerهای پایین‌تر باقی می‌مانند.
+- MSI/Burn Setup UI را در shell نصب می‌کنند، میانبر فارسی می‌سازند و Burn success page به همان executable canonical Launch می‌دهد.
+- Static/source contracts و Unit محلی PASS هستند؛ build/launch MSI/Burn و Apache runtime روی Windows همان head همچنان CI pending است و نباید PASS عملیاتی ادعا شود.
+- مرجع جزئی: `docs/architecture-migration-r2/PHASE8B_SETUP_UI_CHECKPOINT_FA.md`.

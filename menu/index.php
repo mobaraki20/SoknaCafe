@@ -6,11 +6,11 @@ if (maintenance_is_active()) {
     http_response_code(503);
     header('Retry-After: 120');
     header('Cache-Control: no-store, max-age=0');
-    ?><!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>نگهداری سامانه</title><?= favicon_head_tags() ?><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f7f3ec;color:#2c2723;font-family:Tahoma,Arial,sans-serif}.box{max-width:520px;margin:20px;padding:28px;border:1px solid #ded5cc;border-radius:20px;background:#fff;text-align:center;box-shadow:0 12px 35px #00000010}.box span{font-size:40px}.box p{line-height:2;color:#6d625b}.rescue{display:inline-block;margin-top:8px;padding:9px 14px;border:1px solid #d4cbc1;border-radius:12px;color:#365b4c;text-decoration:none;font-size:13px}</style></head><body><main class="box"><span><?= ui_icon('coffee') ?></span><h1>چند لحظه در حال نگهداری هستیم</h1><p><?= e((string)(maintenance_state()['message'] ?? 'اطلاعات سامانه با دقت در حال بررسی و بازیابی است.')) ?></p><p>این صفحه را کمی بعد دوباره باز کنید.</p><a class="rescue" href="<?= e(asset('admin/update/')) ?>">مرکز به‌روزرسانی و بازیابی</a></main></body></html><?php
+    ?><!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>نگهداری سامانه | سکنا</title><?= favicon_head_tags() ?><link rel="stylesheet" href="<?= e(asset('assets/css/scds-foundation.css')) ?>"><link rel="stylesheet" href="<?= e(asset('assets/css/scds-system-state.css')) ?>"></head><body class="scds-system-page"><main class="scds-system-card"><span class="scds-system-symbol" aria-hidden="true"><?= ui_icon('coffee') ?></span><h1>چند لحظه در حال نگهداری هستیم</h1><p><?= e((string)(maintenance_state()['message'] ?? 'اطلاعات سامانه با دقت در حال بررسی و بازیابی است.')) ?></p><p>این صفحه را کمی بعد دوباره باز کنید.</p><a class="scds-system-action" href="<?= e(asset('admin/update/')) ?>">مرکز به‌روزرسانی و بازیابی</a></main></body></html><?php
     exit;
 }
 $tableToken=trim((string)($_GET['table']??''));$table=null;$session=null;
-if($tableToken!==''){$stmt=db()->prepare('SELECT id,name,code,access_token,zone_label FROM cafe_tables WHERE access_token=? AND active=1 LIMIT 1');$stmt->execute([$tableToken]);$table=$stmt->fetch()?:null;if(!$table){http_response_code(404);header('Cache-Control: no-store, max-age=0');?><!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>QR نامعتبر | Sokna</title><?= favicon_head_tags() ?><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f7f3ec;color:#262722;font-family:Tahoma,Arial,sans-serif}.box{width:min(520px,calc(100% - 32px));padding:26px;border:1px solid #e5dfd6;border-radius:22px;background:#fff;text-align:center;box-shadow:0 16px 44px #0001}.box p{color:#6f746f;line-height:2}</style></head><body><main class="box"><h1>این QR معتبر نیست</h1><p>این QR ممکن است قدیمی یا مربوط به میزی غیرفعال باشد. QR موجود روی میز را دوباره اسکن کنید یا از همکاران کافه کمک بگیرید.</p></main></body></html><?php exit;}}
+if($tableToken!==''){$stmt=db()->prepare('SELECT id,name,code,access_token,zone_label FROM cafe_tables WHERE access_token=? AND active=1 LIMIT 1');$stmt->execute([$tableToken]);$table=$stmt->fetch()?:null;if(!$table){http_response_code(404);header('Cache-Control: no-store, max-age=0');?><!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow,noarchive"><title>QR نامعتبر | سکنا</title><?= favicon_head_tags() ?><link rel="stylesheet" href="<?= e(asset('assets/css/scds-foundation.css')) ?>"><link rel="stylesheet" href="<?= e(asset('assets/css/scds-system-state.css')) ?>"></head><body class="scds-system-page"><main class="scds-system-card"><h1>این QR معتبر نیست</h1><p>این QR ممکن است قدیمی یا مربوط به میزی غیرفعال باشد. QR موجود روی میز را دوباره اسکن کنید یا از همکاران کافه کمک بگیرید.</p></main></body></html><?php exit;}}
 if($table&&table_sessions_enabled())$session=active_table_session((int)$table['id']);
 $isPublic=$table===null;
 $requestedMenuKey=trim((string)($_GET['menu']??''));
@@ -29,7 +29,8 @@ foreach($flatItems as &$item){
 }
 unset($item);
 $menu=array_values($menuByCategory);
-$clientItems=array_map(static fn(array $item):array=>[
+$taxProfiles=sokna_module_runtime_ready('tax')?tax_item_profile_map(db(),array_column($flatItems,'id')):[];
+$clientItems=array_map(static fn(array $item) => [
     'id'=>(int)$item['id'],
     'name'=>(string)$item['name'],
     'description'=>(string)($item['display_description']??$item['description']??''),
@@ -37,6 +38,8 @@ $clientItems=array_map(static fn(array $item):array=>[
     'image'=>$item['image_path'] ? asset((string)$item['image_path']) : '',
     'search_text'=>(string)$item['name'].' '.(string)($item['category_name']??'').' '.(string)($item['display_description']??'').' '.implode(' ',array_column($item['tags']??[],'title')),
     'price'=>(int)$item['price'],
+    'tax_policy'=>(string)($taxProfiles[(int)$item['id']]['policy']??'disabled'),
+    'tax_rate_bps'=>(int)($taxProfiles[(int)$item['id']]['rate_bps']??0),
     'available'=>(int)$item['available'],
     'takeaway_allowed'=>(int)($item['takeaway_allowed']??1),
     'order_available'=>$isPublic?0:(((int)$item['available']===1 && order_acceptance_blocked_scope_for_station((string)$item['preparation_station'])===null)?1:0),

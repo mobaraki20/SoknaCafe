@@ -8,6 +8,7 @@ setup=read('includes/setup_install.php')
 web=read('install.php')
 cli=read('tools/setup-machine.php')
 ps=read('runtime/windows/setup-sokna.ps1')
+support=read('runtime/windows/setup-support.psm1')
 host=read('runtime/windows/SoknaRuntimeService.cs')
 maint=read('includes/maintenance.php')
 readme=read('runtime/README_FA.md')
@@ -85,13 +86,52 @@ checks={
         "$Mode -eq 'Validate'" in ps
         and '--self-test' in ps,
 
-    'stable Print Agent input is versioned Setup asset only':
-        'Sokna-Print-Agent-' in ps
-        and 'Setup\\.exe' in ps,
+    'Windows setup performs broad preflight before mutation':
+        'Test-SoknaPendingReboot' in ps
+        and 'Get-SoknaFreeBytes' in ps
+        and 'MinimumFreeBytes' in ps
+        and 'minimum_version_id' in ps
+        and 'required_extensions' in ps
+        and 'prerequisites.json' in ps
+        and 'RequireWebServerPreflight' in ps
+        and 'Get-SoknaTcpListenerOwners' in ps
+        and "SOKNA_SETUP_REBOOT_REQUIRED" in ps,
+
+    'Windows setup owns bundled internal Print Worker':
+        'PrintWorkerBundle' in ps
+        and 'Install-PrintWorkerComponent' in ps
+        and 'SoknaPrintWorker' in ps
+        and 'PrintAgentSetup' not in ps
+        and 'PrintAgentSha256' not in ps,
 
     'runtime docs point to Phase 8B setup owner':
         'runtime/windows/setup-sokna.ps1' in readme
         and 'Canonical Windows setup owner' in readme,
+
+    'secret-bearing setup inputs require private ACL':
+        'Assert-SoknaPrivateInputFile' in support
+        and '$SetupConfigFile = Assert-SoknaPrivateInputFile' in ps
+        and '$RecoveryPassphraseFile = Assert-SoknaPrivateInputFile' in ps,
+
+    'canonical setup accepts shared correlation session':
+        'SOKNA_SETUP_SESSION_ID' in ps
+        and "^[a-fA-F0-9]{32}$" in ps,
+
+    'support bundle is structured, allowlisted and redacted':
+        'Write-SoknaSupportSnapshot' in support
+        and 'Get-SoknaServiceDiagnostic' in support
+        and 'Get-SoknaPrintHealthDiagnostic' in support
+        and 'Copy-SoknaSanitizedDiagnosticLog' in support
+        and "'components.json'" in ps
+        and 'SOKNA_BURN_LOG_PATH' in ps
+        and 'SOKNA_MSI_LOG_PATH' in ps
+        and 'Compress-Archive -LiteralPath $supportFiles' in ps
+        and 'Compress-Archive -Path $session' not in ps,
+
+    'Windows Repair gate protects updater-owned live payload':
+        'live-updater-owned.txt' in read('tests/phase8b-windows-setup-runtime.ps1')
+        and 'Repair rewrote updater-owned VERSION.txt' in read('tests/phase8b-windows-setup-runtime.ps1')
+        and 'Failed Repair changed updater-owned live application payload' in read('tests/phase8b-windows-setup-runtime.ps1'),
 }
 
 failed=[name for name,ok in checks.items() if not ok]

@@ -21,7 +21,7 @@ $params=[$start->format('Y-m-d H:i:s'),$end->format('Y-m-d H:i:s')];
 if($userId>0){$where[]='a.actor_user_id=?';$params[]=$userId;}
 $familySql=[
  'orders-tables'=>"(a.action LIKE 'order.%' OR a.action LIKE 'table.%' OR a.action LIKE 'waiter_call.%' OR a.action LIKE 'preparation.%')",
- 'finance'=>"(a.action LIKE 'settlement.%' OR a.action LIKE 'invoice.%' OR a.action LIKE 'subscriber.%' OR a.action LIKE 'financial_period.%')",
+ 'finance'=>"(a.action LIKE 'settlement.%' OR a.action LIKE 'invoice.%' OR a.action LIKE 'subscriber.%' OR a.action LIKE 'financial_period.%' OR a.action LIKE 'expense.%')",
  'inventory'=>"(a.action LIKE 'inventory.%' OR a.action LIKE 'purchase.%')",
  'menu-content'=>"(a.action LIKE 'menu.%' OR a.action LIKE 'marketing.%' OR a.action LIKE 'event.%' OR a.action LIKE 'guest_message%')",
  'settings-access'=>"(a.action LIKE 'user.%' OR a.action LIKE 'operations.%' OR a.action LIKE 'print_template_%' OR a.action LIKE 'print_agent_%' OR a.action LIKE 'print_destination_%')",

@@ -39,7 +39,7 @@ assert "window.CAFE_CAN_ORDER=<?= $showOrderUi?'true':'false' ?>" in index
 
 # Table runtime owns ordering and uses idempotent server tokens.
 assert 'async function submitOrder(options = {})' in menu
-assert 'data.client_token || submittedTarget?.client_token || pendingToken' in menu
+assert 'data.client_token || context.submittedTarget?.client_token || pendingToken' in menu
 assert 'function bindDismissibleBackdrop' in menu
 assert 'event.preventDefault()' in menu and 'event.stopPropagation()' in menu
 assert 'window.SoknaHorizontalRail' in read('assets/js/horizontal-rail.js') and 'function enhanceHorizontalRail' not in menu

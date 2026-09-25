@@ -132,11 +132,12 @@ function staff_order_commit_tx(PDO $pdo, array $data, array $user, string $mode 
         $id=(int)$row['id'];$item=$itemsById[$id];
         $quantity=(int)$row['quantity'];$itemNote=(string)$row['note'];
         $lineTotal=(int)$item['price']*$quantity;$total+=$lineTotal;
+        $tax = tax_order_line_snapshot($pdo,$id);
         $lines[] = [
             $id,(string)$item['name'],(int)$item['price'],$quantity,$itemNote,
             normalize_fulfillment_mode((string)$row['fulfillment_mode']),
             normalize_preparation_station((string)($item['preparation_station'] ?? 'cold_bar')),
-            $lineTotal,normalize_sellable_kind($item['sellable_kind']??null),
+            $lineTotal,normalize_sellable_kind($item['sellable_kind']??null),$tax,
         ];
     }
 
@@ -151,9 +152,9 @@ function staff_order_commit_tx(PDO $pdo, array $data, array $user, string $mode 
     ]);
     $orderId = (int)$pdo->lastInsertId();
 
-    $lineStmt = $pdo->prepare('INSERT INTO order_items(order_id,item_id,item_name,sellable_kind_snapshot,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total) VALUES(?,?,?,?,?,?,?,?,?,?,?)');
-    foreach ($lines as [$itemId,$name,$price,$quantity,$itemNote,$fulfillmentMode,$station,$lineTotal,$sellableKind]) {
-        $lineStmt->execute([$orderId,$itemId,$name,$sellableKind,$price,$quantity,$quantity,$itemNote !== '' ? $itemNote : null,$fulfillmentMode,$station,$lineTotal]);
+    $lineStmt = $pdo->prepare('INSERT INTO order_items(order_id,item_id,item_name,sellable_kind_snapshot,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total,tax_policy_snapshot,tax_rate_bps_snapshot,tax_rate_version_id,tax_item_policy_version_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    foreach ($lines as [$itemId,$name,$price,$quantity,$itemNote,$fulfillmentMode,$station,$lineTotal,$sellableKind,$tax]) {
+        $lineStmt->execute([$orderId,$itemId,$name,$sellableKind,$price,$quantity,$quantity,$itemNote !== '' ? $itemNote : null,$fulfillmentMode,$station,$lineTotal,$tax['policy'],$tax['rate_bps'],$tax['rate_version_id'],$tax['policy_version_id']]);
     }
     $pdo->prepare("INSERT INTO order_status_history(order_id,from_status,to_status,actor_user_id) VALUES(?,NULL,'accounted',?)")
         ->execute([$orderId,$userId]);

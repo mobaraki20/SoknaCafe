@@ -1,8 +1,12 @@
-# استاندارد زنده UI/UX سکنا
+# استاندارد Legacy UI/UX سکنا — فقط مرجع سازگاری
 
-نسخه مرجع: 1.36.3
+> **SUPERSEDED / NON-AUTHORITATIVE FOR NEW WORK**
+> Design Authority فعلی و یگانه برای کار جدید و migration، `docs/ui-design-system/CANONICAL_DESIGN_SYSTEM_CONTRACT_FA.md` با شناسه `SCDS-CANONICAL-2026-R1` است.
+> این فایل فقط برای حفظ contractهای legacy و provenance نگه داشته شده است؛ هیچ قاعده متعارض با SCDS canonical حق تقدم ندارد.
 
-این سند **مالک رسمی استاندارد رابط پنل سکنا** است. هر تغییر در یک استاندارد UI باید در همان Release دو چیز داشته باشد: ۱) به‌روزرسانی همین سند یا Register استاندارد، ۲) Contract/Regression Test متناظر. تغییر استاندارد بدون تست پذیرفته نیست.
+نسخه تاریخی مرجع: 1.36.3
+
+این سند در نسل قبلی **مالک رسمی استاندارد رابط پنل سکنا** بود. هر تغییر در یک استاندارد UI باید در همان Release دو چیز داشته باشد: ۱) به‌روزرسانی همین سند یا Register استاندارد، ۲) Contract/Regression Test متناظر. تغییر استاندارد بدون تست پذیرفته نیست.
 
 ## 1) اصول پایه
 - RTL واقعی و فارسی؛ Touch target عملیاتی حداقل `44px`.

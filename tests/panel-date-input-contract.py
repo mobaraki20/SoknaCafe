@@ -21,6 +21,9 @@ required={
  'admin/inventory_receive.php':['inventoryReceiveDate'],
  'admin/inventory_waste.php':['inventoryWasteDate'],
  'admin/purchases.php':['purchaseReceiveDate'],
+ 'admin/purchases_batch.php':['batchReceiveDate'],
+ 'admin/expenses.php':['expenseOccurredDate'],
+ 'admin/tax.php':['taxEffectiveDate','taxPolicyEffectiveDate'],
 }
 seen=[]
 for rel,ids in required.items():

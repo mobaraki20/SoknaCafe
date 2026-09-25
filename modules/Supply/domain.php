@@ -493,6 +493,73 @@ function supply_receive_preparing_locked(PDO $pdo, string $groupKey, array $data
     ];
 }
 
+
+/**
+ * Receive multiple already-known inventory purchase groups as one atomic command.
+ * All selected rows are locked and validated before the first inventory mutation.
+ * Provisional/free-name groups are intentionally excluded: catalog identity must
+ * be resolved through the ordinary single-receipt workflow first.
+ */
+function supply_receive_batch_locked(PDO $pdo, array $lines, string $batchToken, int $actorUserId): array
+{
+    supply_module_require_runtime_ready_locked($pdo);
+    if (!$pdo->inTransaction()) throw new RuntimeException('ثبت گروهی خرید باید داخل تراکنش انجام شود.');
+    $batchToken=trim($batchToken);
+    if(!preg_match('/^[a-f0-9]{32}$/',$batchToken)) throw new RuntimeException('فرم ثبت گروهی منقضی شده؛ صفحه را تازه کن.');
+    $lines=array_values($lines);
+    if(count($lines)<2 || count($lines)>50) throw new RuntimeException('برای ثبت گروهی، حداقل دو و حداکثر پنجاه قلم انتخاب کن.');
+
+    $prepared=[];$seen=[];$tokens=[];
+    foreach($lines as $i=>$line){
+        if(!is_array($line)) throw new RuntimeException('اطلاعات یکی از اقلام خرید ناقص است.');
+        $groupKey=trim((string)($line['group_key']??''));
+        if(isset($seen[$groupKey])) throw new RuntimeException('یک قلم خرید بیش از یک‌بار در ثبت گروهی آمده است.');
+        $seen[$groupKey]=true;
+        $group=supply_parse_group_key($groupKey);
+        if(($group['type']??'')!=='item') throw new RuntimeException('اقلام خارج از فهرست باید ابتدا جداگانه به کالای انبار متصل شوند.');
+        $requestToken=substr(hash('sha256',$batchToken.'|'.$i.'|'.$groupKey),0,32);
+        $tokens[]=$requestToken;
+        $data=$line;$data['request_token']=$requestToken;
+        $prepared[]=['group_key'=>$groupKey,'data'=>$data,'request_token'=>$requestToken];
+    }
+
+    $ph=implode(',',array_fill(0,count($tokens),'?'));
+    $dup=$pdo->prepare("SELECT request_token FROM inventory_supply_receipts WHERE request_token IN ($ph)");
+    $dup->execute($tokens);$existing=$dup->fetchAll(PDO::FETCH_COLUMN);
+    if($existing){
+        if(count($existing)!==count($tokens)) throw new RuntimeException('بخشی از ثبت گروهی قبلاً ذخیره شده است؛ برای جلوگیری از ثبت دوباره، وضعیت خرید را تازه کن.');
+        $results=[];
+        foreach($prepared as $entry)$results[]=supply_receive_preparing_locked($pdo,$entry['group_key'],$entry['data'],$actorUserId);
+        return ['batch_token'=>$batchToken,'results'=>$results,'duplicate'=>true];
+    }
+
+    // Validate and lock every line before the first mutation.
+    foreach($prepared as $entry){
+        $groupKey=$entry['group_key'];$data=$entry['data'];
+        $rows=supply_group_rows_locked($pdo,$groupKey,true);
+        if(!$rows) throw new RuntimeException('یکی از اقلام دیگر در حال خرید نیست؛ صفحه را تازه کن.');
+        $itemId=(int)($rows[0]['inventory_item_id']??0);
+        $item=inventory_item($pdo,$itemId,true);
+        if(!$item || (int)$item['active']!==1) throw new RuntimeException('یکی از کالاهای انتخاب‌شده دیگر فعال نیست.');
+        $preparedTotal=array_sum(array_map(static fn(array $r): int => (int)$r['preparing_quantity_base'],$rows));
+        $expected=(int)($data['expected_preparing_quantity_base']??-1);
+        if($expected<1 || $expected!==$preparedTotal) throw new RuntimeException('مقدار یکی از اقلام از زمان بازشدن فرم تغییر کرده است؛ صفحه را تازه کن.');
+        foreach($rows as $row) if((string)$row['base_unit']!==(string)$item['base_unit']) throw new RuntimeException('واحد یکی از نیازهای خرید هم‌خوان نیست.');
+        inventory_resolve_operation_quantity($pdo,$itemId,(int)($data['purchase_unit_id']??0),$data['unit_count']??'',$data['actual_major_quantity']??'');
+        $costRaw=trim((string)($data['total_cost']??'')); if($costRaw!=='') inventory_money_value($costRaw);
+        if(trim((string)($data['occurred_at']??''))!=='') inventory_normalize_occurred_at((string)$data['occurred_at'],'دریافت خرید');
+        else inventory_optional_occurred_at((string)($data['occurred_date_j']??''),(string)($data['occurred_time']??''),'دریافت خرید');
+    }
+
+    $results=[];
+    foreach($prepared as $entry)$results[]=supply_receive_preparing_locked($pdo,$entry['group_key'],$entry['data'],$actorUserId);
+    audit_log_write_strict($pdo,'supply.batch_received','inventory_supply_batch',$batchToken,[
+        'line_count'=>count($results),'receipt_ids'=>array_values(array_filter(array_map(static fn(array $r): int => (int)($r['receipt_id']??0),$results))),
+        'movement_ids'=>array_values(array_map(static fn(array $r): int => (int)($r['movement_id']??0),$results)),
+    ],$actorUserId);
+    return ['batch_token'=>$batchToken,'results'=>$results,'duplicate'=>false];
+}
+
 function supply_mark_unavailable_locked(PDO $pdo, int $needId, int $actorUserId): void
 {
     supply_module_require_runtime_ready_locked($pdo);

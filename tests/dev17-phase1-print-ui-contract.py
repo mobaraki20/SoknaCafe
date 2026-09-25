@@ -10,7 +10,7 @@ css=read('assets/css/panel-components.css')
 def need(cond,msg):
     if not cond: raise AssertionError(msg)
 
-need('/releases/latest' in printing and 'print_agent_release_metadata' in printing, 'Web must resolve the latest stable official Agent release')
+need('print_worker_component_metadata' in printing and 'mobaraki20/Pagent' not in printing, 'Phase7R supersedes external Agent release resolution with the internal Print Worker component')
 need("['items','categories','printing']" in layout and 'assets/css/reorder.css' in layout, 'printing must load the shared reorder component stylesheet')
 need('برنامه چاپ 6.1.0 را نصب کنید' not in admin, 'stale Agent 6.1.0 guidance remains in runtime UI')
 need("$originLabels=['builtin'=>'استاندارد سکنا','imported'=>'واردشده','custom'=>'سفارشی'];" in templates, 'template origins must be human labels, not raw technical values')

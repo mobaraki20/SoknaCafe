@@ -1,0 +1,23 @@
+from pathlib import Path
+root=Path(__file__).resolve().parents[1]
+def read(p): return (root/p).read_text(encoding='utf-8-sig')
+def need(c,m):
+    if not c: raise SystemExit('FAIL: '+m)
+owner=read('includes/expenses.php'); page=read('admin/expenses.php'); periods=read('admin/financial_periods.php'); mods=read('includes/modules.php'); nav=read('includes/panel_layout.php'); routes=read('docs/architecture-migration-r2/ROUTE_OWNERS.CSV'); deferred=read('includes/deferred.php')
+need('function expense_create_locked' in owner,'create owner missing')
+need('function expense_reverse_locked' in owner,'reversal owner missing')
+need('function expense_correct_locked' in owner,'correction owner missing')
+need("status,reverses_expense_id" in owner or "'reversal'" in owner,'append-only reversal representation missing')
+need('DELETE FROM expenses' not in owner.upper(),'expense owner must never hard-delete committed history')
+need('expense_assert_period_accepts_locked' in owner and "status']==='closed'" in owner,'closed-period guard missing')
+need("expense_reverse_locked($pdo,$expenseId" in owner and "expense_create_locked($pdo,$categoryKey" in owner,'correction must compose reversal + replacement owners')
+need("require_login(['admin'])" in page,'local expense mutation must be admin-only')
+need('data-money-input' in page and 'data-jalali-date' in page,'Persian money/date controls missing')
+need('خرید مواد و کالا از مسیر انبار/خرید' in page,'inventory purchase double-count warning missing')
+need('expense_period_summary($pdo,$id)' in periods,'financial close summary does not include expenses')
+need('expense_net_amount' in periods,'financial period read model does not include net expenses')
+need('admin/expenses.php' in mods and 'expense_reverse_locked()' in mods and 'expense_correct_locked()' in mods,'module registry incomplete')
+need("'expenses' => [$base . '/admin/expenses.php', 'هزینه‌های کافه']" in nav,'finance navigation missing')
+need('admin/expenses.php,expenses,business' in routes,'route ownership missing')
+need("'expense.create'" in deferred and 'expense.reversal' not in read('includes/deferred.php')[:1200],'Deferred boundary must keep reversal local-required')
+print('PASS R2 expenses contract: immutable create/reversal/correction, closed-period guard, Persian admin UI, period reporting integration')

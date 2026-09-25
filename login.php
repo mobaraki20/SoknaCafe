@@ -3,6 +3,8 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 header('Cache-Control: no-store, max-age=0');
 header('Pragma: no-cache');
+$soknaRuntimeReady = PHP_VERSION_ID >= 80200 && extension_loaded('pdo_mysql') && extension_loaded('fileinfo') && extension_loaded('openssl') && extension_loaded('sodium') && extension_loaded('mbstring');
+header('X-Sokna-Runtime: ' . ($soknaRuntimeReady ? 'php-ready' : 'php-incompatible'));
 if (is_logged_in()) redirect(user_home_path());
 $next = safe_local_redirect_target($_GET['next'] ?? $_POST['next'] ?? '', '');
 $error = '';
@@ -55,7 +57,7 @@ foreach ($users as $candidate) {
         break;
     }
 }
-?><!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ورود | <?= e(setting('cafe_name','سامانه کافه')) ?></title><?= favicon_head_tags() ?><?= ui_font_head($font) ?><link rel="stylesheet" href="<?= e(asset('assets/css/tokens.css')) ?>"><link rel="stylesheet" href="<?= e(asset('assets/css/app.css')) ?>"><link rel="stylesheet" href="<?= e(asset('assets/css/responsive.css')) ?>"><link rel="stylesheet" href="<?= e(asset('assets/css/panel.css')) ?>"><style>:root{--font-ui:<?= ui_font_family($font) ?>;--primary:<?= e($primaryColor) ?>;--accent:<?= e($accentColor) ?>;--app-bg:<?= e($backgroundColor) ?>;--on-primary:<?= e(contrast_text_color($primaryColor)) ?>}</style></head>
+?><!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ورود | <?= e(setting('cafe_name','سامانه کافه')) ?></title><?= favicon_head_tags() ?><?= ui_font_head($font) ?><link rel="stylesheet" href="<?= e(asset('assets/css/tokens.css')) ?>"><link rel="stylesheet" href="<?= e(asset('assets/css/app.css')) ?>"><link rel="stylesheet" href="<?= e(asset('assets/css/scds-foundation.css')) ?>"><link rel="stylesheet" href="<?= e(asset('assets/css/responsive.css')) ?>"><link rel="stylesheet" href="<?= e(asset('assets/css/panel.css')) ?>"><style>:root{--font-ui:<?= ui_font_family($font) ?>;--primary:<?= e($primaryColor) ?>;--accent:<?= e($accentColor) ?>;--app-bg:<?= e($backgroundColor) ?>;--on-primary:<?= e(contrast_text_color($primaryColor)) ?>}</style></head>
 <body class="login-page sokna-login-v19 font-<?= e($font) ?>">
 <main class="login-shell-v19">
     <section class="login-story-v19" aria-label="معرفی سامانه">

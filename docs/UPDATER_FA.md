@@ -33,11 +33,13 @@
 
 زنجیره نسخه‌های پیش‌عملیاتی تا checkpoint جاری در تاریخچه Git و Release Notes نگهداری می‌شود؛ سند عملیاتی نباید با فهرست‌کردن دستی تمام نسخه‌های قدیمی منسوخ شود.
 
-checkpoint جاری Web/PWA: `1.36.4-dev.31`
+checkpoint جاری engineering/installable: `1.36.4-dev.39`
 
-مسیر Upgrade رسمی این checkpoint از predecessor پذیرفته‌شده:
+آخرین مسیر تاریخی Web/PWA که در این سند migration آن صریحاً ثبت شده بود:
 
 `1.36.4-dev.30 → 1.36.4-dev.31`
+
+از `dev.38 → dev.39` شماره نسخه برای Windows Phase 8B Closure یکتا شده است، اما این به‌تنهایی به معنی آماده‌بودن Web Updater package نیست. Update Package dev.39 فقط پس از Freeze شدن migration/package manifest همان release ساخته می‌شود؛ Installer/Repair نباید از روی این متن migration قدیمی حدس بزند.
 
 این checkpoint **Migration دیتابیس دارد**:
 - Local: جداول Expenses، Deferred receipt/review و Financial Close Override.

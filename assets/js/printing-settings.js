@@ -1,23 +1,25 @@
 (() => {
   'use strict';
   const dataNode = document.getElementById('printing-printers-data');
-  let printersByAgent = {};
-  try { printersByAgent = JSON.parse(dataNode?.textContent || '{}') || {}; } catch (_) {}
+  let printers = [];
+  try {
+    const decoded = JSON.parse(dataNode?.textContent || '[]');
+    printers = Array.isArray(decoded) ? decoded : [];
+  } catch (_) {}
 
-  const fillPair = (form, role) => {
-    const agentSelect = form.querySelector(`[data-print-agent-select="${role}"]`);
+  const fillPrinter = (form, role) => {
     const printerSelect = form.querySelector(`[data-print-printer-select="${role}"]`);
-    if (!agentSelect || !printerSelect) return;
-    const agentId = String(agentSelect.value || '0');
+    if (!printerSelect) return;
     const current = String(printerSelect.dataset.currentPrinter || printerSelect.value || '').trim();
-    const list = Array.isArray(printersByAgent[agentId]) ? printersByAgent[agentId] : [];
     printerSelect.replaceChildren();
     const first = document.createElement('option');
     first.value = '';
-    first.textContent = agentId === '0' ? (role === 'fallback' ? 'بدون پرینتر جایگزین' : 'ابتدا رایانه چاپ را انتخاب کنید') : (list.length ? '— انتخاب پرینتر —' : 'پرینتری از این رایانه گزارش نشده');
+    first.textContent = role === 'fallback'
+      ? 'بدون پرینتر جایگزین'
+      : (printers.length ? '— انتخاب پرینتر —' : 'پرینتری از Windows گزارش نشده');
     printerSelect.append(first);
     let found = false;
-    for (const printer of list) {
+    for (const printer of printers) {
       const name = String(printer?.name || '').trim();
       if (!name) continue;
       const option = document.createElement('option');
@@ -37,38 +39,14 @@
       missing.selected = true;
       printerSelect.append(missing);
     }
-    printerSelect.disabled = agentId === '0';
+    printerSelect.disabled = false;
   };
 
   document.querySelectorAll('[data-print-destination]').forEach((form) => {
     for (const role of ['primary', 'fallback']) {
-      fillPair(form, role);
-      const agentSelect = form.querySelector(`[data-print-agent-select="${role}"]`);
+      fillPrinter(form, role);
       const printerSelect = form.querySelector(`[data-print-printer-select="${role}"]`);
-      agentSelect?.addEventListener('change', () => {
-        if (printerSelect) printerSelect.dataset.currentPrinter = '';
-        fillPair(form, role);
-      });
       printerSelect?.addEventListener('change', () => { printerSelect.dataset.currentPrinter = printerSelect.value; });
-    }
-  });
-
-  document.querySelector('[data-copy-print-token]')?.addEventListener('click', async (event) => {
-    const tokenNode = document.getElementById('printAgentToken');
-    const token = tokenNode?.textContent?.trim() || '';
-    if (!token) return;
-    try {
-      await navigator.clipboard.writeText(token);
-      const button = event.currentTarget;
-      const old = button.textContent;
-      button.textContent = 'کپی شد';
-      setTimeout(() => { button.textContent = old; }, 1600);
-    } catch (_) {
-      const range = document.createRange();
-      range.selectNodeContents(tokenNode);
-      const selection = window.getSelection();
-      selection?.removeAllRanges();
-      selection?.addRange(range);
     }
   });
 
@@ -77,17 +55,15 @@
   });
 })();
 
-
 // Read-only operational snapshot. It never replaces forms/focus/scroll or one-time token DOM.
 (() => {
   const root=document.querySelector('[data-print-live-status]');if(!root)return;
   const url=root.dataset.snapshotUrl;if(!url)return;
   const fa=v=>String(v??'').replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
   let busy=false;
-  const refresh=async()=>{if(busy||document.hidden)return;busy=true;try{const response=await fetch(url,{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});const data=await response.json().catch(()=>null);if(!response.ok||!data?.success)return;root.querySelector('[data-print-live-label]')?.replaceChildren(document.createTextNode(data.overall?.label||''));root.querySelector('[data-print-live-agents]')?.replaceChildren(document.createTextNode(`${fa(data.online_agents)}/${fa(data.agent_count)}`));root.querySelector('[data-print-live-destinations]')?.replaceChildren(document.createTextNode(`${fa(data.ready_destinations)}/${fa(data.destination_count)}`));root.querySelector('[data-print-live-problems]')?.replaceChildren(document.createTextNode(fa(data.problem_count)));root.classList.toggle('is-ok',Boolean(data.overall?.healthy));root.classList.toggle('is-warn',!data.overall?.healthy);}catch(_){}finally{busy=false;}};
+  const refresh=async()=>{if(busy||document.hidden)return;busy=true;try{const response=await fetch(url,{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});const data=await response.json().catch(()=>null);if(!response.ok||!data?.success)return;root.querySelector('[data-print-live-label]')?.replaceChildren(document.createTextNode(data.overall?.label||''));root.querySelector('[data-print-live-agents]')?.replaceChildren(document.createTextNode(data.internal_worker?.online?'آماده':'—'));root.querySelector('[data-print-live-destinations]')?.replaceChildren(document.createTextNode(`${fa(data.ready_destinations)}/${fa(data.destination_count)}`));root.querySelector('[data-print-live-problems]')?.replaceChildren(document.createTextNode(fa(data.problem_count)));root.classList.toggle('is-ok',Boolean(data.overall?.healthy));root.classList.toggle('is-warn',!data.overall?.healthy);}catch(_){}finally{busy=false;}};
   window.setInterval(refresh,15000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refresh();});
 })();
-
 
 // Mutating route operations must not be double-submitted.
 (() => {

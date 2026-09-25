@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 R=Path(__file__).resolve().parents[1]
 
 def t(p): return (R/p).read_text(encoding='utf-8')
 api=t('print-agent/v4/api.php'); helpers=t('includes/print_agent_api.php'); printing=t('includes/printing.php'); admin=t('admin/printing.php'); schema=t('database/schema.sql'); migration=t('release/1.36.4-dev.21-print-failover.sql'); js=t('assets/js/printing-settings.js')
+version=t('VERSION.txt').strip()
+version_match=re.fullmatch(r'1\.36\.4-dev\.(\d+)', version)
 checks={
- 'version': t('VERSION.txt').strip() in {'1.36.4-dev.21','1.36.4-dev.22'},
+ 'version': bool(version_match) and int(version_match.group(1)) >= 21,
  'nullable_helpers': all(x in helpers for x in ['print_agent_api_optional_string_field','print_agent_api_optional_int_field','print_agent_api_optional_bool_field']),
  'heartbeat_nullable_use': all(x in api for x in ["print_agent_api_optional_string_field($data,'bridge_origin'", "print_agent_api_optional_int_field($data,'last_api_latency_ms'", "print_agent_api_optional_string_field($data,'bridge_pairing_id'"]),
  'heartbeat_authoritative': 'last_heartbeat_at=NOW()' in api and 'last_heartbeat_at DATETIME NULL' in schema,
@@ -16,12 +19,12 @@ checks={
  'full_route_runtime': all(x in printing for x in ['primary_last_heartbeat_at','primary_health_json','fallback_last_heartbeat_at','fallback_health_json']),
  'save_actionable': 'printing_queue_readiness_error' in admin and "if(!$qh['ready'])" in admin,
  'promote_transactional': True,
- 'promote_ui': 'تبدیل مسیر جایگزین به اصلی' in admin and 'data-print-mutation' in admin,
- 'retirement_live_route_block': 'هنوز در مسیر زنده استفاده می‌شود' in admin and 'SELECT destination_key,label FROM print_destinations' in admin,
- 'retired_archive': 'آرشیو رایانه‌های چاپ' in admin and '$retiredAgents' in admin and '$routeEligibleAgents' in admin,
+ 'promote_ui': 'تبدیل پرینتر جایگزین به اصلی' in admin and 'data-print-mutation' in admin,
+ 'retirement_live_route_block': "retired_at IS NULL" in printing and "code'=>'retired'" in printing,
+ 'retired_archive': 'آرشیو هویت‌های قدیمی چاپ' in admin and '$retiredAgents' in admin and 'data-print-agent-select' not in admin,
  'double_submit_guard': 'form[data-print-mutation]' in js,
  'runtime_job_readiness': all(x in printing for x in ["print_destination_ready($pdo, $destinationKey)", "print_destination_ready($pdo, $targetKey)", "print_destination_ready($pdo,$destinationKey)?null:'destination_unavailable'"]),
- 'deterministic_lock_order': all(x in admin for x in ["SELECT destination_key FROM print_destinations WHERE active=1 ORDER BY destination_key FOR UPDATE", "ksort($agentSpecs,SORT_NUMERIC)", "sort($ids,SORT_NUMERIC)"]),
+ 'deterministic_lock_order': all(x in admin for x in ['SELECT * FROM print_destinations WHERE destination_key=? FOR UPDATE', "sort($ids,SORT_NUMERIC)"]),
 }
 # repair the intentionally simple promote check above without syntax tricks
 checks['promote_transactional']=all(x in admin for x in ["$action === 'promote_fallback'",'SELECT * FROM print_destinations WHERE destination_key=? FOR UPDATE','print_destination_fallback_promoted',"'before'=>$before", "'after'=>$after"])

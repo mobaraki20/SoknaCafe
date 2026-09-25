@@ -81,6 +81,18 @@ try {
     $freshIdentity = sokna_installation_identity_ensure();
 
     $restore = maintenance_restore_external_backup_to_empty_target($recoveryFile, $passphrase);
+
+    // Recovery restores the authoritative print tables first; only then rotate/provision
+    // the internal worker credential so the recovered queue ownership remains coherent.
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $printWorkerProvision = sokna_setup_write_internal_print_worker_provision($pdo, $input);
+        $pdo->commit();
+    } catch (Throwable $provisionError) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        throw $provisionError;
+    }
     sokna_setup_write_lock($root);
 
     echo json_encode(

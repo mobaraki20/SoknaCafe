@@ -125,6 +125,8 @@ try {
                 'review'=>[
                     'subtotal'=>(int)$review['subtotal'],
                     'discount'=>(int)$review['discount'],
+                    'taxable'=>(int)($review['taxable']??0),
+                    'tax'=>(int)($review['tax']??0),
                     'total'=>(int)$review['total'],
                     'remaining_subtotal'=>(int)$review['remaining_subtotal'],
                     'remaining_discount'=>(int)$review['remaining_discount'],
@@ -138,6 +140,10 @@ try {
                         'gross_amount'=>(int)$line['gross_amount'],
                         'discount_amount'=>(int)$line['discount_amount'],
                         'net_amount'=>(int)$line['net_amount'],
+                        'taxable_amount'=>(int)($line['taxable_amount']??0),
+                        'tax_rate_bps'=>(int)($line['tax_rate_bps']??0),
+                        'tax_amount'=>(int)($line['tax_amount']??0),
+                        'final_amount'=>(int)($line['final_amount']??$line['net_amount']),
                     ], (array)$review['lines']),
                 ],
             ]);

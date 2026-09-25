@@ -110,6 +110,9 @@
   const cartStationWarning = document.getElementById('cartStationWarning');
   const cartCount = document.getElementById('cartCount');
   const cartTotal = document.getElementById('cartTotal');
+  const cartTaxBreakdown = document.getElementById('cartTaxBreakdown');
+  const cartSubtotal = document.getElementById('cartSubtotal');
+  const cartTax = document.getElementById('cartTax');
   const cartBarTotal = document.getElementById('cartBarTotal');
   const customerNote = document.getElementById('customerNote');
   const submit = document.getElementById('submitOrder');
@@ -520,14 +523,52 @@
     } catch (_) {}
   }
 
+  function taxAmountFor(amount, rateBps) {
+    const taxable = Math.max(0, Math.trunc(Number(amount) || 0));
+    const rate = Math.max(0, Math.min(10000, Math.trunc(Number(rateBps) || 0)));
+    if (!taxable || !rate) return 0;
+    const whole = Math.floor(taxable / 10000) * rate;
+    const remainder = taxable % 10000;
+    return whole + Math.floor(((remainder * rate) + 5000) / 10000);
+  }
+
+  function taxProfileForCartPortion(line, fulfillmentMode) {
+    const fallback = {
+      policy: String(line.item.tax_policy || 'disabled'),
+      rateBps: Number(line.item.tax_rate_bps || 0),
+    };
+    if (editingOrderCode || line.item?.snapshot_from_order) return fallback;
+    const appendTarget = [...guestOrders].reverse().find((order) => order.can_edit) || null;
+    const existing = appendTarget?.items?.find((item) =>
+      Number(item.id) === Number(line.item.id)
+      && String(item.fulfillment_mode || 'dine_in') === fulfillmentMode
+    );
+    if (!existing) return fallback;
+    return {
+      policy: String(existing.tax_policy || 'disabled'),
+      rateBps: Number(existing.tax_rate_bps || 0),
+    };
+  }
+
   function totals() {
     let quantity = 0;
-    let total = 0;
+    let subtotal = 0;
+    let tax = 0;
     for (const line of cart.values()) {
-      quantity += line.quantity;
-      total += Number(line.item.price) * line.quantity;
+      const lineQuantity = Math.max(0, Number(line.quantity) || 0);
+      const takeawayQuantity = Math.max(0, Math.min(lineQuantity, Number(line.takeaway_quantity) || 0));
+      const dineInQuantity = lineQuantity - takeawayQuantity;
+      const unitPrice = Number(line.item.price) || 0;
+      quantity += lineQuantity;
+      subtotal += unitPrice * lineQuantity;
+      for (const [mode, modeQuantity] of [['dine_in', dineInQuantity], ['takeaway', takeawayQuantity]]) {
+        if (!modeQuantity) continue;
+        const profile = taxProfileForCartPortion(line, mode);
+        const rateBps = profile.policy === 'disabled' || profile.policy === 'exempt' ? 0 : profile.rateBps;
+        tax += taxAmountFor(unitPrice * modeQuantity, rateBps);
+      }
     }
-    return { quantity, total };
+    return { quantity, subtotal, tax, total: subtotal + tax };
   }
 
   function setInlineCounts() {
@@ -714,12 +755,18 @@
         : 'کافه این سفارش را تأیید کرده یا وضعیت آن تغییر کرده است. نسخه قبلی به سفارش جدید تبدیل نمی‌شود.';
       if (guestOrderConflictPrimary) guestOrderConflictPrimary.textContent = changed ? 'بارگذاری آخرین نسخه' : 'مشاهده سفارش‌ها';
       if (guestOrderConflictSecondary) guestOrderConflictSecondary.textContent = changed ? 'انصراف از ویرایش' : 'شروع سفارش جدید';
+      // A stale-edit conflict blocks submit; keep its recovery actions in view even
+      // when a long cart was scrolled to the bottom before the server response.
+      if (cartDrawerContent && cartDrawerContent.scrollTop > 0) cartDrawerContent.scrollTop = 0;
     }
     if (cartCount) cartCount.textContent = new Intl.NumberFormat('fa-IR').format(total.quantity);
     if (cartContext) cartContext.textContent = table ? `${textFaDigits(table.name)} • ${new Intl.NumberFormat('fa-IR').format(cart.size)} قلم، ${new Intl.NumberFormat('fa-IR').format(total.quantity)} عدد` : `${new Intl.NumberFormat('fa-IR').format(cart.size)} قلم، ${new Intl.NumberFormat('fa-IR').format(total.quantity)} عدد`;
+    if (cartSubtotal) cartSubtotal.textContent = money(total.subtotal);
+    if (cartTax) cartTax.textContent = money(total.tax);
+    cartTaxBreakdown?.classList.toggle('hidden', total.tax <= 0);
     if (cartTotal) cartTotal.textContent = money(total.total);
     if (cartBarTotal) cartBarTotal.textContent = money(total.total);
-    if (cartTotalLabel) cartTotalLabel.textContent = !editingOrder && appendTarget ? 'جمع موارد جدید' : 'جمع سفارش';
+    if (cartTotalLabel) cartTotalLabel.textContent = total.tax > 0 ? 'مبلغ قابل پرداخت' : (!editingOrder && appendTarget ? 'جمع موارد جدید' : 'جمع سفارش');
     if (cartSummaryCaption) {
       const modeText = editingOrderCode
         ? `در حال ویرایش ${orderNumberLabel(editingOrder?.order_number || editConflict?.latest?.order_number)}`
@@ -1075,7 +1122,7 @@
       const statusLabel = orderStatusShortLabel(order.status);
       const statusClass = isMutable ? 'is-pending' : ['accounted','completed'].includes(String(order.status)) ? 'is-confirmed' : String(order.status)==='cancelled' ? 'is-cancelled' : '';
       const actions = (order.can_edit || order.can_cancel) ? `<div class="guest-order-actions">${order.can_edit ? `<button type="button" data-edit-guest-order="${esc(order.order_code)}">ویرایش سفارش</button>` : ''}${order.can_cancel ? `<button type="button" data-cancel-guest-order="${esc(order.order_code)}">لغو سفارش</button>` : ''}</div>` : '';
-      return `<article class="guest-order-card ${statusClass}" data-guest-order="${esc(order.order_code)}"><header class="guest-order-card-head"><div><strong>${orderNumberLabel(order.order_number)}</strong><span class="guest-order-status">${esc(statusLabel)}</span></div><small>${numberFa(orderItems.length)} قلم · ${numberFa(unitCount)} عدد</small></header><div class="guest-order-lines">${previewLines || '<div class="guest-order-line"><span>بدون آیتم</span></div>'}${more}</div><footer class="guest-order-card-foot"><strong>${money(order.total_amount)}</strong>${actions}</footer></article>`;
+      return `<article class="guest-order-card ${statusClass}" data-guest-order="${esc(order.order_code)}"><header class="guest-order-card-head"><div><strong>${orderNumberLabel(order.order_number)}</strong><span class="guest-order-status">${esc(statusLabel)}</span></div><small>${numberFa(orderItems.length)} قلم · ${numberFa(unitCount)} عدد</small></header><div class="guest-order-lines">${previewLines || '<div class="guest-order-line"><span>بدون آیتم</span></div>'}${more}</div><footer class="guest-order-card-foot"><strong>${money(Number(order.final_amount ?? order.total_amount))}</strong>${Number(order.tax_amount || 0) > 0 ? `<small>شامل ${money(order.tax_amount)} مالیات</small>` : ''}${actions}</footer></article>`;
     }).join('');
     if (guestOrders.length) guestOrdersList.insertAdjacentHTML('afterbegin', '<div class="guest-orders-currency">مبالغ به تومان</div>');
 
@@ -1165,6 +1212,8 @@
         price: Number(line.unit_price || current?.price || 0),
         snapshot_only: !current || !canOrderItem(current),
         snapshot_from_order: true,
+        tax_policy: String(line.tax_policy || current?.tax_policy || 'disabled'),
+        tax_rate_bps: Number(line.tax_rate_bps ?? current?.tax_rate_bps ?? 0),
       };
       const quantity = Math.max(1, Math.min(20, Number(line.quantity) || 1));
       const existing = cart.get(id);
@@ -1418,6 +1467,69 @@
   }
 
 
+  function buildGuestSubmissionContext() {
+    const order = { note: customerNote?.value.trim() || '', items: orderPayloadLines() };
+    const signature = JSON.stringify(order);
+    if (!pendingToken || pendingSignature !== signature) {
+      pendingToken = uuid();
+      pendingSignature = signature;
+    }
+    const explicitOrder = editingOrderCode ? editingOrder : null;
+    const appendTarget = explicitOrder ? null : mutableAppendTarget();
+    const submittedMode = explicitOrder ? 'edit' : appendTarget ? 'append' : 'create';
+    const submittedTarget = explicitOrder || appendTarget;
+    const usesEditableApi = Boolean(submittedTarget && window.CAFE_GUEST_ORDERS_API_URL);
+    const endpoint = usesEditableApi ? window.CAFE_GUEST_ORDERS_API_URL : window.CAFE_API_URL;
+    const finalOrder = submittedMode === 'edit'
+      ? order
+      : submittedMode === 'append' ? mergeDraftIntoMutableOrder(submittedTarget, order) : order;
+    const expectedSignature = submittedMode === 'edit'
+      ? String(editingOrderSignature || submittedTarget?.edit_signature || '')
+      : String(submittedTarget?.edit_signature || '');
+    const body = usesEditableApi ? {
+      action: 'update', order_code: submittedTarget.order_code, expected_signature: expectedSignature,
+      table_token: table.token, session_token: session?.token || '', device_token: deviceToken,
+      customer_note: finalOrder.note, items: finalOrder.items, csrf_token: csrf,
+    } : {
+      table_token: table.token, session_token: session?.token || '', device_token: deviceToken,
+      client_token: pendingToken, customer_note: order.note, items: order.items, csrf_token: csrf,
+    };
+    const draftSignature = JSON.stringify({
+      mode: submittedMode, order_code: submittedTarget?.order_code || '', expected_signature: expectedSignature,
+      session_token: session?.token || '', note: finalOrder.note, items: finalOrder.items,
+    });
+    return { order, submittedMode, submittedTarget, endpoint, body, draftSignature };
+  }
+
+  async function requestGuestFinancialPreview(context) {
+    if (!window.CAFE_ORDER_QUOTE_API_URL) throw Object.assign(new Error('پیش‌نمایش مالی سفارش در دسترس نیست.'), { code: 'quote_unavailable' });
+    const quoteBody = {
+      ...context.body,
+      quote_mode: context.submittedMode === 'edit' ? 'update' : context.submittedMode,
+    };
+    delete quoteBody.action;
+    const response = await fetch(window.CAFE_ORDER_QUOTE_API_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      cache: 'no-store', body: JSON.stringify(quoteBody),
+    });
+    const data = await response.json().catch(() => ({}));
+    window.SoknaPushRuntime?.handleResponse?.(data);
+    if (!response.ok || !data.success || !data.financial_preview) {
+      throw Object.assign(new Error(data.message || 'پیش‌نمایش مالی سفارش آماده نشد؛ دوباره تلاش کنید.'), { code: data.code });
+    }
+    return data.financial_preview;
+  }
+
+  function guestFinancialPreviewText(preview) {
+    return [
+      `جمع اقلام: ${money(preview.subtotal)}`,
+      `تخفیف: ${money(preview.discount)}`,
+      `پایه مشمول مالیات: ${money(preview.taxable)}`,
+      `مالیات: ${money(preview.tax)}`,
+      `مبلغ نهایی: ${money(preview.total)}`,
+    ].join('؛ ');
+  }
+
   async function submitOrder(options = {}) {
     const retryCount = Math.max(0, Number(options.retryCount || 0));
     if (submitting || editConflict || editingOrderNeedsReconcile || !cart.size || !table || (!canOrder && !editingOrder)) return;
@@ -1431,62 +1543,65 @@
       return;
     }
 
+    const context = buildGuestSubmissionContext();
+    saveState();
+    if (options.financialConfirmed !== true || String(options.quoteSignature || '') !== context.draftSignature) {
+      submitting = true;
+      submit.disabled = true;
+      if (submitText) submitText.textContent = 'در حال بررسی مبلغ…';
+      try {
+        const preview = await requestGuestFinancialPreview(context);
+        submitting = false;
+        submit.disabled = Boolean(editConflict || editingOrderNeedsReconcile) || (!canOrder && !editingOrder);
+        updateSubmitMode();
+        openGuestConfirmation({
+          title: context.submittedMode === 'edit' ? 'تأیید تغییر سفارش' : 'تأیید نهایی سفارش',
+          text: guestFinancialPreviewText(preview),
+          acceptLabel: context.submittedMode === 'edit' ? 'ثبت تغییرات' : 'تأیید و ارسال',
+          onAccept: () => {
+            layerManager.close(guestConfirmModal);
+            setTimeout(() => submitOrder({ retryCount, financialConfirmed: true, quoteSignature: context.draftSignature }), 20);
+            return true;
+          },
+        });
+      } catch (error) {
+        submitting = false;
+        submit.disabled = Boolean(editConflict || editingOrderNeedsReconcile) || (!canOrder && !editingOrder);
+        updateSubmitMode();
+        const refreshCodes = ['order_changed','order_not_editable','order_not_found'];
+        if (['edit','append'].includes(context.submittedMode) && refreshCodes.includes(String(error.code || ''))) {
+          await refreshGuestOrders({ silent: true });
+          if (context.submittedMode === 'edit' && !editConflict) {
+            const latest = guestOrders.find((entry) => entry.order_code === editingOrderCode) || null;
+            setEditConflict(latest?.can_edit ? 'changed' : 'locked', latest);
+          }
+          render();
+        } else if (error.code === 'pending_order_exists' && context.submittedMode === 'create') {
+          await refreshGuestOrders({ silent: true });
+          showToast('یک سفارش در انتظار پیدا شد؛ سفارش را دوباره بررسی و ثبت کنید.', 'warning');
+          render();
+        } else {
+          showToast(window.SoknaGuestUI?.requestErrorMessage?.(error, error.message || 'پیش‌نمایش مالی سفارش آماده نشد.') || error.message || 'پیش‌نمایش مالی سفارش آماده نشد.', 'error');
+        }
+        if (error.code === 'ordering_paused') { orderingEnabled = false; canOrder = false; setOrderingState(); }
+        if (error.code === 'session_inactive') { canOrder = false; setOrderingState(); closeDrawer(); }
+        if (error.code === 'prices_changed' || error.code === 'items_unavailable') { saveState(); setTimeout(() => location.reload(), 1200); }
+      }
+      return;
+    }
+
     submitting = true;
     submit.disabled = true;
     if (submitText) submitText.textContent = msg('sending_order', 'داریم سفارشت رو می‌فرستیم…');
     else submit.textContent = msg('sending_order', 'داریم سفارشت رو می‌فرستیم…');
-    const order = {
-      note: customerNote?.value.trim() || '',
-      items: orderPayloadLines(),
-    };
-    const signature = JSON.stringify(order);
-    if (!pendingToken || pendingSignature !== signature) {
-      pendingToken = uuid();
-      pendingSignature = signature;
-    }
-    saveState();
-
-    let submittedMode = 'create';
-    let submittedTarget = null;
     let retrySubmission = false;
 
     try {
-      const explicitOrder = editingOrderCode ? editingOrder : null;
-      const appendTarget = explicitOrder ? null : mutableAppendTarget();
-      submittedMode = explicitOrder ? 'edit' : appendTarget ? 'append' : 'create';
-      submittedTarget = explicitOrder || appendTarget;
-      const usesEditableApi = Boolean(submittedTarget && window.CAFE_GUEST_ORDERS_API_URL);
-      const endpoint = usesEditableApi ? window.CAFE_GUEST_ORDERS_API_URL : window.CAFE_API_URL;
-      const finalOrder = submittedMode === 'edit'
-        ? order
-        : submittedMode === 'append' ? mergeDraftIntoMutableOrder(submittedTarget, order) : order;
-      const expectedSignature = submittedMode === 'edit'
-        ? String(editingOrderSignature || submittedTarget?.edit_signature || '')
-        : String(submittedTarget?.edit_signature || '');
-      const body = usesEditableApi ? {
-        action: 'update',
-        order_code: submittedTarget.order_code,
-        expected_signature: expectedSignature,
-        table_token: table.token,
-        session_token: session?.token || '',
-        device_token: deviceToken,
-        customer_note: finalOrder.note,
-        items: finalOrder.items,
-        csrf_token: csrf,
-      } : {
-        table_token: table.token,
-        session_token: session?.token || '',
-        device_token: deviceToken,
-        client_token: pendingToken,
-        customer_note: order.note,
-        items: order.items,
-        csrf_token: csrf,
-      };
-      const response = await fetch(endpoint, {
+      const response = await fetch(context.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         cache: 'no-store',
-        body: JSON.stringify(body),
+        body: JSON.stringify(context.body),
       });
       const data = await response.json().catch(() => ({}));
       window.SoknaPushRuntime?.handleResponse?.(data);
@@ -1495,7 +1610,7 @@
       }
 
       metric('order_submit', 0);
-      const trackingToken = String(data.client_token || submittedTarget?.client_token || pendingToken);
+      const trackingToken = String(data.client_token || context.submittedTarget?.client_token || pendingToken);
       clearEditingContext();
       pendingToken = '';
       pendingSignature = '';
@@ -1523,38 +1638,28 @@
       trackOrder(data.order_code, trackingToken, data.order_number);
     } catch (error) {
       const refreshCodes = ['order_changed','order_not_editable','order_not_found'];
-      if (submittedMode === 'edit' && refreshCodes.includes(String(error.code || ''))) {
+      if (context.submittedMode === 'edit' && refreshCodes.includes(String(error.code || ''))) {
         await refreshGuestOrders({ silent: true });
         if (!editConflict) {
           const latest = guestOrders.find((entry) => entry.order_code === editingOrderCode) || null;
           setEditConflict(latest?.can_edit ? 'changed' : 'locked', latest);
         }
         render();
-      } else if (submittedMode === 'append' && refreshCodes.includes(String(error.code || ''))) {
+      } else if (context.submittedMode === 'append' && refreshCodes.includes(String(error.code || ''))) {
         await refreshGuestOrders({ silent: true });
         if (retryCount < 1) retrySubmission = true;
         else showToast('وضعیت سفارش هم‌زمان تغییر کرد؛ دوباره ثبت را بزنید.', 'warning');
-      } else if (error.code === 'pending_order_exists' && submittedMode === 'create') {
+      } else if (error.code === 'pending_order_exists' && context.submittedMode === 'create') {
         await refreshGuestOrders({ silent: true });
         if (retryCount < 1 && mutableAppendTarget()) retrySubmission = true;
         else showToast(window.SoknaGuestUI?.requestErrorMessage?.(error, 'سفارش در انتظار پیدا نشد؛ دوباره امتحان کن.') || 'سفارش در انتظار پیدا نشد؛ دوباره امتحان کن.', 'error');
       } else {
         showToast(window.SoknaGuestUI?.requestErrorMessage?.(error, msg('order_failed', 'سفارشت ثبت نشد؛ دوباره امتحان کن.')) || msg('order_failed', 'سفارشت ثبت نشد؛ دوباره امتحان کن.'), 'error');
       }
-      if (error.code === 'ordering_paused') {
-        orderingEnabled = false;
-        canOrder = false;
-        setOrderingState();
-      }
-      if (error.code === 'session_inactive') {
-        canOrder = false;
-        setOrderingState();
-        closeDrawer();
-      }
-      if (error.code === 'prices_changed' || error.code === 'items_unavailable') {
-        saveState();
-        setTimeout(() => location.reload(), 1200);
-      }
+      if (error.code === 'ordering_paused') { orderingEnabled = false; canOrder = false; setOrderingState(); }
+      if (error.code === 'session_inactive') { canOrder = false; setOrderingState(); closeDrawer(); }
+      else if (cart.size && layerManager.currentLayer() !== drawer) layerManager.open(drawer);
+      if (error.code === 'prices_changed' || error.code === 'items_unavailable') { saveState(); setTimeout(() => location.reload(), 1200); }
     } finally {
       submitting = false;
       submit.disabled = Boolean(editConflict || editingOrderNeedsReconcile) || (!canOrder && !editingOrder);
