@@ -34,7 +34,10 @@ function Get-ApacheOwnerInfo([string]$Exe){
     if(-not $rootMatch.Success -or -not $cfgMatch.Success){throw 'Apache did not report HTTPD_ROOT/SERVER_CONFIG_FILE; SOKNA will not guess the shared configuration path.'}
     $root=[IO.Path]::GetFullPath($rootMatch.Groups[1].Value)
     $cfgRaw=$cfgMatch.Groups[1].Value
-    $cfg=if([IO.Path]::IsPathFullyQualified($cfgRaw)){[IO.Path]::GetFullPath($cfgRaw)}else{[IO.Path]::GetFullPath((Join-Path $root $cfgRaw))}
+    # Windows PowerShell 5.1 runs on .NET Framework, which has no IsPathFullyQualified.
+    $absoluteConfig = $cfgRaw -match '^(?:[A-Za-z]:[\\/]|[\\/]{2}[^\\/]+[\\/][^\\/]+)'
+    if (-not $absoluteConfig -and [IO.Path]::IsPathRooted($cfgRaw)) { throw 'Apache config path is rooted but not absolute.' }
+    $cfg=if($absoluteConfig){[IO.Path]::GetFullPath($cfgRaw)}else{[IO.Path]::GetFullPath((Join-Path $root $cfgRaw))}
     Assert-SoknaSafePath $root
     Assert-SoknaSafePath $cfg
     if(-not(Test-Path -LiteralPath $cfg -PathType Leaf)){throw 'Apache main configuration file was not found.'}

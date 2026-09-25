@@ -1,3 +1,25 @@
+# وضعیت ادامه — ۲۵ سپتامبر ۲۰۲۶، بررسی مجدد CI
+
+این بخش بر گزارش‌های تاریخی پایین اولویت دارد. PR فعال: https://github.com/mobaraki20/SoknaCafe/pull/19 . انتشار سورس مجاز و انجام شده؛ نصب نهایی منتشر نشده است.
+
+شاهد قطعی روی commit `637494574425ea177bea0251e9ecb2d19603b36f` در run https://github.com/mobaraki20/SoknaCafe/actions/runs/36115585860 :
+- Linux regression gate: موفق کامل.
+- Public Relay + MariaDB: موفق.
+- Windows: build Runtime و Print Worker و آزمون واقعی setup runtime موفق؛ شامل repair/rollback، listener، حذف امن دو سرویس و حفظ داده و TLS.
+- Inno lifecycle: شکست؛ فایل prerequisites.json در payload نبود. آزمون bundle نیز هنوز تعداد قدیمی سه فایل را انتظار داشت.
+- full-stack / MSI: skipped، شاهد پذیرش نیستند.
+
+commit `8b92d3233505aeebad882cb23eb01b761095fde2` payload پیش‌نیاز، Apache owner/template و Print Worker را اضافه و allowlist چهار فایل bundle را تصحیح کرد. run https://github.com/mobaraki20/SoknaCafe/actions/runs/36130372726 برای آن شروع شده؛ نتیجه باید خوانده شود. این اصلاح مسیر preview است، نه ادعای نصب کامل روی سیستم خام.
+
+freeze پیش‌نیاز در run https://github.com/mobaraki20/SoknaCafe/actions/runs/36115585976 با redirect ناامن متوقف شد. HTTPS نباید غیرفعال شود و hashها نباید برای عبور تست تغییر کنند. پیام خطا اکنون شناسه provider را ثبت می‌کند؛ run جدید https://github.com/mobaraki20/SoknaCafe/actions/runs/36130372748 باید بررسی شود. release-lock هنوز تأیید نشده است.
+
+رفع سازگاری جاری: Apache owner از IsPathFullyQualified استفاده می‌کرد که در .NET Framework/Windows PowerShell 5.1 موجود نیست. تشخیص مسیر کامل ویندوز جایگزین شده و مسیر drive-relative رد می‌شود؛ آزمون Windows لازم است.
+
+موارد باز: انتخاب و ادغام مسیر واحد Setup.exe با Host/UI، نصب هدایت‌شده پیش‌نیازها و Apache، fixture معتبر lifecycle نصب، Repair هم‌نسخه و updater، پذیرش مالی مشترک اقامتگاه، Phase8C و UAT چاپگر/صندوق. PowerShell پشت صحنه مجاز است و کاربر نباید ps1 اجرا کند. شکست یا skipped به موفق تبدیل گزارش نشود.
+
+---
+# گزارش‌های تاریخی (وضعیت جاری نیستند)
+
 # آخرین ادامه و شواهد اجرایی
 
 شاخه منتشرشده: `work/reconcile-dev39`، PR https://github.com/mobaraki20/SoknaCafe/pull/19 (Draft؛ مقصد phase/8b-windows-setup).
