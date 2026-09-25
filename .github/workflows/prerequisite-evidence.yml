@@ -1,0 +1,40 @@
+name: SOKNA prerequisite evidence
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'installer/windows/prerequisites/provider-candidate.json'
+      - 'installer/windows/scripts/freeze-prerequisite-lock.ps1'
+      - '.github/workflows/prerequisite-evidence.yml'
+permissions:
+  contents: read
+jobs:
+  provider-evidence:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify pinned provider artifacts and emit review candidate
+        shell: pwsh
+        run: |
+          $out=Join-Path $env:RUNNER_TEMP 'sokna-prerequisite-review'
+          New-Item -ItemType Directory -Path $out -Force | Out-Null
+          $source=(& git rev-parse HEAD).Trim()
+          @{source_sha=$source;status='started';release_approved=$false} | ConvertTo-Json | Set-Content (Join-Path $out 'review-status.json')
+          try {
+            ./installer/windows/scripts/freeze-prerequisite-lock.ps1 -CandidateFile (Join-Path $PWD 'installer/windows/prerequisites/provider-candidate.json') -ArtifactRoot (Join-Path $env:RUNNER_TEMP 'sokna-provider-downloads') -OutputLock (Join-Path $out 'release-lock.json') -RepoRoot $PWD -AllowDownload
+            if($LASTEXITCODE -ne 0){throw 'Provider verification failed.'}
+            @{source_sha=$source;status='verified-awaiting-review';release_approved=$false} | ConvertTo-Json | Set-Content (Join-Path $out 'review-status.json')
+          } catch {
+            @{source_sha=$source;status='failed';release_approved=$false;error=$_.Exception.Message} | ConvertTo-Json | Set-Content (Join-Path $out 'review-status.json')
+            throw
+          }
+      - name: Preserve evidence even when a provider fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sokna-provider-review-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/sokna-prerequisite-review/
+          if-no-files-found: warn
