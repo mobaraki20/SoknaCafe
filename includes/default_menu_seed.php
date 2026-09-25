@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/sellable.php';
+
 /** Load the versioned default Sokna menu/catalog data. */
 function default_menu_seed(): array
 {

@@ -69,7 +69,7 @@ try {
     Install $Installer $extra
     Assert-InstallerBundle (Join-Path $root 'install-2.log')
     $caFile = Join-Path $data 'secrets/tls/local-ca.crt.pem'
-    $caThumb = (New-Object Security.Cryptography.X509Certificates.X509Certificate2($caFile)).Thumbprint
+    Assert (-not (Test-Path -LiteralPath $caFile)) 'Platform preview fixture unexpectedly provisioned HTTPS identity'
     Assert ((Get-Service SoknaRuntime).Status -eq 'Running') 'Installer did not start Runtime'
     Assert (Test-Path $arp) 'Installed apps entry missing'
     $entry = Get-ItemProperty $arp
@@ -80,7 +80,6 @@ try {
     Assert (Test-Path $desktop) 'Desktop shortcut missing'
     Assert (Test-Path (Join-Path $start 'SOKNA.url')) 'Start shortcut missing'
     Assert ((Get-Content $desktop -Raw) -match 'https://sokna.local/') 'Shortcut points at the wrong URL'
-    $tlsHash = (Get-FileHash (Join-Path $data 'secrets/tls/local-ca.key.pem')).Hash
     # Simulate a later application update, then repair with the original installer.
     [IO.File]::WriteAllText((Join-Path $app 'VERSION.txt'), 'application-B')
     [IO.File]::WriteAllText((Join-Path $data 'business-sentinel.txt'), 'preserve-data')
@@ -93,7 +92,6 @@ try {
     Assert (Test-Path $desktop) 'Repair did not restore desktop shortcut'
     Assert ((Get-Content (Join-Path $app 'VERSION.txt') -Raw) -eq 'application-B') 'Repair downgraded application version'
     Assert ((Get-FileHash (Join-Path $app 'config.php')).Hash -eq $configHash) 'Repair changed application config'
-    Assert ((Get-FileHash (Join-Path $data 'secrets/tls/local-ca.key.pem')).Hash -eq $tlsHash) 'Repair changed TLS identity'
     # Wrong service owner must block removal and leave integration intact.
     $sc = "$env:SystemRoot\System32\sc.exe"
     $image = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\SoknaRuntime').ImagePath
@@ -111,8 +109,7 @@ try {
     Assert (-not (Test-Path (Join-Path $platform 'setup-sokna.ps1'))) 'Uninstall left platform executable scripts behind'
     Assert ((Get-FileHash (Join-Path $app 'config.php')).Hash -eq $configHash) 'Uninstall changed app config'
     Assert ((Get-Content (Join-Path $data 'business-sentinel.txt') -Raw) -eq 'preserve-data') 'Uninstall deleted business data'
-    Assert ((Get-FileHash (Join-Path $data 'secrets/tls/local-ca.key.pem')).Hash -eq $tlsHash) 'Uninstall deleted private TLS identity'
-    Write-Host 'Inno lifecycle PASS: preflight, ARP, shortcuts, cached Repair, application preservation, ownership refusal, uninstall/data preservation. Fixture test only; no HTTP/DB/UAT claim.'
+    Write-Host 'Inno lifecycle PASS: preflight, ARP, shortcuts, cached Repair, application preservation, ownership refusal, uninstall/data preservation. Platform fixture only; HTTPS/HTTP/DB/UAT are proven by separate gates.'
 } finally {
     # Fixture logs contain no real credentials. Emit evidence even when a GUI child has no stdout.
     Get-ChildItem $root -Filter '*.log' -File | ForEach-Object { Write-Host $_.Name; Get-Content $_.FullName -Tail 100 | Write-Host }

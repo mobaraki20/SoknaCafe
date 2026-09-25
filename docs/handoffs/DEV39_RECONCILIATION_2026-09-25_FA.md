@@ -5,6 +5,8 @@ Run `36195932654` موفقیت Linux regression، Public Relay/MariaDB و Apache
 
 Run `36198103588` اصلاح syntax MSI را تأیید کرد: MariaDB در ۴۱ ثانیه نصب شد و stage به `new` رسید. خطای بعدی relocation Apache Lounge بود؛ `-V` ریشه compiled را گزارش می‌کرد نه ریشه کنار executable منتخب. اصلاح fail-closed برای executable-adjacent root و pairing غیرواقعیِ fixture preview همراه checkpoint جاری است. نصب نهایی منتشر نشده است.
 
+Run `36198723040` relocation Apache و رسیدن New به business setup را تأیید کرد. شکست واقعی بعدی load نشدن `sellable.php` در مسیر مستقیم default-menu seed بود. preview پلتفرم نیز نصب/Runtime/Print Worker را انجام داد و فقط assertion خارج از scope برای CA غیرفعال شکست خورد. اصلاح dependency و scope fixture همراه checkpoint جاری است. نصب نهایی منتشر نشده است.
+
 ---
 
 # به‌روزرسانی تثبیت پیش‌نیاز و اجرای full-stack
