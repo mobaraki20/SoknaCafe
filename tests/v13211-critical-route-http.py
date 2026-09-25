@@ -8,7 +8,7 @@ def block(msg,code=2):
     print(('BLOCKED: ' if strict else 'UAT_REQUIRED: ')+msg)
     sys.exit(code if strict else 0)
 if not (base and cookie and sub): block('staging URL/session/subscriber id missing; authenticated route smoke not executed.')
-checks=[(f'/admin/subscribers.php?view={sub}','پرونده مشترک'),('/admin/subscribers.php','مشترکین'),('/admin/invoices.php','فاکتور')]
+checks=[(f'/admin/subscribers.php?view={sub}','پرونده مشتری'),('/admin/subscribers.php','مشتریان'),('/admin/invoices.php','فاکتور')]
 for route,needle in checks:
     req=urllib.request.Request(base+route,headers={'Cookie':cookie,'User-Agent':'Sokna-Release-Gate/1.32.14','Cache-Control':'no-cache'})
     try:

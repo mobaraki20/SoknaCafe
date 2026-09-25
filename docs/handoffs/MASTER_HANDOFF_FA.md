@@ -1,3 +1,5 @@
+> **مرجع فعلی تطبیق — 2026-09-25:** شاخه منتشرشده `work/reconcile-dev39` در PR #19، نسخه سورس dev.39، مبتنی بر تاریخچه گیت‌هاب و پیشرفت‌های بسته. ابتدا `docs/handoffs/DEV39_RECONCILIATION_2026-09-25_FA.md` را بخوانید (مسیر نسبت به ریشه مخزن). ادامه‌ها و دستورهای متعارض زیر سوابق تاریخی‌اند؛ Phase8B کامل نشده، WiX مجوز اجرا نگرفته و شواهد CI جدید و کارهای باز در مرجع فوق و جدول پذیرش 2026-09-25 ثبت شده‌اند.
+
 # SOKNA — Master Project Handoff
 
 Latest verified diagnostic extension: source `0557e64336d1ac1be958787ebe76f895df4647a2`, CI `35504980480` all three gates SUCCESS. Read CURRENT_STATUS and DELIVERY_STATUS for exact scope and outstanding deliverables. Independent Windows Agent repository: `mobaraki20/Pagent`, published v6.2.5 observed; integration still requires validation.
@@ -19,11 +21,41 @@ Packaging design checkpoint: `docs/architecture-migration-r2/WINDOWS_PACKAGING_O
 
 Native platform preview source `a3435d187717ffdc1d2fc2914ab81a341e7742b3` is verified by CI `35504331920`: Windows installer lifecycle, Linux and MariaDB all SUCCESS. Artifact `sokna-platform-preview-unsigned` is available in that run. Actual install/shortcuts/Installed apps/cached Repair/owned-service uninstall and data preservation passed on a disposable Windows fixture. The preview assumes an already configured application and is not the complete installer; clean-machine prerequisites, same-version full app repair, unified diagnostics and UAT remain open. Read the latest phase handoff before continuing.
 
+> **CURRENT AUTHORITY BANNER — 2026-09-24**
+> Current Phase 8B Closure source is `1.36.4-dev.39` on `work/phase8b-closure-dev39`. Implementation checkpoint `268957d42d281b0f677de5a32be6c41e36b108f5` closes the source hardening; exact packaged head must still be obtained with `git rev-parse HEAD`. Historical GitHub branch/SHAs below are provenance only.
+> Product engineering identity for this closure batch is `1.36.4-dev.39`; this is not a Production-ready claim. The 2026-09-19 branch/main instructions later in this file are **HISTORICAL / SUPERSEDED**.
+> Sole Design Authority: `docs/ui-design-system/CANONICAL_DESIGN_SYSTEM_CONTRACT_FA.md` (`SCDS-CANONICAL-2026-R1`).
+> Print Worker remains internal to SOKNA Local; Phase 8B remains incomplete until real Windows/.NET/WiX/MariaDB/physical acceptance evidence exists.
+
+
+## Addendum تاریخی reconciliation — SUPERSEDED by dev.39 banner above
+> این بخش روندی را ثبت می‌کند که از snapshot `dev.38` به وضعیت فعلی رسید. برای تعیین نسخه/مرحله/اقدام بعدی از banner بالا و `CURRENT_STATUS_FA.md` استفاده کنید.
+
+- Working source آن مرحله snapshot `phase/8b-windows-setup` / `1.36.4-dev.38` بود؛ این دیگر current installable identity نیست.
+- `dev.26` فقط Business Behavior + UI DNA/provenance است؛ Working Source نیست.
+- همه نسخه‌های قبلی **SOKNA Design System** به تصمیم صریح مالک **REJECTED** هستند. UI فعلی dev.38 نیز Design Authority نهایی نیست. Design System جدید باید از نقاط درست dev.26 + اصلاح ایرادها + اصول استاندارد Persian-first/RTL-first ساخته و روی همه Surfaceهای لمس‌شده enforce شود.
+- Printing deployment/ownership قدیمی این فایل Superseded است: طبق R2، **Print Worker component داخلی SOKNA Local است و محصول جدا نصب نمی‌شود**. مرجع جاری: `docs/architecture-migration-r2/PHASE7R_PRINTING_RECONCILIATION_FA.md`.
+- Print API v4، durable SQLite queue، reconciliation/submission fence/Winspool semantics بالغ حفظ می‌شوند و در PHP بازنویسی نمی‌شوند. Source baseline داخلی فعلی از Pagent `6.2.5` با provenance ثبت‌شده گرفته شده است؛ Setup/Control مستقل جزو محصول SOKNA نیستند.
+
+## انتقال و بازبینی 2026-09-19 — شاخه فعال را از نو نسازید
+- main مشاهده‌شده: `98607d87d50c7913a1143d621e60f807965bae53` (checkpoint محصول همچنان Phase 8A / dev.38).
+- شاخه فعال موجود: `phase/8b-windows-setup`.
+- head بررسی‌شده: `6a3e183ca0ea544046c09bf3b9c8de7ab038ca5b`.
+- CI `35445104275`: completed/success؛ هر سه job Windows runtime، Public+Local MariaDB و Linux regression موفق‌اند.
+- هنگام بازبینی PR باز وجود نداشت؛ 8B merge نشده و COMPLETE نیست.
+- کد نصب مشترک، machine recovery، service host واقعی C# و PowerShell orchestration موجود است. هنداور اولیه شاخه درباره WinSW قدیمی شده؛ کد C# منبع فعلی است.
+- الزامات مالک، انتخاب فنی پیشنهادی، شکاف‌های واقعی و معیارهای پذیرش: `docs/architecture-migration-r2/WINDOWS_INSTALLER_ACCEPTANCE_FA.md`.
+- اقدام بعدی: همان شاخه فعال را fetch و بررسی کن؛ قبل از ادامه تغییرات احتمالی جدید را بخوان. نصب‌کننده نهایی هنوز تأیید نشده است.
+- این checkpoint فقط بررسی و مستندسازی است؛ هیچ تغییر runtime یا ارتقای نسخه‌ای انجام نشده و CI فوق متعلق به head کد 8B است، نه commit مستندات جدید.
+
+### قرارداد تحویل هر مرحله
+پیش از پایان هر گام، تغییرات را در GitHub ثبت کن؛ CURRENT_STATUS و هنداور فاز باید شامل branch/head، کار انجام‌شده، تست واقعی و run ID، موارد باز و اولین اقدام بعدی باشند. نقطه شروع root و MASTER باید به شاخه فعال اشاره کنند. شاخه‌ای با CI سبز اما بدون merge/post-merge CI را COMPLETE ننام. بسته ZIP تاریخی را بر GitHub فعلی مقدم ندان.
+
 ---
 
-Updated: 2026-09-19  
-Repository: `mobaraki20/SoknaCafe`  
-Current verified release checkpoint: `1.36.4-dev.38`  
+Updated: 2026-09-19
+Repository: `mobaraki20/SoknaCafe`
+Current verified release checkpoint: `1.36.4-dev.38`
 Current verified product main checkpoint: `485db60b71b40c475c931a9d6d056ce8a07d0df2`
 
 این فایل مرجع سطح‌بالای ادامه پروژه است. هر ایجنت جدید باید قبل از هر تغییر کد، این فایل را کامل بخواند. هدف این است که ادامه پروژه بدون نیاز به تاریخچه ChatGPT یا پرسیدن مجدد تصمیم‌های قبلی ممکن باشد.
@@ -34,7 +66,7 @@ Current verified product main checkpoint: `485db60b71b40c475c931a9d6d056ce8a07d0
 
 ترتیب اعتبار منابع:
 
-1. **Current `main` source** = رفتار واقعی، UI/Design System، Business behavior و canonical owners.
+1. **Current packaged Git head (`1.36.4-dev.39`)** = رفتار واقعی و canonical code/business owners؛ `dev.38` predecessor/provenance است. UI موجود فقط current implementation است، نه Design Authority نهایی.
 2. **Handover R2** در `docs/architecture-migration-r2/` = تصمیم‌های Frozen معماری/محصول.
 3. **Latest phase handoff** در `docs/handoffs/` = نقطه ادامه، CI، PR/SHA و scope جاری.
 4. Release notes/checkpoint هر فاز = شواهد پیاده‌سازی همان فاز.
@@ -43,11 +75,13 @@ Current verified product main checkpoint: `485db60b71b40c475c931a9d6d056ce8a07d0
 - رفتار کد فعلی را نادیده نگیر.
 - تصمیم Frozen در R2 را نقض نکن.
 - قبل از ساخت Business owner موازی، owner فعلی را پیدا و refactor کن.
-- UI فعلی owner طراحی است مگر R2 صریحاً تغییر را الزام کرده باشد.
+- UI فعلی را کورکورانه حفظ نکن؛ تصمیم صریح مالک درباره Design System جدید و Persian-first/RTL-first بالاتر از UI legacy/current است.
 
 ---
 
-## 2) How to Recover the Exact Source
+## 2) Historical GitHub recovery recipe — NOT current package recovery authority
+
+> برای بسته محلی فعلی از Full Repo/Git Bundle داخل Handoff و `README_START_HERE_FA.md` استفاده کنید. دستورات GitHub زیر provenance دوره 2026-09-19 هستند و نباید checkpoint محلی dev.39 را با main قدیمی جایگزین کنند.
 
 Repository:
 `https://github.com/mobaraki20/SoknaCafe`
@@ -115,15 +149,17 @@ git checkout 485db60b71b40c475c931a9d6d056ce8a07d0df2
 - closed report تا correction explicit دست‌نخورده می‌ماند.
 
 ### Printing / Notifications / Integrations
-- Runtime اکنون lifecycle سرویس نصب‌شده Print Agent را supervise می‌کند؛ Print API v4، Agent SQLite، renderer، submission fence و Winspool state machine همچنان owner بالغ خود را دارند و نباید در PHP duplicate شوند.
+- Print Worker component داخلی SOKNA Local است؛ Setup/Repair/Recovery خود SOKNA آن را build/package/provision/manage می‌کند و محصول/installer/download جداگانه ندارد. Print API v4، SQLite durable queue، renderer، submission fence، reconciliation و Winspool state machine بالغ حفظ می‌شوند و نباید در PHP duplicate شوند.
 - Push queue processing زیر Runtime است؛ `push_event_queue` durable truth می‌ماند و request-time drain فقط accelerator/fallback است.
 - Accommodation transport از business/settlement/recovery owner جدا است.
 - Center outbound user projection capability-gated است؛ legacy inbound directory تا اثبات migration سمت Center حذف نمی‌شود.
 - business receipt tax دارد؛ preparation ticket tax ندارد.
 
 ### UI/DS
-- current source owner UI/Design System است.
-- legacy CSS/markup را زنده نکن.
+- همه SOKNA Design Systemهای قبلی REJECTED هستند و Design Authority نیستند.
+- `dev.26` مرجع DNA و رفتار خوب UI است، نه template مقدس؛ هر ایراد باید قبل از migration اصلاح شود.
+- Design System جدید SOKNA باید Persian-first / RTL-first باشد و tokens/components/behavior/responsive/a11y را canonical و قابل Gate کند.
+- legacy CSS/markup را زنده نکن و UI ضعیف dev.26/dev.38 را کورکورانه کپی نکن.
 - fork renderer یا duplicate route نساز.
 
 ---
@@ -168,7 +204,7 @@ Outcome:
 - no premature print-worker rewrite.
 
 ### Phase 2 — Public Edge + Realtime Relay
-PR #1  
+PR #1
 Merge commit: `f47bde53cd4ae29c4368a5bfb62584691f2dc478`
 
 Owners:
@@ -189,7 +225,7 @@ Outcome:
 - no inbound Internet dependency on Local.
 
 ### Phase 3 — Guest/Public Snapshot Runtime
-PR #2  
+PR #2
 Merge commit: `25e01c0d1465a7b7f0b20115a82cfedc6a8c018d`
 
 Key owners:
@@ -209,7 +245,7 @@ Outcome:
 - forked Public guest runtime removed.
 
 ### Phase 4 — Permission-aware Remote Read Models
-PR #3  
+PR #3
 Merge commit: `124b569b7488ccce707a78733967581e65793a18`
 
 Owners:
@@ -234,7 +270,7 @@ Outcome:
 - no canonical Orders/Finance/Inventory DB clone on Public.
 
 ### Phase 5 — Deferred-safe + Financial Reconciliation
-PR #4  
+PR #4
 Merge commit: `652a950e5909a755a1aa80279c97a645dc537dfe`
 
 Owners:
@@ -261,9 +297,9 @@ Checkpoint/release:
 - `RELEASE_NOTES_1.36.4_DEV31_FA.md`
 
 ### Phase 6A — Preparation Permission Split
-Release: `1.36.4-dev.32`  
-PR #5  
-Merge commit: `32e9b3b239ad3320a7af2ec168fb7f19acbd589c`  
+Release: `1.36.4-dev.32`
+PR #5
+Merge commit: `32e9b3b239ad3320a7af2ec168fb7f19acbd589c`
 Post-merge CI: `35422830131` SUCCESS
 
 Canonical owner:
@@ -280,9 +316,9 @@ Handoff:
 - `docs/handoffs/PHASE6A_HANDOFF_FA.md`
 
 ### Phase 6B — Explicit Sellable Kind
-Release: `1.36.4-dev.33`  
-PR #7  
-Merge commit: `afa84a333ca34d8405af58f2bb3287e6aebfca39`  
+Release: `1.36.4-dev.33`
+PR #7
+Merge commit: `afa84a333ca34d8405af58f2bb3287e6aebfca39`
 Post-merge CI: `35424762946` SUCCESS
 
 Canonical owner:
@@ -299,9 +335,9 @@ Handoff:
 - `docs/handoffs/PHASE6B_HANDOFF_FA.md`
 
 ### Phase 6C — Server-persistent Table Draft
-Release: `1.36.4-dev.34`  
-PR #10  
-Merge commit: `ccf0656655702a0b175a7cb9d7521fcb808745b1`  
+Release: `1.36.4-dev.34`
+PR #10
+Merge commit: `ccf0656655702a0b175a7cb9d7521fcb808745b1`
 Product post-merge CI: `35438494232` SUCCESS
 
 Canonical owners:
@@ -326,7 +362,7 @@ Handoff:
 Release: `1.36.4-dev.37`
 
 Phase 7A — PR #12 / merge `215949cd3507bcf2d20860bd6a8c1c6ef67c51b3` / main CI `35439861511` SUCCESS.
-- Runtime supervises the installed stable Print Agent without duplicating Agent state/Winspool logic.
+- Historical implementation: Runtime آن زمان Agent نصب‌شده را supervise می‌کرد. **Deployment/ownership این خط با Phase7R Superseded شده**؛ state/Winspool logic فقط به‌عنوان behavior provenance حفظ می‌شود.
 - Push processing is explicitly Runtime-owned; durable outbox remains canonical.
 
 Phase 7B — PR #13 / merge `c83df6bdfd240a29a8c8bcf6653f2b69886d2954` / main CI `35440573461` SUCCESS.
@@ -373,7 +409,7 @@ Latest merge:
 Current next phase:
 **Phase 8B — Windows New / Recover Setup Orchestration**
 
-Preserve and compose existing owners: fresh install, Runtime/HTTPS service setup, stable Print Agent installer, backup import/restore, updater recovery, optional Public/off-server/push setup.
+Preserve and compose existing owners: fresh install, Runtime/HTTPS service setup, **internal Print Worker component owned by SOKNA Setup/Repair/Recovery**, backup import/restore, updater recovery, optional Public/off-server/push setup.
 
 ---
 
@@ -457,7 +493,7 @@ Preserve and compose existing owners: fresh install, Runtime/HTTPS service setup
 
 ### Printing / Runtime
 - `includes/printing.php` + `print-agent/v4/` — mature print state/API owner.
-- `tools/print-runtime-worker.php` — Runtime supervision of installed Windows Agent only.
+- `tools/print-runtime-worker.php` — thin Runtime supervisor for the **internal SOKNA Print Worker service**; Print state machine remains in the internal worker component.
 - `includes/runtime.php` / `runtime/sokna-runtime.php` — worker orchestration.
 
 ### Notifications
@@ -542,7 +578,7 @@ Start Phase 8B from current `main` after reading:
 First audit:
 - `install.php` fresh install flow.
 - Runtime Windows service/HTTPS provisioning.
-- stable Print Agent Setup integration.
+- internal Print Worker build/package/provision/Windows acceptance.
 - backup import/restore + updater recovery.
 - optional Public pairing/off-server/push configuration.
 

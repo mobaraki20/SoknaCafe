@@ -1,3 +1,7 @@
+# ⚠️ SUPERSEDED BY PHASE7R
+
+> بخش‌هایی از این سند که Print Agent را محصول/Installer خارجی و مستقل در نظر می‌گیرند **مردود و superseded** هستند. مرجع فعال: `PHASE7R_PRINTING_RECONCILIATION_FA.md` و تصمیم Frozen R2 مبنی بر «Print Worker داخلی SOKNA؛ محصول جدا نصب نمی‌شود». این فایل فقط برای provenance تاریخی نگه داشته شده است.
+
 # Phase 7 Design Notes — Printing / Notifications / Integrations
 
 Status: COMPLETE

@@ -1,0 +1,32 @@
+from pathlib import Path
+root=Path(__file__).resolve().parents[1]
+program=(root/'installer/windows/setup-host/Program.cs').read_text(encoding='utf-8')
+proj=(root/'installer/windows/setup-host/Sokna.SetupHost.csproj').read_text(encoding='utf-8')
+manifest=(root/'installer/windows/setup-host/app.manifest').read_text(encoding='utf-8')
+build=(root/'installer/windows/scripts/build-setup-host.ps1').read_text(encoding='utf-8-sig')
+prepare=(root/'installer/windows/scripts/prepare-shell-payload.ps1').read_text(encoding='utf-8-sig')
+workflow=(root/'.github/workflows/sokna-ci.yml').read_text(encoding='utf-8')
+
+def need(cond,msg):
+    if not cond: raise AssertionError(msg)
+    print('PASS:',msg)
+
+need(not (root/'installer/windows/scripts/setup-host.ps1').exists(), 'no parallel PowerShell Setup Host owner exists')
+need('<TargetFramework>net10.0-windows</TargetFramework>' in proj and '<SelfContained>true</SelfContained>' in proj and '<PublishSingleFile>true</PublishSingleFile>' in proj, 'Setup Host is self-contained single-file Windows executable')
+need('requestedExecutionLevel level="requireAdministrator"' in manifest, 'Setup Host requests elevation explicitly')
+need('UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow' in program and 'SchemaVersion != 1' in program, 'plan parsing is strict and versioned')
+need('VerifyShellManifest' in program and 'SHA256.HashData' in program and 'actual.SetEquals(expected)' in program, 'Setup Host verifies exact shell payload before orchestration')
+need('collect-support.ps1' in program and 'collect-support.ps1' in prepare, 'installer shell requires the canonical one-step support collector')
+need('deploy-seed.ps1' in program and 'setup-sokna.ps1' in program, 'Host delegates New/Recover and Repair to canonical orchestration owners')
+need('Path.Combine(Path.GetFullPath(p.AppRoot), "runtime", "windows", "setup-sokna.ps1")' in program, 'Repair executes the updater-owned live application setup owner, never the cached shell copy')
+need('SoknaRuntimeService.exe' in program and 'PrintWorkerBundle' in program and 'print-worker' in program, 'Repair uses installer-owned Service Host and internal Print Worker bundle')
+need('RedirectStandardOutput = true' in program and 'RedirectStandardError = true' in program and 'return process.ExitCode' in program, 'Host preserves child diagnostics and exit code including reboot-required')
+need('SOKNA_SETUP_SESSION_ID' in program and 'SOKNA_SETUP_SESSION_ID' in (root/'runtime/windows/setup-sokna.ps1').read_text(encoding='utf-8-sig'), 'Host propagates one shared setup session ID into canonical setup logs')
+need('ArgumentList.Add' in program and 'ProcessStartInfo(ps)' in program, 'Host uses structured argument list rather than shell-concatenated command')
+need(program.count('var sessionId = Guid.NewGuid().ToString("N");') == 1 and 'SOKNA_SETUP_SESSION_ID' in program, 'Setup Host has one canonical correlation session ID and propagates it to child setup')
+need('Assert-SoknaPrivateInputFile' in (root/'runtime/windows/setup-support.psm1').read_text(encoding='utf-8-sig') and 'SetupConfigFile = Assert-SoknaPrivateInputFile' in (root/'runtime/windows/setup-sokna.ps1').read_text(encoding='utf-8-sig'), 'secret-bearing setup inputs must be ACL-private before canonical setup reads them')
+need('db.pass' not in program and 'admin_password' not in program and 'shared_secret' not in program, 'Setup Host never parses business secrets')
+need("[Parameter(Mandatory=$true)][string]$SetupHostExe" in prepare and "SoknaSetupHost.exe" in prepare and 'setup-host.ps1' not in prepare, 'installer shell contains only the compiled Setup Host owner')
+need('dotnet publish' in build and '-r win-x64' in build and '--self-contained true' in build, 'Setup Host build is self-contained x64 publish')
+need('build-setup-host.ps1' in workflow and ('-SetupHostExe' in workflow or 'SetupHostExe=' in workflow), 'Windows installer CI builds and packages Setup Host')
+print('Phase 8B Setup Host contract PASS: 19 checks.')

@@ -58,6 +58,12 @@
       "v1360-ui-conformance-browser.py"
     ]
   },
+  "admin/purchases_batch.php": {
+    "family": "supply",
+    "tests": [
+      "v1360-ui-conformance-browser.py"
+    ]
+  },
   "operator/supply-needs.php": {
     "family": "supply",
     "tests": [
@@ -229,6 +235,18 @@
     "family": "finance",
     "tests": [
       "v1326-financial-browser.py"
+    ]
+  },
+  "admin/expenses.php": {
+    "family": "finance",
+    "tests": [
+      "v1360-ui-conformance-browser.py"
+    ]
+  },
+  "admin/tax.php": {
+    "family": "finance",
+    "tests": [
+      "v1360-ui-conformance-browser.py"
     ]
   },
   "admin/accommodation.php": {

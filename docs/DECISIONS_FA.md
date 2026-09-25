@@ -15,7 +15,7 @@
 13. Snapshot تاریخی روز/شیفت تغییرناپذیر است و شناسه شیفت تاریخی دوباره مصرف نمی‌شود.
 14. اسناد مالی و تاریخچه اصلی حذف نمی‌شوند.
 15. Push کانال کمکی است؛ شکست شبکه خارجی نباید مسیر ثبت سفارش را Block کند.
-16. Print Agent با Web Core یکی نیست و فقط پس از پذیرش Windows جداگانه Production-ready اعلام می‌شود.
+16. **Print Worker داخلی SOKNA Local است و محصول جدا نصب نمی‌شود.** state machine بالغ چاپ، durable queue و Winspool حفظ می‌شوند، اما build/install/repair/lifecycle آن مالکیت SOKNA Local است. پذیرش Windows و پرینتر واقعی همچنان Gate اجباری انتشار است و به معنی محصول مستقل نیست.
 17. Test not run = Not tested. Device-sensitive finding تا UAT واقعی «CLOSED» نیست.
 18. وضعیت پروژه تا اعلام صریح Owner **Pre-Operational** است؛ حفظ Legacy صرفاً برای Backward Compatibility الزام نیست و Cleanup/Breaking cleanup کنترل‌شده مجاز است. Source of Truth: `DEVELOPER_READ_FIRST_FA.md`.
 19. مقیاس طراحی تا اعلام صریح Owner: حداکثر حدود 50 میز، 100–110 مهمان هم‌زمان در Peak، حدود 3 ماه Peak در سال و تیم عملیاتی حدود 8–9 نفر با مسئولیت‌های چندگانه. Overengineering برای مقیاس Enterprise ممنوع است مگر Requirement جدید صریح ثبت شود.

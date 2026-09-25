@@ -1,8 +1,6 @@
-# Generated/installed by SOKNA Setup. Values in {{...}} are installer-owned.
-Listen 443
-<VirtualHost *:443>
-    ServerName sokna.local
-    DocumentRoot "{{SOKNA_RELEASE_ROOT}}"
+<VirtualHost *:{{SOKNA_HTTPS_PORT}}>
+    ServerName {{SOKNA_HOSTNAME}}
+    DocumentRoot "{{SOKNA_WEB_ROOT}}"
     SSLEngine on
     SSLCertificateFile "{{SOKNA_DATA_ROOT}}/secrets/tls/server.crt.pem"
     SSLCertificateKeyFile "{{SOKNA_DATA_ROOT}}/secrets/tls/server.key.pem"
@@ -10,7 +8,7 @@ Listen 443
     Header always set Strict-Transport-Security "max-age=31536000"
     Header always set X-Content-Type-Options "nosniff"
     Header always set Referrer-Policy "same-origin"
-    <Directory "{{SOKNA_RELEASE_ROOT}}">
+    <Directory "{{SOKNA_WEB_ROOT}}">
         Options -Indexes
         AllowOverride All
         Require all granted

@@ -1,0 +1,70 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" RequiredVersion="7.0.0">
+  <Package Id="SOKNA.Cafe.Local.InstallerShell"
+           Name="SOKNA Cafe Local"
+           Manufacturer="SOKNA"
+           Version="$(ProductVersion)"
+           Scope="perMachine">
+
+    <!--
+      Ownership invariant: this MSI installs only the immutable Windows installer shell/cache.
+      The updater-owned live application tree is deliberately NOT harvested here.
+      See PHASE8B_PACKAGE_OWNERSHIP_FA.md.
+    -->
+    <Icon Id="SoknaProductIcon" SourceFile="!(bindpath.Shell)\Sokna.ico" />
+    <Property Id="ARPPRODUCTICON" Value="SoknaProductIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://sokna.local/" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="SoknaCompanyFolder" Name="SOKNA">
+        <Directory Id="INSTALLFOLDER" Name="Cafe Local">
+          <Directory Id="INSTALLERSHELL" Name="Installer">
+            <Files Include="!(bindpath.Shell)\**" />
+          </Directory>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder">
+      <Component Id="SoknaDesktopShortcutComponent" Guid="*">
+        <Shortcut Id="SoknaDesktopShortcut"
+                  Name="SOKNA Cafe"
+                  Description="باز کردن سامانه سکنا"
+                  Target="[WindowsFolder]explorer.exe"
+                  Arguments="https://sokna.local/"
+                  Icon="SoknaProductIcon" />
+        <RegistryValue Root="HKLM" Key="Software\SOKNA\Cafe Local" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="SoknaStartMenuFolder" Name="SOKNA">
+        <Component Id="SoknaStartMenuShortcutComponent" Guid="*">
+          <Shortcut Id="SoknaStartMenuShortcut"
+                    Name="SOKNA Cafe"
+                    Description="باز کردن سامانه سکنا"
+                    Target="[WindowsFolder]explorer.exe"
+                    Arguments="https://sokna.local/"
+                    Icon="SoknaProductIcon" />
+          <Shortcut Id="SoknaSetupUiShortcut"
+                    Name="راه‌اندازی و تعمیر سکنا"
+                    Description="نصب، بازیابی یا تعمیر SOKNA Cafe Local"
+                    Target="[INSTALLERSHELL]SoknaSetupUi.exe"
+                    Icon="SoknaProductIcon" />
+          <Shortcut Id="SoknaSupportShortcut"
+                    Name="گزارش پشتیبانی سکنا"
+                    Description="ساخت بسته تشخیص امن برای پشتیبانی"
+                    Target="[SystemFolder]WindowsPowerShell\v1.0\powershell.exe"
+                    Arguments="-NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLERSHELL]collect-support.ps1&quot;"
+                    Icon="SoknaProductIcon" />
+          <RemoveFolder Id="RemoveSoknaStartMenuFolder" On="uninstall" />
+          <RegistryValue Root="HKLM" Key="Software\SOKNA\Cafe Local" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <Component Directory="INSTALLFOLDER" Id="SoknaPackageMetadata" Guid="*">
+      <RegistryValue Root="HKLM" Key="Software\SOKNA\Cafe Local" Name="AppVersion" Type="string" Value="$(AppVersion)" KeyPath="yes" />
+      <RegistryValue Root="HKLM" Key="Software\SOKNA\Cafe Local" Name="InstallerOwnership" Type="string" Value="shell-cache-only;live-app-owned-by-updater" />
+    </Component>
+  </Package>
+</Wix>

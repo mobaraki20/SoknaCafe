@@ -21,11 +21,13 @@ $stats = [
     'occupied_tables' => $scalar("SELECT COUNT(*) FROM table_sessions WHERE status IN('active','pending')"),
     'waiter_calls' => $scalar("SELECT COUNT(*) FROM waiter_calls WHERE status IN('new','accepted')"),
 ];
-$sales = ['invoice_count'=>0,'net_total'=>0,'discount'=>0,'direct'=>0,'accommodation'=>0,'subscriber'=>0];
+$sales = ['invoice_count'=>0,'net_total'=>0,'tax_total'=>0,'collected_total'=>0,'discount'=>0,'direct'=>0,'accommodation'=>0,'subscriber'=>0];
 try {
     $salesStmt=$pdo->prepare("SELECT
       COALESCE(SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END),0) invoice_count,
-      COALESCE(SUM(CASE WHEN status='completed' THEN total WHEN status='reversal' THEN -total ELSE 0 END),0) net_total,
+      COALESCE(SUM(CASE WHEN status='completed' THEN total-tax_amount WHEN status='reversal' THEN -(total-tax_amount) ELSE 0 END),0) net_total,
+      COALESCE(SUM(CASE WHEN status='completed' THEN tax_amount WHEN status='reversal' THEN -tax_amount ELSE 0 END),0) tax_total,
+      COALESCE(SUM(CASE WHEN status='completed' THEN total WHEN status='reversal' THEN -total ELSE 0 END),0) collected_total,
       COALESCE(SUM(CASE WHEN status='completed' THEN discount WHEN status='reversal' THEN -discount ELSE 0 END),0) discount,
       COALESCE(SUM(CASE WHEN status='completed' AND destination='direct' THEN total WHEN status='reversal' AND destination='direct' THEN -total ELSE 0 END),0) direct,
       COALESCE(SUM(CASE WHEN status='completed' AND destination='accommodation' THEN total WHEN status='reversal' AND destination='accommodation' THEN -total ELSE 0 END),0) accommodation,
@@ -58,17 +60,17 @@ panel_header('خلاصه مدیریت', 'dashboard');
 <?php endif; ?>
 
 <section class="dashboard-kpi-grid" aria-label="خلاصه امروز">
-  <article class="dashboard-kpi is-sales"><small>فروش خالص روز کاری</small><strong><?= e(toman((int)$sales['net_total'])) ?></strong><span><?= fa_digits((int)$sales['invoice_count']) ?> فاکتور نهایی</span></article>
+  <article class="dashboard-kpi is-sales"><small>فروش پس از تخفیف</small><strong><?= e(toman((int)$sales['net_total'])) ?></strong><span><?= fa_digits((int)$sales['invoice_count']) ?> فاکتور نهایی<?php if((int)$sales['tax_total']!==0): ?> · مالیات <?= e(toman((int)$sales['tax_total'])) ?><?php endif; ?></span></article>
   <a class="dashboard-kpi is-actionable" href="<?= e(asset('operator/index.php?work=tables&table_filter=open#tables')) ?>"><small>میزهای باز</small><strong><?= fa_digits($stats['occupied_tables']) ?></strong><span><?= fa_digits($freeTables) ?> میز آزاد از <?= fa_digits($stats['active_tables']) ?></span></a>
   <a class="dashboard-kpi is-actionable" href="<?= e(asset('operator/index.php?work=attention&attention_filter=orders#attention')) ?>"><small>سفارش منتظر تأیید</small><strong><?= fa_digits($stats['attention_orders']) ?></strong><span><?= fa_digits($stats['today_orders']) ?> سفارش از آغاز روز کاری</span></a>
   <a class="dashboard-kpi is-actionable" href="<?= e(asset('operator/index.php?work=attention&attention_filter=calls#attention')) ?>"><small>فراخوان مهمان</small><strong><?= fa_digits($stats['waiter_calls']) ?></strong><span><?= $waiterEnabled?'فراخوان فعال است':'فراخوان غیرفعال است' ?></span></a>
 </section>
 
 <div class="dashboard-workspace">
-  <section class="card dashboard-finance-card"><div class="card-head"><div><h2>مقصدهای تسویه روز کاری</h2><small>مبالغ خالص پس از کسر اسناد برگشتی</small></div><a class="btn btn-sm btn-light" href="<?= e(asset('admin/invoices.php')) ?>">آرشیو فاکتورها</a></div><div class="card-body dashboard-destination-list">
-    <a href="<?= e(asset('admin/invoices.php?destination=direct&from='.rawurlencode($todayJalali).'&to='.rawurlencode($todayJalali))) ?>"><span>تسویه مستقیم</span><strong><?= e(toman((int)$sales['direct'])) ?></strong></a>
+  <section class="card dashboard-finance-card"><div class="card-head"><div><h2>مقصدهای تسویه روز کاری</h2><small>مبالغ نهایی ثبت‌شده پس از کسر اسناد برگشتی</small></div><a class="btn btn-sm btn-light" href="<?= e(asset('admin/invoices.php')) ?>">آرشیو فاکتورها</a></div><div class="card-body dashboard-destination-list">
+    <a href="<?= e(asset('admin/invoices.php?destination=direct&from='.rawurlencode($todayJalali).'&to='.rawurlencode($todayJalali))) ?>"><span>تسویه</span><strong><?= e(toman((int)$sales['direct'])) ?></strong></a>
     <a href="<?= e(asset('admin/invoices.php?destination=accommodation&from='.rawurlencode($todayJalali).'&to='.rawurlencode($todayJalali))) ?>"><span>حساب اقامتگاه</span><strong><?= e(toman((int)$sales['accommodation'])) ?></strong></a>
-    <a href="<?= e(asset('admin/invoices.php?destination=subscriber&from='.rawurlencode($todayJalali).'&to='.rawurlencode($todayJalali))) ?>"><span>حساب مشترک</span><strong><?= e(toman((int)$sales['subscriber'])) ?></strong></a>
+    <a href="<?= e(asset('admin/invoices.php?destination=subscriber&from='.rawurlencode($todayJalali).'&to='.rawurlencode($todayJalali))) ?>"><span>حساب مشتری</span><strong><?= e(toman((int)$sales['subscriber'])) ?></strong></a>
     <div class="is-muted"><span>تخفیف ثبت‌شده</span><strong><?= e(toman((int)$sales['discount'])) ?></strong></div>
   </div></section>
 
@@ -86,7 +88,7 @@ panel_header('خلاصه مدیریت', 'dashboard');
     <?php foreach ($recent as $order): $isException=in_array((string)$order['status'],['pending_approval','new','cancelled','rejected'],true); ?>
       <a class="dashboard-recent-row" href="<?= e(asset('operator/index.php?work=tables#tables')) ?>">
         <span class="dashboard-recent-main"><strong><?= e(order_display_label($order)) ?></strong><small>میز <?= e(fa_digits((string)$order['table_name'])) ?> · <?= e(time_ago($order['created_at'])) ?></small></span>
-        <span class="dashboard-recent-amount"><?= e(toman((int)$order['total_amount'])) ?></span>
+        <span class="dashboard-recent-amount"><small>جمع اقلام</small><strong><?= e(toman((int)$order['total_amount'])) ?></strong></span>
         <?php if($isException): ?><span class="badge badge-<?= e((string)$order['status']) ?> dashboard-recent-exception"><?= e(order_status_label((string)$order['status'])) ?></span><?php endif; ?>
       </a>
     <?php endforeach; ?>

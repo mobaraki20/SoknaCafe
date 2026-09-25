@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "design_system_id": "SCDS-CANONICAL-2026-R1",
+  "status": "migration_in_progress",
+  "language": "fa",
+  "direction": "rtl",
+  "previous_sokna_design_systems": "rejected_not_authoritative",
+  "components": [
+    {
+      "id": "button",
+      "owner": "planned:assets/css/scds-components.css",
+      "status": "legacy_migrating",
+      "legacy_selectors": [
+        ".btn",
+        ".btn-primary",
+        ".btn-light",
+        ".btn-danger",
+        ".btn-sm"
+      ]
+    },
+    {
+      "id": "icon_button",
+      "owner": "planned:assets/css/scds-components.css",
+      "status": "legacy_migrating",
+      "legacy_selectors": [
+        ".icon-btn"
+      ]
+    },
+    {
+      "id": "form_control",
+      "owner": "planned:assets/css/scds-components.css",
+      "status": "legacy_migrating",
+      "legacy_selectors": [
+        ".form-control"
+      ]
+    },
+    {
+      "id": "status_badge",
+      "owner": "planned:assets/css/scds-components.css",
+      "status": "legacy_migrating",
+      "legacy_selectors": [
+        ".badge",
+        ".status-chip"
+      ]
+    },
+    {
+      "id": "card_surface",
+      "owner": "planned:assets/css/scds-components.css",
+      "status": "legacy_migrating",
+      "legacy_selectors": [
+        ".card"
+      ]
+    },
+    {
+      "id": "alert",
+      "owner": "planned:assets/css/scds-components.css",
+      "status": "legacy_migrating",
+      "legacy_selectors": [
+        ".alert"
+      ]
+    },
+    {
+      "id": "dialog_sheet",
+      "owner": "planned:assets/css/scds-components.css + assets/js canonical overlay owner",
+      "status": "legacy_migrating",
+      "legacy_selectors": [
+        ".panel-confirm-layer",
+        ".panel-form-dialog-layer",
+        ".success-modal"
+      ]
+    },
+    {
+      "id": "tabs",
+      "owner": "planned:assets/css/scds-components.css",
+      "status": "legacy_migrating",
+      "legacy_selectors": [
+        ".panel-primary-tabs",
+        ".category-tabs"
+      ]
+    },
+    {
+      "id": "data_table",
+      "owner": "planned:assets/css/scds-components.css",
+      "status": "legacy_migrating",
+      "legacy_selectors": [
+        ".data-table",
+        ".mobile-card-table"
+      ]
+    },
+    {
+      "id": "quantity_stepper",
+      "owner": "planned:assets/css/scds-components.css + canonical JS behavior",
+      "status": "legacy_migrating",
+      "legacy_selectors": [
+        ".quantity-stepper"
+      ]
+    },
+    {
+      "id": "jalali_date",
+      "owner": "existing behavior to be audited then migrated",
+      "status": "legacy_migrating",
+      "legacy_selectors": [
+        ".jalali-date-control",
+        ".jalali-picker-dialog"
+      ]
+    },
+    {
+      "id": "app_shell",
+      "owner": "planned canonical shell layer",
+      "status": "legacy_migrating",
+      "legacy_selectors": [
+        ".panel-shell",
+        ".side-nav",
+        ".panel-main",
+        ".app-bottom-nav"
+      ]
+    },
+    {
+      "id": "system_state_page",
+      "owner": "assets/css/scds-system-state.css",
+      "status": "canonical",
+      "consumers": [
+        "menu/index.php maintenance",
+        "menu/index.php invalid QR"
+      ],
+      "requirements": [
+        "Persian RTL",
+        "Vazirmatn",
+        "320px safe",
+        "44px action",
+        "no inline style island"
+      ]
+    }
+  ]
+}

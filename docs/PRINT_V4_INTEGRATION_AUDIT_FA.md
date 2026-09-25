@@ -1,3 +1,6 @@
+> **Historical audit — Superseded for deployment/ownership by `docs/architecture-migration-r2/PHASE7R_PRINTING_RECONCILIATION_FA.md`.**
+> Protocol-v4/state-machine findings remain useful evidence. Claims that Agent source/binary must live only outside Cafe are not active authority after R2 reconciliation.
+
 # Audit جاری Integration چاپ — Working Copy بدون Release
 
 > Baseline اجرایی: `Sokna 1.33.0-rc1`

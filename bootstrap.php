@@ -67,6 +67,7 @@ require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/sellable.php';
 require_once __DIR__ . '/includes/preparation_permissions.php';
 require_once __DIR__ . '/includes/modules.php';
+require_once __DIR__ . '/includes/tax.php';
 require_once __DIR__ . '/includes/menu_catalog.php';
 require_once __DIR__ . '/includes/sokna_center.php';
 require_once __DIR__ . '/includes/accommodation.php';

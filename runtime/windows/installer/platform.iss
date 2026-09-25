@@ -34,6 +34,11 @@ CloseApplications=no
 RestartApplications=no
 
 [Files]
+Source: "{#SourceRoot}\apache\sokna-local-https.conf.template"; DestDir: "{app}\apache"; Flags: ignoreversion
+Source: "{#SourceRoot}\prerequisites.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourceRoot}\configure-apache.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourceRoot}\bin\print-worker\*"; DestDir: "{app}\bin\print-worker"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#WorkerArchive}"; Flags: dontcopy
 Source: "{#SourceRoot}\setup-sokna.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceRoot}\setup-support.psm1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceRoot}\provision-local-https.ps1"; DestDir: "{app}"; Flags: ignoreversion
@@ -156,6 +161,10 @@ begin
      Overlaps(Target.Values[0], Target.Values[1]) then begin
     Result := 'Platform, application and private data folders must be separate.'; Exit;
   end;
+  ExtractTemporaryFile('prerequisites.json');
+  ExtractTemporaryFile('configure-apache.ps1');
+  ExtractTemporaryFile('sokna-local-https.conf.template');
+  ExtractTemporaryFile('print-worker.zip');
   ExtractTemporaryFile('setup-sokna.ps1');
   ExtractTemporaryFile('setup-support.psm1');
   ExtractTemporaryFile('provision-local-https.ps1');

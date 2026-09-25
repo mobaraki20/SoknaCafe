@@ -101,6 +101,8 @@ foreach(($catalog['items']??[]) as $item){
     $item['id']=$id;$item['category_id']=$categoryId;
     $item['category_name']=(string)($item['category_name']??($categoryNames[$categoryId]??''));
     $item['available']=(array_key_exists('available',$live)?(bool)$live['available']:(bool)($item['available']??false))?1:0;
+    $item['tax_policy']=(string)(array_key_exists('tax_policy',$live)?$live['tax_policy']:($item['tax_policy']??'disabled'));
+    $item['tax_rate_bps']=(int)(array_key_exists('tax_rate_bps',$live)?$live['tax_rate_bps']:($item['tax_rate_bps']??0));
     $item['featured']=!empty($item['featured'])?1:0;
     $item['takeaway_allowed']=!array_key_exists('takeaway_allowed',$item)||!empty($item['takeaway_allowed'])?1:0;
     $item['preparation_station']=(string)($item['preparation_station']??'cold_bar');
@@ -125,6 +127,7 @@ $clientItems=array_map(static function(array $item)use($isPublic):array{
         'image'=>$item['image_path']?asset((string)$item['image_path']):'',
         'search_text'=>(string)$item['name'].' '.(string)($item['category_name']??'').' '.(string)($item['display_description']??'').' '.implode(' ',array_column($item['tags']??[],'title')),
         'price'=>(int)$item['price'],'available'=>(int)$item['available'],
+        'tax_policy'=>(string)($item['tax_policy']??'disabled'),'tax_rate_bps'=>(int)($item['tax_rate_bps']??0),
         'takeaway_allowed'=>(int)($item['takeaway_allowed']??1),
         'order_available'=>$isPublic?0:(((int)$item['available']===1&&$blocked===null)?1:0),
         'blocked_scope'=>$blocked,'unavailable_message'=>$blocked!==null?order_acceptance_message($blocked):'',

@@ -32,8 +32,8 @@ function quick_order_catalog(array $tableIds, ?string $requestedMenuKey = null):
     $ph = implode(',', array_fill(0, count($tableIds), '?'));
     $tableStmt = $pdo->prepare("SELECT t.id,t.name,t.table_number,t.code,t.zone_label,t.sort_order,
         s.id session_id,s.status session_status,s.discount_type,COALESCE(s.discount_value,0) discount_value,COALESCE(s.discount_amount,0) discount_amount,
-        COALESCE((SELECT SUM(sr.total) FROM settlement_records sr WHERE sr.session_id=s.id AND sr.status='completed' AND sr.allocation_version=1 AND NOT EXISTS(SELECT 1 FROM settlement_records rv WHERE rv.reverses_settlement_id=sr.id AND rv.status='reversal')),0) paid_total,
-        EXISTS(SELECT 1 FROM settlement_records sx WHERE sx.session_id=s.id AND sx.status='completed' AND sx.allocation_version=1 AND sx.settlement_kind='itemized' AND NOT EXISTS(SELECT 1 FROM settlement_records rx WHERE rx.reverses_settlement_id=sx.id AND rx.status='reversal')) itemized_active
+        COALESCE((SELECT SUM(sr.total) FROM settlement_records sr WHERE sr.session_id=s.id AND sr.status='completed' AND sr.allocation_version IN(1,2) AND NOT EXISTS(SELECT 1 FROM settlement_records rv WHERE rv.reverses_settlement_id=sr.id AND rv.status='reversal')),0) paid_total,
+        EXISTS(SELECT 1 FROM settlement_records sx WHERE sx.session_id=s.id AND sx.status='completed' AND sx.allocation_version IN(1,2) AND sx.settlement_kind='itemized' AND NOT EXISTS(SELECT 1 FROM settlement_records rx WHERE rx.reverses_settlement_id=sx.id AND rx.status='reversal')) itemized_active
         FROM cafe_tables t
         LEFT JOIN table_sessions s ON s.id=(SELECT MAX(s2.id) FROM table_sessions s2 WHERE s2.table_id=t.id AND s2.status IN('active','pending'))
         WHERE t.active=1 AND t.id IN($ph)
@@ -53,7 +53,11 @@ function quick_order_catalog(array $tableIds, ?string $requestedMenuKey = null):
         $table['pending_order_count'] = 0;
         $table['pending_orders'] = [];
         $table['current_total'] = 0;
+        $table['current_net'] = 0;
+        $table['current_taxable'] = 0;
+        $table['current_tax'] = 0;
         $table['current_final_total'] = 0;
+        $table['current_tax_lines'] = [];
         $table['current_quantity'] = 0;
         $table['current_order_count'] = 0;
         $table['current_items'] = [];
@@ -75,16 +79,20 @@ function quick_order_catalog(array $tableIds, ?string $requestedMenuKey = null):
         $orderIds = array_map('intval', array_column($orders, 'id'));
         if ($orderIds) {
             $orderPh = implode(',', array_fill(0, count($orderIds), '?'));
-            $itemStmt = $pdo->prepare("SELECT order_id,item_name,unit_price,quantity,item_note,line_total
+            $itemStmt = $pdo->prepare("SELECT id,order_id,item_id,item_name,unit_price,quantity,item_note,line_total,tax_policy_snapshot,tax_rate_bps_snapshot
                 FROM order_items WHERE order_id IN($orderPh) AND quantity>0 ORDER BY order_id,id");
             $itemStmt->execute($orderIds);
             foreach ($itemStmt->fetchAll() as $line) {
                 $itemsByOrder[(int)$line['order_id']][] = [
+                    'id'=>(int)$line['id'],
+                    'item_id'=>(int)($line['item_id']??0),
                     'name'=>(string)$line['item_name'],
                     'unit_price'=>(int)$line['unit_price'],
                     'quantity'=>(int)$line['quantity'],
                     'note'=>(string)($line['item_note'] ?? ''),
                     'line_total'=>(int)$line['line_total'],
+                    'tax_policy'=>(string)($line['tax_policy_snapshot']??'disabled'),
+                    'tax_rate_bps'=>(int)($line['tax_rate_bps_snapshot']??0),
                 ];
             }
         }
@@ -97,10 +105,17 @@ function quick_order_catalog(array $tableIds, ?string $requestedMenuKey = null):
             $orderId = (int)$order['id'];
             $lines = $itemsByOrder[$orderId] ?? [];
             if ((string)$order['status'] !== 'accounted') {
+                $pendingTaxLines=array_map(static fn(array $line):array=>[
+                    'order_item_id'=>(int)$line['id'],'quantity'=>(int)$line['quantity'],'unit_price'=>(int)$line['unit_price'],
+                    'tax_policy_snapshot'=>(string)$line['tax_policy'],'tax_rate_bps_snapshot'=>(int)$line['tax_rate_bps'],
+                ],$lines);
+                $pendingCalc=tax_calculate_invoice_lines($pendingTaxLines,0);
                 $tables[$tableIndex]['pending_orders'][] = [
                     'id'=>$orderId,
                     'number'=>order_display_number($orderId),
-                    'total'=>(int)$order['total_amount'],
+                    'subtotal'=>(int)$order['total_amount'],
+                    'tax'=>(int)$pendingCalc['tax'],
+                    'total'=>(int)$pendingCalc['total'],
                     'note'=>(string)($order['customer_note'] ?? ''),
                     'created_at'=>(string)$order['created_at'],
                     'items'=>$lines,
@@ -112,6 +127,10 @@ function quick_order_catalog(array $tableIds, ?string $requestedMenuKey = null):
             $tables[$tableIndex]['current_order_count']++;
             foreach ($lines as $line) {
                 $tables[$tableIndex]['current_quantity'] += (int)$line['quantity'];
+                $tables[$tableIndex]['current_tax_lines'][]=[
+                    'order_item_id'=>(int)$line['id'],'quantity'=>(int)$line['quantity'],'unit_price'=>(int)$line['unit_price'],
+                    'tax_policy_snapshot'=>(string)$line['tax_policy'],'tax_rate_bps_snapshot'=>(int)$line['tax_rate_bps'],
+                ];
                 $key = $line['name'] . "\x1f" . $line['unit_price'] . "\x1f" . $line['note'];
                 if (!isset($currentAggregates[$tableIndex][$key])) {
                     $currentAggregates[$tableIndex][$key] = $line;
@@ -123,8 +142,13 @@ function quick_order_catalog(array $tableIds, ?string $requestedMenuKey = null):
         }
         foreach ($tables as $index => &$table) {
             $table['current_items'] = array_values($currentAggregates[$index] ?? []);
-            $table['discount_amount'] = invoice_discount_amount((int)$table['current_total'], (string)($table['discount_type'] ?? ''), (int)$table['discount_value']);
-            $table['current_final_total'] = max(0, (int)$table['current_total'] - (int)$table['discount_amount']);
+            $requestedDiscount = invoice_discount_amount((int)$table['current_total'], (string)($table['discount_type'] ?? ''), (int)$table['discount_value']);
+            $accountCalc = tax_calculate_invoice_lines((array)$table['current_tax_lines'],$requestedDiscount);
+            $table['discount_amount'] = (int)$accountCalc['discount'];
+            $table['current_net'] = (int)$accountCalc['net'];
+            $table['current_taxable'] = (int)$accountCalc['taxable'];
+            $table['current_tax'] = (int)$accountCalc['tax'];
+            $table['current_final_total'] = (int)$accountCalc['total'];
             $table['remaining_total'] = max(0, (int)$table['current_final_total'] - (int)$table['paid_total']);
         }
         unset($table);
@@ -139,6 +163,7 @@ function quick_order_catalog(array $tableIds, ?string $requestedMenuKey = null):
         'icon_key'=>(string)($row['icon_key'] ?? ''),
         'icon'=>category_visual_icon((string)($row['icon_key'] ?? ''),(string)$row['name']),
     ],$catalog['categories']);
+    $taxProfiles = sokna_module_runtime_ready('tax') ? tax_item_profile_map($pdo,array_column($catalog['items'],'id')) : [];
     $items = [];
     foreach ($catalog['items'] as $row) {
         $station=normalize_preparation_station((string)$row['preparation_station']);
@@ -154,6 +179,8 @@ function quick_order_catalog(array $tableIds, ?string $requestedMenuKey = null):
             'order_available'=>1,
             'blocked_scope'=>null,
             'unavailable_message'=>'',
+            'tax_policy'=>(string)($taxProfiles[(int)$row['id']]['policy']??'disabled'),
+            'tax_rate_bps'=>(int)($taxProfiles[(int)$row['id']]['rate_bps']??0),
         ];
     }
     return ['tables'=>$tables,'menus'=>$catalog['menus'],'selected_menu'=>$catalog['selected_menu'],'categories'=>$categories,'items'=>$items];

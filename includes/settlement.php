@@ -66,20 +66,36 @@ function settlement_invoice_snapshot_locked(PDO $pdo, array $invoice, string $in
     $ids = array_map('intval', array_column((array)($invoice['orders'] ?? []), 'id'));
     if (!$ids) throw new RuntimeException('برای این تسویه، فاکتور تأییدشده‌ای وجود ندارد.');
     $ph = implode(',', array_fill(0, count($ids), '?'));
-    $stmt = $pdo->prepare("SELECT oi.item_name,oi.quantity,oi.unit_price,oi.line_total,oi.item_note FROM order_items oi WHERE oi.order_id IN($ph) AND oi.quantity>0 ORDER BY oi.order_id,oi.id");
+    $stmt = $pdo->prepare("SELECT oi.id,oi.item_name,oi.quantity,oi.unit_price,oi.line_total,oi.item_note,oi.tax_policy_snapshot,oi.tax_rate_bps_snapshot FROM order_items oi WHERE oi.order_id IN($ph) AND oi.quantity>0 ORDER BY oi.order_id,oi.id");
     $stmt->execute($ids);
+    $rows = $stmt->fetchAll();
+    $taxLines = tax_calculate_invoice_lines($rows, (int)($invoice['discount'] ?? 0));
+    $byId = [];
+    foreach ((array)$taxLines['lines'] as $line) $byId[(int)$line['id']] = $line;
     $items = [];
-    foreach ($stmt->fetchAll() as $row) {
-        $items[] = [
+    foreach ($rows as $row) {
+        $calc = $byId[(int)$row['id']] ?? [];
+        $item = [
             'name' => (string)$row['item_name'],
             'quantity' => (int)$row['quantity'],
             'unit_price' => (int)$row['unit_price'],
             'line_total' => (int)$row['line_total'],
             'note' => trim((string)($row['item_note'] ?? '')) ?: null,
         ];
+        if (!empty($invoice['tax_document_active'])) {
+            $item += [
+                'line_discount'=>(int)($calc['invoice_discount_amount'] ?? 0),
+                'line_net'=>(int)($calc['invoice_net_amount'] ?? 0),
+                'taxable_amount'=>(int)($calc['invoice_taxable_amount'] ?? 0),
+                'tax_rate_bps'=>(int)($row['tax_rate_bps_snapshot'] ?? 0),
+                'tax_amount'=>(int)($calc['invoice_tax_amount'] ?? 0),
+                'line_final'=>(int)($calc['invoice_final_amount'] ?? 0),
+            ];
+        }
+        $items[] = $item;
     }
-    return [
-        'version' => 1,
+    $snapshot = [
+        'version' => !empty($invoice['tax_document_active']) ? 3 : 1,
         'number' => $invoiceNumber,
         'issued_at' => $issuedAt ?: date(DATE_ATOM),
         'table_name' => (string)($invoice['session']['table_name'] ?? ''),
@@ -88,6 +104,12 @@ function settlement_invoice_snapshot_locked(PDO $pdo, array $invoice, string $in
         'total' => (int)$invoice['total'],
         'items' => $items,
     ];
+    if (!empty($invoice['tax_document_active'])) {
+        $snapshot['net'] = (int)($invoice['net'] ?? ((int)$invoice['subtotal'] - (int)$invoice['discount']));
+        $snapshot['taxable'] = (int)($invoice['taxable'] ?? 0);
+        $snapshot['tax'] = (int)($invoice['tax'] ?? 0);
+    }
+    return $snapshot;
 }
 
 /**
@@ -97,15 +119,15 @@ function settlement_invoice_snapshot_locked(PDO $pdo, array $invoice, string $in
 function settlement_destinations(): array
 {
     return [
-        'direct' => 'تسویه مستقیم',
+        'direct' => 'تسویه',
         'accommodation' => 'حساب اقامتگاه',
-        'subscriber' => 'حساب مشترک',
+        'subscriber' => 'حساب مشتری',
     ];
 }
 
 function settlement_destination_label(?string $destination): string
 {
-    return settlement_destinations()[$destination ?? ''] ?? 'تسویه مستقیم';
+    return settlement_destinations()[$destination ?? ''] ?? 'تسویه';
 }
 
 function settlement_status_label(string $status): string
@@ -163,9 +185,12 @@ function settlement_result_from_record(array $record): array
         'closes_session' => (int)($record['closes_session'] ?? 1) === 1,
         'subtotal_amount' => (int)$record['subtotal'],
         'discount_amount' => (int)$record['discount'],
+        'taxable_amount' => (int)($record['taxable_amount'] ?? 0),
+        'tax_amount' => (int)($record['tax_amount'] ?? 0),
         'total_amount' => (int)$record['total'],
         'remaining_subtotal' => (int)($record['remaining_subtotal'] ?? 0),
         'remaining_discount' => (int)($record['remaining_discount'] ?? 0),
+        'remaining_tax' => (int)($record['remaining_tax'] ?? 0),
         'remaining_total' => (int)($record['remaining_total'] ?? 0),
         'completed_orders' => 0,
         'idempotent' => true,
@@ -188,6 +213,10 @@ function settlement_review_signature(array $session, array $orders, array $paidS
                 'line_total'=>(int)($line['line_total']??0),
                 'item_note'=>trim((string)($line['item_note']??'')),
                 'fulfillment_mode'=>normalize_fulfillment_mode((string)($line['fulfillment_mode']??'dine_in')),
+                'tax_policy_snapshot'=>(string)($line['tax_policy_snapshot']??'disabled'),
+                'tax_rate_bps_snapshot'=>(int)($line['tax_rate_bps_snapshot']??0),
+                'tax_rate_version_id'=>(int)($line['tax_rate_version_id']??0),
+                'tax_item_policy_version_id'=>(int)($line['tax_item_policy_version_id']??0),
             ];
         }
         usort($items,static fn(array $a,array $b): int => $a['id']<=>$b['id']);
@@ -210,6 +239,8 @@ function settlement_review_signature(array $session, array $orders, array $paidS
             'paid_quantities'=>$paidQuantities,
             'paid_subtotal'=>(int)($paidState['paid_subtotal'] ?? 0),
             'paid_discount'=>(int)($paidState['paid_discount'] ?? 0),
+            'paid_taxable'=>(int)($paidState['paid_taxable'] ?? 0),
+            'paid_tax'=>(int)($paidState['paid_tax'] ?? 0),
             'paid_total'=>(int)($paidState['paid_total'] ?? 0),
         ];
     }
@@ -238,12 +269,29 @@ function settlement_calculate_session_invoice_locked(PDO $pdo, int $sessionId, a
 
     $subtotal = array_sum(array_map(static fn(array $order): int => (int)$order['total_amount'], $confirmed));
     $discount = invoice_discount_amount($subtotal, (string)($session['discount_type'] ?? ''), (int)($session['discount_value'] ?? 0));
+    $ids = array_map('intval', array_column($confirmed, 'id'));
+    $ph = implode(',', array_fill(0, count($ids), '?'));
+    $lineStmt = $pdo->prepare("SELECT oi.id order_item_id,oi.order_id,oi.item_id,oi.item_name,oi.unit_price,oi.quantity,oi.line_total,oi.tax_policy_snapshot,oi.tax_rate_bps_snapshot,oi.tax_rate_version_id,oi.tax_item_policy_version_id FROM order_items oi WHERE oi.order_id IN($ph) AND oi.quantity>0 ORDER BY oi.id FOR UPDATE");
+    $lineStmt->execute($ids);
+    $lines = $lineStmt->fetchAll();
+    if (!$lines) throw new RuntimeException('برای این میز قلم قابل تسویه‌ای وجود ندارد.');
+    $calculated = tax_calculate_invoice_lines($lines, $discount);
+    if ((int)$calculated['subtotal'] !== $subtotal) throw new SettlementStateConflict('جمع اقلام سفارش با مبلغ حساب هماهنگ نیست و باید بررسی شود.', 409);
+    $taxDocumentActive = false;
+    foreach ($lines as $line) {
+        if ((string)($line['tax_policy_snapshot'] ?? 'disabled') !== 'disabled') { $taxDocumentActive = true; break; }
+    }
     return [
         'session' => $session,
         'orders' => $confirmed,
         'subtotal' => $subtotal,
-        'discount' => $discount,
-        'total' => max(0, $subtotal - $discount),
+        'discount' => (int)$calculated['discount'],
+        'net' => (int)$calculated['net'],
+        'taxable' => (int)$calculated['taxable'],
+        'tax' => (int)$calculated['tax'],
+        'total' => (int)$calculated['total'],
+        'tax_document_active'=>$taxDocumentActive,
+        'tax_lines'=>(array)$calculated['lines'],
     ];
 }
 
@@ -262,12 +310,14 @@ function settlement_record_create_locked(PDO $pdo, array $invoice, string $desti
     $kind = (string)($context['settlement_kind'] ?? 'full');
     if (!in_array($kind, ['full','itemized'], true)) throw new RuntimeException('نوع سند تسویه معتبر نیست.');
     $closesSession = !empty($context['closes_session']);
+    $allocationVersion = (int)($context['allocation_version'] ?? (!empty($invoice['tax_document_active']) ? 2 : 1));
+    if (!in_array($allocationVersion,[1,2],true)) throw new RuntimeException('نسخه تخصیص سند تسویه معتبر نیست.');
     $settledAt = date('Y-m-d H:i:s');
     $business = business_assignment($settledAt);
-    $stmt = $pdo->prepare("INSERT INTO settlement_records(session_id,financial_period_id,invoice_number,invoice_snapshot_json,destination,table_name_snapshot,subtotal,discount,total,status,actor_user_id,subscriber_ledger_entry_id,accommodation_transfer_id,request_id,request_fingerprint,settlement_kind,closes_session,remaining_subtotal,remaining_discount,remaining_total,allocation_version,settled_at,business_date,business_shift_key,business_shift_label,business_cutoff_snapshot) VALUES(?,?,?,?,?,?,?,?,?,'completed',?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT INTO settlement_records(session_id,financial_period_id,invoice_number,invoice_snapshot_json,destination,table_name_snapshot,subtotal,discount,taxable_amount,tax_amount,total,status,actor_user_id,subscriber_ledger_entry_id,accommodation_transfer_id,request_id,request_fingerprint,settlement_kind,closes_session,remaining_subtotal,remaining_discount,remaining_tax,remaining_total,allocation_version,settled_at,business_date,business_shift_key,business_shift_label,business_cutoff_snapshot) VALUES(?,?,?,?,?,?,?,?,?,?,?,'completed',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     $stmt->execute([
         (int)$invoice['session']['id'], $periodId, $invoiceNumber, $snapshotJson, $destination,
-        (string)($invoice['session']['table_name'] ?? ''), (int)$invoice['subtotal'], (int)$invoice['discount'], (int)$invoice['total'],
+        (string)($invoice['session']['table_name'] ?? ''), (int)$invoice['subtotal'], (int)$invoice['discount'], (int)($invoice['taxable'] ?? 0), (int)($invoice['tax'] ?? 0), (int)$invoice['total'],
         $actorUserId,
         isset($context['subscriber_ledger_entry_id']) ? (int)$context['subscriber_ledger_entry_id'] : null,
         isset($context['accommodation_transfer_id']) ? (int)$context['accommodation_transfer_id'] : null,
@@ -277,7 +327,9 @@ function settlement_record_create_locked(PDO $pdo, array $invoice, string $desti
         $closesSession ? 1 : 0,
         (int)($context['remaining_subtotal'] ?? 0),
         (int)($context['remaining_discount'] ?? 0),
+        (int)($context['remaining_tax'] ?? 0),
         (int)($context['remaining_total'] ?? 0),
+        $allocationVersion,
         $settledAt,(string)$business['business_date'],(string)$business['shift_key'],(string)$business['shift_label'],(string)$business['cutoff'],
     ]);
     return (int)$pdo->lastInsertId();
@@ -321,9 +373,7 @@ function settlement_finalize_review_locked(PDO $pdo, array $account, array $revi
     $session = $account['session'] ?? null;
     if (!is_array($session) || (int)($session['id'] ?? 0) < 1) throw new RuntimeException('حساب میز معتبر نیست.');
     $sessionId = (int)$session['id'];
-    if (!empty($account['itemized_active']) && $destination !== 'direct') {
-        throw new SettlementStateConflict('پس از شروع پرداخت جداگانه، فقط تسویه مستقیم مانده حساب مجاز است.', 409);
-    }
+    if (!empty($account['itemized_active']) && $destination !== 'direct') throw new SettlementStateConflict('پس از شروع پرداخت جداگانه، فقط تسویه مانده حساب مجاز است.', 409);
     if (!(array)($review['lines'] ?? [])) throw new RuntimeException('اقلام این پرداخت مشخص نشده است.');
 
     $requestedKind = (string)($context['settlement_kind'] ?? '');
@@ -336,16 +386,18 @@ function settlement_finalize_review_locked(PDO $pdo, array $account, array $revi
         $periodId = (int)$issued['period']['id'];
         $invoiceNumber = (string)$issued['invoice_number'];
     }
-    if (!is_array($snapshot) || $kind === 'itemized') {
-        $snapshot = settlement_payment_snapshot($account, $review, $invoiceNumber);
-    }
+    if (!is_array($snapshot) || $kind === 'itemized') $snapshot = settlement_payment_snapshot($account, $review, $invoiceNumber);
 
     $paymentInvoice = [
         'session'=>$account['session'],
         'orders'=>$account['orders'],
         'subtotal'=>(int)$review['subtotal'],
         'discount'=>(int)$review['discount'],
+        'net'=>(int)($review['net'] ?? ((int)$review['subtotal']-(int)$review['discount'])),
+        'taxable'=>(int)($review['taxable'] ?? 0),
+        'tax'=>(int)($review['tax'] ?? 0),
         'total'=>(int)$review['total'],
+        'tax_document_active'=>((int)($account['allocation_version'] ?? 1) === 2),
     ];
     $context['financial_period_id'] = $periodId;
     $context['invoice_number'] = $invoiceNumber;
@@ -354,14 +406,11 @@ function settlement_finalize_review_locked(PDO $pdo, array $account, array $revi
     $context['closes_session'] = !empty($review['closes_session']);
     $context['remaining_subtotal'] = (int)$review['remaining_subtotal'];
     $context['remaining_discount'] = (int)$review['remaining_discount'];
+    $context['remaining_tax'] = (int)($review['remaining_tax'] ?? 0);
     $context['remaining_total'] = (int)$review['remaining_total'];
+    $context['allocation_version'] = (int)($account['allocation_version'] ?? 1);
     if (empty($context['request_fingerprint'])) {
-        $context['request_fingerprint'] = settlement_request_fingerprint(
-            $sessionId,
-            $destination,
-            $kind === 'itemized' ? 'itemized' : 'full',
-            (array)$review['selection']
-        );
+        $context['request_fingerprint'] = settlement_request_fingerprint($sessionId,$destination,$kind === 'itemized' ? 'itemized' : 'full',(array)$review['selection']);
     }
 
     $settlementId = settlement_record_create_locked($pdo, $paymentInvoice, $destination, $actorUserId, $context);
@@ -373,62 +422,33 @@ function settlement_finalize_review_locked(PDO $pdo, array $account, array $revi
         $history = $pdo->prepare("INSERT INTO order_status_history(order_id,from_status,to_status,actor_user_id) VALUES(?,'accounted','completed',?)");
         foreach ($account['orders'] as $order) {
             $complete->execute([(int)$order['id']]);
-            if ($complete->rowCount() > 0) {
-                $history->execute([(int)$order['id'], $actorUserId]);
-                $completedOrders++;
-            }
+            if ($complete->rowCount() > 0) { $history->execute([(int)$order['id'], $actorUserId]); $completedOrders++; }
         }
-        $pdo->prepare("UPDATE table_sessions SET discount_amount=?,checkout_subtotal=?,checkout_discount=?,checkout_total=?,settlement_destination=?,checkout_voided_at=NULL,checkout_voided_by_user_id=NULL WHERE id=?")
-            ->execute([(int)$account['discount'], (int)$account['subtotal'], (int)$account['discount'], (int)$account['total'], $destination, $sessionId]);
+        $pdo->prepare("UPDATE table_sessions SET discount_amount=?,checkout_subtotal=?,checkout_discount=?,checkout_taxable=?,checkout_tax=?,checkout_total=?,settlement_destination=?,checkout_voided_at=NULL,checkout_voided_by_user_id=NULL WHERE id=?")
+            ->execute([(int)$account['discount'], (int)$account['subtotal'], (int)$account['discount'], (int)($account['taxable'] ?? 0), (int)($account['tax'] ?? 0), (int)$account['total'], $destination, $sessionId]);
         close_table_session($sessionId, $actorUserId, 'checkout');
     } else {
-        // Keep the active session intact while still invalidating the live revision for another cashier.
         $pdo->prepare('UPDATE table_sessions SET updated_at=NOW() WHERE id=?')->execute([$sessionId]);
     }
 
     $printJob = settlement_enqueue_final_print_best_effort_locked($pdo, $settlementId, $destination, $actorUserId, $printFinal);
-    if (!empty($printJob['job_id'])) {
-        $pdo->prepare('UPDATE settlement_records SET final_print_job_id=? WHERE id=?')->execute([(int)$printJob['job_id'], $settlementId]);
-    }
+    if (!empty($printJob['job_id'])) $pdo->prepare('UPDATE settlement_records SET final_print_job_id=? WHERE id=?')->execute([(int)$printJob['job_id'], $settlementId]);
 
     audit_log_write_strict($pdo, 'settlement.completed', 'settlement_record', $settlementId, [
-        'session_id'=>$sessionId,
-        'table_name'=>(string)($account['session']['table_name'] ?? ''),
-        'invoice_number'=>$invoiceNumber,
-        'financial_period_id'=>$periodId,
-        'destination'=>$destination,
-        'settlement_kind'=>$kind,
-        'closes_session'=>!empty($review['closes_session']),
-        'subtotal'=>(int)$review['subtotal'],
-        'discount'=>(int)$review['discount'],
-        'total'=>(int)$review['total'],
-        'remaining_total'=>(int)$review['remaining_total'],
-        'line_count'=>count((array)$review['lines']),
-        'print_requested'=>$printFinal,
-        'print_queued'=>!empty($printJob['queued']) || !empty($printJob['duplicate']),
-        'print_job_id'=>(int)($printJob['job_id'] ?? 0),
+        'session_id'=>$sessionId,'table_name'=>(string)($account['session']['table_name'] ?? ''),'invoice_number'=>$invoiceNumber,'financial_period_id'=>$periodId,
+        'destination'=>$destination,'settlement_kind'=>$kind,'closes_session'=>!empty($review['closes_session']),
+        'subtotal'=>(int)$review['subtotal'],'discount'=>(int)$review['discount'],'taxable'=>(int)($review['taxable'] ?? 0),'tax'=>(int)($review['tax'] ?? 0),'total'=>(int)$review['total'],
+        'remaining_tax'=>(int)($review['remaining_tax'] ?? 0),'remaining_total'=>(int)$review['remaining_total'],'line_count'=>count((array)$review['lines']),
+        'allocation_version'=>(int)($account['allocation_version'] ?? 1),'print_requested'=>$printFinal,'print_queued'=>!empty($printJob['queued']) || !empty($printJob['duplicate']),'print_job_id'=>(int)($printJob['job_id'] ?? 0),
     ], $actorUserId);
 
     return [
-        'settlement_id'=>$settlementId,
-        'invoice_number'=>$invoiceNumber,
-        'financial_period_id'=>$periodId,
-        'session_id'=>$sessionId,
-        'destination'=>$destination,
-        'destination_label'=>settlement_destination_label($destination),
-        'settlement_kind'=>$kind,
-        'closes_session'=>!empty($review['closes_session']),
-        'subtotal_amount'=>(int)$review['subtotal'],
-        'discount_amount'=>(int)$review['discount'],
-        'total_amount'=>(int)$review['total'],
-        'remaining_subtotal'=>(int)$review['remaining_subtotal'],
-        'remaining_discount'=>(int)$review['remaining_discount'],
-        'remaining_total'=>(int)$review['remaining_total'],
-        'completed_orders'=>$completedOrders,
-        'print_job'=>$printJob,
-        'print_warning'=>$printFinal && empty($printJob['queued']) && empty($printJob['duplicate'])
-            ? 'تسویه ثبت شد؛ چاپ فاکتور انجام نشد. سند از سوابق قابل چاپ مجدد است.'
-            : '',
+        'settlement_id'=>$settlementId,'invoice_number'=>$invoiceNumber,'financial_period_id'=>$periodId,'session_id'=>$sessionId,'destination'=>$destination,
+        'destination_label'=>settlement_destination_label($destination),'settlement_kind'=>$kind,'closes_session'=>!empty($review['closes_session']),
+        'subtotal_amount'=>(int)$review['subtotal'],'discount_amount'=>(int)$review['discount'],'taxable_amount'=>(int)($review['taxable'] ?? 0),'tax_amount'=>(int)($review['tax'] ?? 0),'total_amount'=>(int)$review['total'],
+        'remaining_subtotal'=>(int)$review['remaining_subtotal'],'remaining_discount'=>(int)$review['remaining_discount'],'remaining_tax'=>(int)($review['remaining_tax'] ?? 0),'remaining_total'=>(int)$review['remaining_total'],
+        'completed_orders'=>$completedOrders,'print_job'=>$printJob,
+        'print_warning'=>$printFinal && empty($printJob['queued']) && empty($printJob['duplicate']) ? 'تسویه ثبت شد؛ چاپ فاکتور انجام نشد. سند از سوابق قابل چاپ مجدد است.' : '',
     ];
 }
 
@@ -522,7 +542,7 @@ function settlement_reopen_locked(PDO $pdo, array $record, int $targetTableId, s
     $session = $sessionStmt->fetch();
     if (!$session) throw new RuntimeException('حساب اصلی پیدا نشد.');
 
-    $isItemizedAllocation = (int)($record['allocation_version'] ?? 0) === 1 && (string)($record['settlement_kind'] ?? '') === 'itemized';
+    $isItemizedAllocation = in_array((int)($record['allocation_version'] ?? 0), [1,2], true) && (string)($record['settlement_kind'] ?? '') === 'itemized';
     if ($isItemizedAllocation) {
         if (!in_array((string)$session['status'], ['active','closed'], true)) throw new RuntimeException('این حساب در وضعیت قابل برگشت رسید نیست.');
         $target = null;
@@ -535,7 +555,7 @@ function settlement_reopen_locked(PDO $pdo, array $record, int $targetTableId, s
             $busyStmt->execute([$targetTableId,(int)$session['id']]);
             if ($busyStmt->fetchColumn()) throw new RuntimeException('میز مقصد اکنون اشغال است؛ میز آزاد دیگری انتخاب کن.');
 
-            $pdo->prepare("UPDATE table_sessions SET table_id=?,status='active',live_table_guard=?,ended_at=NULL,ended_reason=NULL,closed_by_user_id=NULL,checkout_subtotal=NULL,checkout_discount=NULL,checkout_total=NULL,settlement_destination=NULL,checkout_voided_at=NULL,checkout_voided_by_user_id=NULL,updated_at=NOW() WHERE id=? AND status='closed'")
+            $pdo->prepare("UPDATE table_sessions SET table_id=?,status='active',live_table_guard=?,ended_at=NULL,ended_reason=NULL,closed_by_user_id=NULL,checkout_subtotal=NULL,checkout_discount=NULL,checkout_taxable=NULL,checkout_tax=NULL,checkout_total=NULL,settlement_destination=NULL,checkout_voided_at=NULL,checkout_voided_by_user_id=NULL,updated_at=NOW() WHERE id=? AND status='closed'")
                 ->execute([$targetTableId,$targetTableId,(int)$session['id']]);
             $orders = $pdo->prepare("SELECT id FROM orders WHERE session_id=? AND status='completed' ORDER BY id FOR UPDATE");
             $orders->execute([(int)$session['id']]);
@@ -567,17 +587,17 @@ function settlement_reopen_locked(PDO $pdo, array $record, int $targetTableId, s
         $snapshotJson = json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
         $reversalAt = date('Y-m-d H:i:s');
         $business = business_assignment($reversalAt);
-        $insert = $pdo->prepare("INSERT INTO settlement_records(session_id,financial_period_id,invoice_number,invoice_snapshot_json,destination,table_name_snapshot,subtotal,discount,total,status,reverses_settlement_id,actor_user_id,request_fingerprint,settlement_kind,closes_session,remaining_subtotal,remaining_discount,remaining_total,allocation_version,void_reason,voided_by_user_id,voided_at,settled_at,business_date,business_shift_key,business_shift_label,business_cutoff_snapshot) VALUES(?,?,?,?,?,?,?,?,?,'reversal',?,?,?,'reversal',0,?,?,?,1,?,?,?,?,?,?,?,?)");
+        $insert = $pdo->prepare("INSERT INTO settlement_records(session_id,financial_period_id,invoice_number,invoice_snapshot_json,destination,table_name_snapshot,subtotal,discount,taxable_amount,tax_amount,total,status,reverses_settlement_id,actor_user_id,request_fingerprint,settlement_kind,closes_session,remaining_subtotal,remaining_discount,remaining_tax,remaining_total,allocation_version,void_reason,voided_by_user_id,voided_at,settled_at,business_date,business_shift_key,business_shift_label,business_cutoff_snapshot) VALUES(?,?,?,?,?,?,?,?,?,?,?,'reversal',?,?,?,'reversal',0,?,?,?,?,?,?,?,?,?,?,?,?,?)");
         $insert->execute([
             (int)$record['session_id'],(int)$issued['period']['id'],(string)$issued['invoice_number'],$snapshotJson,
-            (string)$record['destination'],(string)$record['table_name_snapshot'],(int)$record['subtotal'],(int)$record['discount'],(int)$record['total'],
+            (string)$record['destination'],(string)$record['table_name_snapshot'],(int)$record['subtotal'],(int)$record['discount'],(int)($record['taxable_amount']??0),(int)($record['tax_amount']??0),(int)$record['total'],
             (int)$record['id'],$actorUserId,null,
-            0,0,0,
-            $reason,$actorUserId,$reversalAt,$reversalAt,
+            0,0,0,0,
+            (int)($record['allocation_version']??1),$reason,$actorUserId,$reversalAt,$reversalAt,
             (string)$business['business_date'],(string)$business['shift_key'],(string)$business['shift_label'],(string)$business['cutoff'],
         ]);
         $reversalId = (int)$pdo->lastInsertId();
-        $copyLines = $pdo->prepare("INSERT INTO settlement_record_lines(settlement_id,order_item_id,order_id,item_id_snapshot,item_name_snapshot,unit_price_snapshot,quantity,gross_amount,discount_amount,net_amount) SELECT ?,order_item_id,order_id,item_id_snapshot,item_name_snapshot,unit_price_snapshot,quantity,gross_amount,discount_amount,net_amount FROM settlement_record_lines WHERE settlement_id=? ORDER BY id");
+        $copyLines = $pdo->prepare("INSERT INTO settlement_record_lines(settlement_id,order_item_id,order_id,item_id_snapshot,item_name_snapshot,unit_price_snapshot,quantity,gross_amount,discount_amount,net_amount,taxable_amount,tax_rate_bps,tax_amount,final_amount) SELECT ?,order_item_id,order_id,item_id_snapshot,item_name_snapshot,unit_price_snapshot,quantity,gross_amount,discount_amount,net_amount,taxable_amount,tax_rate_bps,tax_amount,final_amount FROM settlement_record_lines WHERE settlement_id=? ORDER BY id");
         $copyLines->execute([$reversalId,(int)$record['id']]);
         if ($copyLines->rowCount() < 1) throw new RuntimeException('خطوط مالی رسید برای برگشت پیدا نشد.');
         $pdo->prepare("UPDATE settlement_records SET void_reason=?,voided_by_user_id=?,voided_at=NOW() WHERE id=? AND status='completed'")
@@ -661,26 +681,17 @@ function settlement_reopen_locked(PDO $pdo, array $record, int $targetTableId, s
 
     $reversalAt = date('Y-m-d H:i:s');
     $business = business_assignment($reversalAt);
-    $insert = $pdo->prepare("INSERT INTO settlement_records(session_id,financial_period_id,invoice_number,invoice_snapshot_json,destination,table_name_snapshot,subtotal,discount,total,status,reverses_settlement_id,actor_user_id,subscriber_ledger_entry_id,accommodation_transfer_id,void_reason,voided_by_user_id,voided_at,settled_at,business_date,business_shift_key,business_shift_label,business_cutoff_snapshot) VALUES(?,?,?,?,?,?,?,?,?,'reversal',?,?,?,?,?,?,?,?,?,?,?,?)");
+    $insert = $pdo->prepare("INSERT INTO settlement_records(session_id,financial_period_id,invoice_number,invoice_snapshot_json,destination,table_name_snapshot,subtotal,discount,taxable_amount,tax_amount,total,status,reverses_settlement_id,actor_user_id,subscriber_ledger_entry_id,accommodation_transfer_id,settlement_kind,closes_session,remaining_subtotal,remaining_discount,remaining_tax,remaining_total,allocation_version,void_reason,voided_by_user_id,voided_at,settled_at,business_date,business_shift_key,business_shift_label,business_cutoff_snapshot) VALUES(?,?,?,?,?,?,?,?,?,?,?,'reversal',?,?,?,?,'reversal',0,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     $insert->execute([
-        (int)$record['session_id'],
-        (int)$issued['period']['id'],
-        (string)$issued['invoice_number'],
-        $snapshotJson,
-        (string)$record['destination'],
-        (string)$record['table_name_snapshot'],
-        (int)$record['subtotal'],
-        (int)$record['discount'],
-        (int)$record['total'],
-        (int)$record['id'],
-        $actorUserId,
-        $record['subscriber_ledger_entry_id'] ? (int)$record['subscriber_ledger_entry_id'] : null,
-        $record['accommodation_transfer_id'] ? (int)$record['accommodation_transfer_id'] : null,
-        $reason,
-        $actorUserId,
-        $reversalAt,$reversalAt,(string)$business['business_date'],(string)$business['shift_key'],(string)$business['shift_label'],(string)$business['cutoff'],
+        (int)$record['session_id'],(int)$issued['period']['id'],(string)$issued['invoice_number'],$snapshotJson,
+        (string)$record['destination'],(string)$record['table_name_snapshot'],(int)$record['subtotal'],(int)$record['discount'],(int)($record['taxable_amount']??0),(int)($record['tax_amount']??0),(int)$record['total'],
+        (int)$record['id'],$actorUserId,$record['subscriber_ledger_entry_id'] ? (int)$record['subscriber_ledger_entry_id'] : null,$record['accommodation_transfer_id'] ? (int)$record['accommodation_transfer_id'] : null,
+        0,0,0,0,(int)($record['allocation_version']??0),
+        $reason,$actorUserId,$reversalAt,$reversalAt,(string)$business['business_date'],(string)$business['shift_key'],(string)$business['shift_label'],(string)$business['cutoff'],
     ]);
     $reversalId = (int)$pdo->lastInsertId();
+    $copyLines = $pdo->prepare("INSERT INTO settlement_record_lines(settlement_id,order_item_id,order_id,item_id_snapshot,item_name_snapshot,unit_price_snapshot,quantity,gross_amount,discount_amount,net_amount,taxable_amount,tax_rate_bps,tax_amount,final_amount) SELECT ?,order_item_id,order_id,item_id_snapshot,item_name_snapshot,unit_price_snapshot,quantity,gross_amount,discount_amount,net_amount,taxable_amount,tax_rate_bps,tax_amount,final_amount FROM settlement_record_lines WHERE settlement_id=? ORDER BY id");
+    $copyLines->execute([$reversalId,(int)$record['id']]);
 
     // Financial values and status of the original stay untouched. Only audit metadata
     // is added; effective "voided" state is derived from the reversal document.

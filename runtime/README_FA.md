@@ -28,5 +28,5 @@ Canonical Windows setup owner: `runtime/windows/setup-sokna.ps1`; این اسک�
 - Each invocation prints a diagnostics directory containing `summary.json`, `events.jsonl` and an allowlisted `support.zip`. Credentials are removed before export; raw configs/backups/keys are never bundled.
 - New/Recover preflight checks the canonical setup owner with `--validate-only`. Later failure after business setup must use Repair, not repeat New.
 - Repair preserves service configuration and restores the old service binary/running state if service installation fails; existing valid TLS identity is reused. Partial/invalid TLS identity requires explicit recovery.
-- Optional Print Agent requires `-PrintAgentSha256` from the trusted versioned release manifest. A filename alone is not authenticity verification.
+- Print Worker یک component داخلی SOKNA Local است؛ Setup مستقل یا `PrintAgentSha256` ندارد. build داخلی باید provenance/version manifest معتبر داشته باشد و Windows CI آن را قبل از بسته‌بندی SOKNA تولید و تست کند.
 - MSI/Burn, shortcuts, Installed apps, full prerequisite acquisition and end-to-end HTTP/DB health remain packaging acceptance work; hosted SCM tests do not prove cashier/printer UAT.

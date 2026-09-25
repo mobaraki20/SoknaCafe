@@ -8,6 +8,7 @@ $setup = Join-Path $repo 'runtime/windows/setup-sokna.ps1'
 $ps = (Get-Command powershell.exe).Source
 $sessions = @()
 $ownsService = $false
+$ownsPrintWorker = $false
 $caThumb = ''
 function Assert([bool]$Condition, [string]$Message) { if (-not $Condition) { throw $Message } }
 function Run-Setup([string[]]$Extra, [int]$Expected = 0) {
@@ -20,6 +21,7 @@ function Run-Setup([string[]]$Extra, [int]$Expected = 0) {
 }
 try {
     Assert (-not (Get-Service SoknaRuntime -ErrorAction SilentlyContinue)) 'Test requires a disposable runner without SoknaRuntime'
+    Assert (-not (Get-Service SoknaPrintWorker -ErrorAction SilentlyContinue)) 'Test requires a disposable runner without SoknaPrintWorker'
     # Real Windows process argument round trip: whitespace, Persian, quotes, trailing slash.
     $probe = Join-Path $root 'args.php'
     [IO.File]::WriteAllText($probe, '<?php echo json_encode(array_slice($argv,1));')
@@ -30,6 +32,15 @@ try {
     for ($i=0; $i -lt $values.Count; $i++) {
         Assert ([string]$actual[$i] -ceq $values[$i]) ('Native argument mismatch at index ' + $i)
     }
+
+    # Exercise occupied-port discovery with a real listener; $PID is read-only.
+    $listener = New-Object Net.Sockets.TcpListener([Net.IPAddress]::Loopback, 0)
+    try {
+        $listener.Start()
+        $probePort = ([Net.IPEndPoint]$listener.LocalEndpoint).Port
+        $owners = @(Get-SoknaTcpListenerOwners $probePort)
+        Assert (@($owners | Where-Object { $_.pid -eq $PID }).Count -eq 1) 'Listening process owner was not discovered'
+    } finally { $listener.Stop() }
 
     Add-SoknaSecret 'secret-canary-123'
     Assert ((Protect-SoknaLog 'failed secret-canary-123 token=other-secret') -notmatch 'secret-canary|other-secret') 'Secret redaction failed'
@@ -59,16 +70,34 @@ try {
     [IO.File]::WriteAllText((Join-Path $app 'runtime/sokna-runtime.php'), '<?php if(in_array("--self-check",$argv,true)){exit(0);} file_put_contents(__DIR__."/started-".getmypid().".txt",json_encode($argv)); if(!in_array("--child",$argv,true)){$child=proc_open([PHP_BINARY,__FILE__,"--child"],[0=>["file","NUL","r"],1=>["file",__DIR__."/child.log","a"],2=>["file",__DIR__."/child.log","a"]],$pipes);file_put_contents(__DIR__."/spawn-result.txt",is_resource($child)?"started":"failed");} while(true){sleep(1);}')
     [IO.File]::WriteAllText((Join-Path $app 'config.php'), '<?php /* secret-canary-123 */')
     [IO.File]::WriteAllText((Join-Path $app 'install.lock'), 'preserve-lock')
-    [IO.File]::WriteAllText((Join-Path $app 'VERSION.txt'), 'fixture')
+    [IO.File]::WriteAllText((Join-Path $app 'VERSION.txt'), 'fixture-updater-owned')
+    [IO.File]::WriteAllText((Join-Path $app 'live-updater-owned.txt'), 'must-survive-msi-repair-byte-for-byte')
+    # The generic SCM Repair fixture has no business database. Seed an existing local
+    # Print Worker pairing so this test verifies that healthy Repair preserves it rather
+    # than invoking the DB-owned missing-pairing recovery path.
+    $workerData = Join-Path $data 'print-worker'
+    New-SoknaPrivateDirectory $workerData | Out-Null
+    [IO.File]::WriteAllText((Join-Path $workerData 'config.json'), '{"server_base_url":"http://127.0.0.1:9","agent_name":"CI fixture"}')
+    [IO.File]::WriteAllBytes((Join-Path $workerData 'secret.dat'), [byte[]](1,2,3,4,5,6,7,8))
+    $workerConfigHash = (Get-FileHash (Join-Path $workerData 'config.json')).Hash
+    $workerSecretHash = (Get-FileHash (Join-Path $workerData 'secret.dat')).Hash
     $configHash = (Get-FileHash (Join-Path $app 'config.php')).Hash
+    $versionHash = (Get-FileHash (Join-Path $app 'VERSION.txt')).Hash
+    $liveOwnerHash = (Get-FileHash (Join-Path $app 'live-updater-owned.txt')).Hash
     $repairArguments = @('-Mode','Repair','-AppRoot',$app,'-DataRoot',$data,'-SkipHttps')
     $ownsService = $true
     $s = Run-Setup $repairArguments
+    $ownsPrintWorker = $true
     Assert ((Get-Service SoknaRuntime).Status -eq 'Running') 'Real SCM service did not start'
+    Assert ((Get-Service SoknaPrintWorker).Status -eq 'Running') 'Internal Print Worker SCM service did not start'
     $before = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\SoknaRuntime').ImagePath
     $s = Run-Setup $repairArguments
     Assert ((Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\SoknaRuntime').ImagePath -eq $before) 'Repair changed service configuration'
-    Assert ((Get-FileHash (Join-Path $app 'config.php')).Hash -eq $configHash) 'Repair changed config/secret'
+    Assert ((Get-FileHash (Join-Path $app 'config.php')).Hash -eq $configHash) 'Repair changed application config/secret'
+    Assert ((Get-FileHash (Join-Path $workerData 'config.json')).Hash -eq $workerConfigHash) 'Healthy Repair replaced Print Worker config'
+    Assert ((Get-FileHash (Join-Path $workerData 'secret.dat')).Hash -eq $workerSecretHash) 'Healthy Repair rotated Print Worker secret'
+    Assert ((Get-FileHash (Join-Path $app 'VERSION.txt')).Hash -eq $versionHash) 'Repair rewrote updater-owned VERSION.txt'
+    Assert ((Get-FileHash (Join-Path $app 'live-updater-owned.txt')).Hash -eq $liveOwnerHash) 'Repair rewrote updater-owned live application payload'
     for ($attempt=0; $attempt -lt 20; $attempt++) {
         # SYSTEM-owned processes can have a null CIM CommandLine; identify our
         # fixture by its own PID markers, including previous generations.
@@ -94,17 +123,34 @@ try {
     $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
     Invoke-SoknaProcess $csc @('/nologo','/target:exe','/reference:System.ServiceProcess.dll',"/out:$badExe",$badSource) | Out-Null
     $goodHash = (Get-FileHash (Join-Path $data 'bin/SoknaRuntimeService.exe')).Hash
+    $burnLog = Join-Path $root 'burn-source.log'
+    $msiLog = Join-Path $root 'msi-source.log'
+    [IO.File]::WriteAllText($burnLog, 'burn diagnostic password=secret-canary-123')
+    [IO.File]::WriteAllText($msiLog, 'msi diagnostic token=other-secret')
+    $env:SOKNA_BURN_LOG_PATH = $burnLog
+    $env:SOKNA_MSI_LOG_PATH = $msiLog
     $goodHost = $ServiceHostExe
     $ServiceHostExe = $badExe
     $s = Run-Setup $repairArguments 2
     $ServiceHostExe = $goodHost
     Assert ((Get-FileHash (Join-Path $data 'bin/SoknaRuntimeService.exe')).Hash -eq $goodHash) 'Failed repair did not restore original host binary'
     Assert ((Get-Service SoknaRuntime).Status -eq 'Running') 'Failed repair did not restore running service'
+    Assert ((Get-FileHash (Join-Path $app 'VERSION.txt')).Hash -eq $versionHash) 'Failed Repair downgraded updater-owned VERSION.txt'
+    Assert ((Get-FileHash (Join-Path $app 'live-updater-owned.txt')).Hash -eq $liveOwnerHash) 'Failed Repair changed updater-owned live application payload'
     $bundle = Join-Path $root 'expanded-diagnostics'
     Expand-Archive (Join-Path $s.diagnostics_directory 'support.zip') $bundle
     $files = @(Get-ChildItem $bundle -File)
-    Assert ($files.Count -eq 2) 'Support bundle contains non-allowlisted files'
-    Assert ((Get-Content (Join-Path $bundle '*') -Raw | Out-String) -notmatch 'secret-canary-123') 'Support bundle leaked secret'
+    $allowedSupportFiles = @('summary.json','events.jsonl','components.json','burn.log','msi.log')
+    Assert ($files.Count -ge 3 -and $files.Count -le $allowedSupportFiles.Count) 'Support bundle file count is outside the explicit allowlist'
+    foreach ($file in $files) { Assert ($allowedSupportFiles -contains $file.Name) ('Support bundle contains unexpected file: ' + $file.Name) }
+    Assert (Test-Path (Join-Path $bundle 'components.json')) 'Support bundle lacks structured component/service diagnostics'
+    Assert (Test-Path (Join-Path $bundle 'burn.log')) 'Support bundle did not include sanitized Burn diagnostics'
+    Assert (Test-Path (Join-Path $bundle 'msi.log')) 'Support bundle did not include sanitized MSI diagnostics'
+    $components = Get-Content (Join-Path $bundle 'components.json') -Raw | ConvertFrom-Json
+    Assert ($components.schema_version -eq 1) 'Component diagnostic schema is invalid'
+    Assert ($components.runtime_service.name -eq 'SoknaRuntime') 'Runtime service diagnostic missing'
+    Assert ($components.print_worker_service.name -eq 'SoknaPrintWorker') 'Print Worker diagnostic missing'
+    Assert ((Get-Content (Join-Path $bundle '*') -Raw | Out-String) -notmatch 'secret-canary-123|other-secret') 'Support bundle leaked secret'
 
     # Read a live installer log, redact credentials, and retain the original failure.
     $installLog = Join-Path $root 'native-installer.log'
@@ -117,7 +163,9 @@ try {
     Assert ($s.support_bundle_status -eq 'created') 'Combined support ZIP missing'
     $combined = Join-Path $root 'combined-diagnostics'
     Expand-Archive $s.support_bundle $combined
-    Assert (@(Get-ChildItem $combined -File).Count -eq 3) 'Combined ZIP must contain only three allowlisted files'
+    $combinedNames = @(Get-ChildItem $combined -File | ForEach-Object { $_.Name } | Sort-Object)
+    $expectedNames = @('summary.json','events.jsonl','components.json','burn.log','msi.log','installer-snapshot.log' | Sort-Object)
+    Assert (($combinedNames -join '|') -eq ($expectedNames -join '|')) 'Combined ZIP must contain exactly the merged diagnostic allowlist'
     $log = Get-Content (Join-Path $combined 'installer-snapshot.log') -Raw
     Assert ($log -match 'Installer evidence marker' -and $log -notmatch 'installer-secret-canary') 'Installer evidence lost or credential leaked'
     $s = Run-Setup @('-Mode','Validate','-AppRoot',$app,'-DataRoot',$data,'-OpenSslExe',(Join-Path $root 'missing.exe'),'-InstallerLogFile',(Join-Path $root 'missing.log')) 2
@@ -138,8 +186,36 @@ try {
     try { & $provision -OpenSslExe $OpenSslExe -DataRoot $tls -Hostname 'sokna.local' | Out-Null } catch { $blocked = $true }
     Assert $blocked 'Partial TLS identity was silently regenerated'
     Assert ((Get-FileHash (Join-Path $tls 'secrets/tls/local-ca.key.pem')).Hash -eq $hashes['local-ca.key.pem']) 'Partial identity check changed CA key'
+    # Uninstall must reject a foreign worker before mutating either service.
+    $printKey = 'HKLM:\SYSTEM\CurrentControlSet\Services\SoknaPrintWorker'
+    $printCommand = (Get-ItemProperty $printKey).ImagePath
+    Invoke-SoknaProcess "$env:SystemRoot\System32\sc.exe" @('config','SoknaPrintWorker','binPath=','C:\foreign-print-service.exe') | Out-Null
+    try {
+        $s = Run-Setup @('-Mode','RemovePlatform','-AppRoot',$app,'-DataRoot',$data,'-SkipHttps') 2
+        Assert ((Get-Service SoknaRuntime).Status -eq 'Running') 'Foreign worker ownership changed Runtime state'
+        Assert ([bool](Get-Service SoknaPrintWorker -ErrorAction SilentlyContinue)) 'Foreign worker was removed'
+    } finally {
+        Invoke-SoknaProcess "$env:SystemRoot\System32\sc.exe" @('config','SoknaPrintWorker','binPath=',$printCommand) | Out-Null
+    }
+    $s = Run-Setup @('-Mode','RemovePlatform','-AppRoot',$app,'-DataRoot',$data,'-SkipHttps')
+    Assert (-not (Get-Service SoknaRuntime -ErrorAction SilentlyContinue)) 'Owned Runtime remains after uninstall'
+    Assert (-not (Get-Service SoknaPrintWorker -ErrorAction SilentlyContinue)) 'Owned Print Worker remains after uninstall'
+    Assert ((Get-FileHash (Join-Path $workerData 'config.json')).Hash -eq $workerConfigHash) 'Uninstall changed print configuration'
+    Assert ((Get-FileHash (Join-Path $workerData 'secret.dat')).Hash -eq $workerSecretHash) 'Uninstall changed print secret'
+    Assert ((Get-FileHash (Join-Path $app 'config.php')).Hash -eq $configHash) 'Uninstall changed application configuration'
+    $s = Run-Setup @('-Mode','RemovePlatform','-AppRoot',$app,'-DataRoot',$data,'-SkipHttps')
     Write-Host 'Phase 8B Windows setup runtime PASS: quoting, private ACL, diagnostics, preflight, real SCM repair/rollback and TLS identity preservation.'
 } finally {
+    Remove-Item Env:SOKNA_BURN_LOG_PATH -ErrorAction SilentlyContinue
+    Remove-Item Env:SOKNA_MSI_LOG_PATH -ErrorAction SilentlyContinue
+    if ($ownsPrintWorker) {
+        if (Get-Service SoknaPrintWorker -ErrorAction SilentlyContinue) {
+            Stop-Service SoknaPrintWorker -ErrorAction SilentlyContinue
+            try { Wait-SoknaService 'SoknaPrintWorker' 'Stopped' } catch { }
+            & "$env:SystemRoot\System32\sc.exe" delete SoknaPrintWorker | Out-Null
+        }
+        Remove-Item 'HKLM:\SOFTWARE\Sokna\Local\PrintWorker' -Recurse -Force -ErrorAction SilentlyContinue
+    }
     if ($ownsService) {
         if (Get-Service SoknaRuntime -ErrorAction SilentlyContinue) {
             Stop-Service SoknaRuntime -ErrorAction SilentlyContinue

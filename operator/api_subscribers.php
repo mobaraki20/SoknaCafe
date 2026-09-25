@@ -23,14 +23,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') json_response(['success'=>false],405)
 $data=request_json();
 $requestId=text_substr(preg_replace('/[^A-Za-z0-9._:-]/','',trim((string)($data['request_id']??'')))?:bin2hex(random_bytes(8)),0,96);
 if (!csrf_valid($data['csrf_token']??null)) json_response(['success'=>false,'message'=>'صفحه منقضی شده؛ دوباره بارگذاری کن.','request_id'=>$requestId],419);
-if ((string)($data['action']??'') !== 'charge') json_response(['success'=>false,'message'=>'عملیات مشترک شناخته نشد.','request_id'=>$requestId],422);
+if ((string)($data['action']??'') !== 'charge') json_response(['success'=>false,'message'=>'عملیات مشتری شناخته نشد.','request_id'=>$requestId],422);
 $tableId=(int)($data['table_id']??0);
 $subscriberId=(int)($data['subscriber_id']??0);
 $printFinal=bool_from_mixed($data['print_final']??false);
 $expectedSessionId=(int)($data['expected_session_id']??0);
 $expectedTotal=(int)($data['expected_total']??-1);
 $expectedSignature=strtolower(trim((string)($data['expected_signature']??'')));
-if ($tableId<1 || $subscriberId<1) json_response(['success'=>false,'message'=>'میز یا مشترک معتبر نیست.','request_id'=>$requestId],422);
+if ($tableId<1 || $subscriberId<1) json_response(['success'=>false,'message'=>'میز یا مشتری معتبر نیست.','request_id'=>$requestId],422);
 
 try {
     $pdo->beginTransaction();
@@ -45,19 +45,19 @@ try {
         $ledgerStmt=$pdo->prepare('SELECT subscriber_id,balance_after FROM subscriber_ledger WHERE id=? LIMIT 1 FOR UPDATE');
         $ledgerStmt->execute([$entryId]);
         $existingLedger=$ledgerStmt->fetch();
-        if(!$existingLedger || (int)$existingLedger['subscriber_id']!==$subscriberId) throw new RuntimeException('شناسه این درخواست قبلاً برای مشترک دیگری استفاده شده است.',409);
+        if(!$existingLedger || (int)$existingLedger['subscriber_id']!==$subscriberId) throw new RuntimeException('شناسه این درخواست قبلاً برای مشتری دیگری استفاده شده است.',409);
         $pdo->commit();
         json_response([
             'success'=>true,'persisted'=>true,'idempotent'=>true,'request_id'=>$requestId,'table_id'=>$tableId,
             'session_id'=>(int)$existingSettlement['session_id'],'subscriber_balance'=>(int)$existingLedger['balance_after'],
-            'message'=>'این فاکتور قبلاً با همین درخواست در حساب مشترک ثبت شده است.',
+            'message'=>'این فاکتور قبلاً با همین درخواست در حساب مشتری ثبت شده است.',
         ]+settlement_result_from_record($existingSettlement));
     }
     $sessionStmt=$pdo->prepare("SELECT id FROM table_sessions WHERE table_id=? AND status='active' ORDER BY id DESC LIMIT 1 FOR UPDATE");
     $sessionStmt->execute([$tableId]);
     $sessionId=(int)($sessionStmt->fetchColumn()?:0);
     if($sessionId<1) throw new RuntimeException('این میز حساب فعال ندارد.');
-    settlement_assert_session_editable_locked($pdo, $sessionId, 'تسویه حساب مشترک');
+    settlement_assert_session_editable_locked($pdo, $sessionId, 'تسویه حساب مشتری');
     $pendingAdjustmentIds=preparation_adjustments_pending_ids($pdo,$sessionId,true);
     accommodation_resolve_failed_for_alternate_settlement_locked($pdo,$sessionId,$userId,'subscriber_settlement');
 
@@ -106,14 +106,14 @@ try {
     json_response(['success'=>false,'code'=>'settlement_changed','message'=>$e->getMessage(),'request_id'=>$requestId],409);
 } catch (PDOException $e) {
     if($pdo->inTransaction())$pdo->rollBack();
-    if((string)$e->getCode()==='23000') json_response(['success'=>false,'message'=>'این فاکتور قبلاً در حساب مشترک ثبت شده است.','request_id'=>$requestId],409);
+    if((string)$e->getCode()==='23000') json_response(['success'=>false,'message'=>'این فاکتور قبلاً در حساب مشتری ثبت شده است.','request_id'=>$requestId],409);
     error_log('subscriber charge ['.$requestId.']: '.$e->getMessage());
-    json_response(['success'=>false,'message'=>'ثبت فاکتور مشترک انجام نشد. کد پیگیری: '.$requestId,'request_id'=>$requestId],500);
+    json_response(['success'=>false,'message'=>'ثبت فاکتور مشتری انجام نشد. کد پیگیری: '.$requestId,'request_id'=>$requestId],500);
 } catch (RuntimeException $e) {
     if($pdo->inTransaction())$pdo->rollBack();
     json_response(['success'=>false,'message'=>$e->getMessage(),'request_id'=>$requestId],$e->getCode()===409?409:422);
 } catch (Throwable $e) {
     if($pdo->inTransaction())$pdo->rollBack();
     error_log('subscriber charge ['.$requestId.']: '.$e->getMessage());
-    json_response(['success'=>false,'message'=>'ثبت فاکتور مشترک انجام نشد. کد پیگیری: '.$requestId,'request_id'=>$requestId],500);
+    json_response(['success'=>false,'message'=>'ثبت فاکتور مشتری انجام نشد. کد پیگیری: '.$requestId,'request_id'=>$requestId],500);
 }

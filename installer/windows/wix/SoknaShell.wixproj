@@ -1,0 +1,10 @@
+<Project Sdk="WixToolset.Sdk/7.0.0">
+  <PropertyGroup>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <OutputName>SOKNA-Cafe-Local</OutputName>
+    <DefineConstants>$(DefineConstants);ProductVersion=$(ProductVersion);AppVersion=$(AppVersion)</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <BindPath Include="$(ShellPayloadRoot)" BindName="Shell" />
+  </ItemGroup>
+</Project>

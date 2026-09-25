@@ -1,3 +1,6 @@
+> **Historical prelaunch baseline — Superseded for deployment/ownership by `docs/architecture-migration-r2/PHASE7R_PRINTING_RECONCILIATION_FA.md`.**
+> Print API v4 invariants remain valid; the old external-product packaging rule is no longer active.
+
 # Pre-launch Print v4 Clean Baseline
 
 وضعیت: **WORKING / NOT RELEASE**

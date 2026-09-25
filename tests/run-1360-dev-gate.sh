@@ -27,6 +27,8 @@ echo "JS syntax PASS: ${js_count} files"
 
 echo '== Unit =='
 php tests/unit.php
+php tests/accommodation-api-contract.php
+php tests/accommodation-tax-snapshot-contract.php
 php tests/phase2-relay-contract.php
 php tests/phase2-projection-contract.php
 php tests/phase2-public-boundary-contract.php
@@ -37,11 +39,17 @@ php tests/phase5-deferred-boundary-contract.php
 php tests/phase6a-preparation-permissions-contract.php
 php tests/phase6b-sellable-kind-contract.php
 php tests/phase6c-table-draft-contract.php
+php tests/r2-phase6f-tax-contract.php
+python tests/r2-phase6f-tax-integration-contract.py
 python tests/phase7-runtime-services-contract.py
 
 echo '== Supply / modular contracts =='
 python tests/v1360-supply-module-contract.py
 python tests/v1360-ui-conformance-contract.py
+python tests/scds-canonical-contract.py
+python tests/scds-regression-budget.py
+python tests/scds-system-state-contract.py
+python tests/scds-persian-product-language-contract.py
 python tests/v1360-ui-language-contract.py
 python tests/panel-tab-language-contract.py
 python tests/v1360-rc4-ui-handoff-contract.py

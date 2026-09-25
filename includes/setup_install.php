@@ -132,7 +132,7 @@ function sokna_setup_config(array $input): array
             'trust_proxy_headers'=>false,
             'data_dir'=>trim((string)($input['data_dir'] ?? '')),
             'local_hostname'=>strtolower(trim((string)($input['local_hostname'] ?? 'sokna.local'))) ?: 'sokna.local',
-            'print_agent_service_name'=>'Sokna Print Agent 6',
+            'print_worker_service_name'=>'SoknaPrintWorker',
         ],
     ];
 }
@@ -209,7 +209,7 @@ function sokna_setup_default_settings(string $cafeName, string $appUrl): array
         'orders_message.kitchen'=>'سفارش‌گیری آشپزخانه موقتاً متوقف است. نوشیدنی‌ها و اقلام بار همچنان قابل سفارش‌اند.',
         'orders_message.bar'=>'سفارش‌گیری بار موقتاً متوقف است. غذاهای آشپزخانه همچنان قابل سفارش‌اند.',
         'app_timezone'=>'Asia/Tehran','checkout_print_default'=>'1',
-        'module.inventory.enabled'=>'1','module.supply.enabled'=>'1','module.marketing.enabled'=>'1','module.reporting.enabled'=>'1','module.personnel.enabled'=>'1',
+        'module.inventory.enabled'=>'1','module.supply.enabled'=>'1','module.tax.enabled'=>'0','module.marketing.enabled'=>'1','module.reporting.enabled'=>'1','module.personnel.enabled'=>'1',
         'inventory_initialized'=>'0','inventory_reconciliation_required'=>'0',
     ];
 }
@@ -235,6 +235,55 @@ function sokna_setup_seed_new(PDO $pdo, array $input): void
         $tableStmt->execute(['میز '.$fa,$i,(string)$i,rtrim(strtr(base64_encode(random_bytes(18)),'+/','-_'),'='),$i]);
     }
     $pdo->prepare('INSERT IGNORE INTO schema_migrations(version) VALUES(?)')->execute(['1.30.1-rc2-baseline']);
+}
+
+function sokna_setup_write_internal_print_worker_provision(PDO $pdo, array $input): ?array
+{
+    $path=trim((string)($input['print_worker_provision_file']??''));
+    if($path==='')return null;
+    $normalizedPath=strtolower(rtrim(str_replace('\\','/',dirname($path)),'/'));
+    $normalizedTemp=strtolower(rtrim(str_replace('\\','/',realpath(sys_get_temp_dir())?:sys_get_temp_dir()),'/'));
+    if($normalizedPath!==$normalizedTemp&&!str_starts_with($normalizedPath,$normalizedTemp.'/'))throw new RuntimeException('مسیر موقت راه‌اندازی سرویس چاپ معتبر نیست.');
+    $token=bin2hex(random_bytes(24));
+    $hash=hash('sha256',$token);
+    $hint=substr($token,-8);
+    $configuredAgentId=(int)($pdo->query("SELECT COALESCE((SELECT setting_value FROM settings WHERE setting_key='print_internal_worker_agent_id' LIMIT 1),'0')")->fetchColumn()?:0);
+    $agent=null;
+    if($configuredAgentId>0){
+        $configured=$pdo->prepare('SELECT id FROM print_agents WHERE id=? AND retired_at IS NULL AND active=1 FOR UPDATE');
+        $configured->execute([$configuredAgentId]);
+        $agent=$configured->fetch()?:null;
+    }
+    if(!$agent)$agent=$pdo->query("SELECT pa.id FROM print_agents pa WHERE pa.retired_at IS NULL AND pa.active=1 ORDER BY EXISTS(SELECT 1 FROM print_destinations d WHERE d.agent_id=pa.id OR d.fallback_agent_id=pa.id) DESC,pa.id LIMIT 1 FOR UPDATE")->fetch();
+    if($agent){
+        $agentId=(int)$agent['id'];
+        $pdo->prepare("UPDATE print_agents SET name='سرویس چاپ داخلی سکنا',token_hash=?,token_hint=?,active=1,retired_at=NULL,retired_by_user_id=NULL WHERE id=?")->execute([$hash,$hint,$agentId]);
+    }else{
+        $pdo->prepare("INSERT INTO print_agents(name,token_hash,token_hint,active) VALUES('سرویس چاپ داخلی سکنا',?,?,1)")->execute([$hash,$hint]);
+        $agentId=(int)$pdo->lastInsertId();
+    }
+    $pdo->prepare("INSERT INTO settings(setting_key,setting_value) VALUES('print_internal_worker_agent_id',?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)")->execute([(string)$agentId]);
+    // Runtime v2 has one SOKNA-owned worker on the Local machine. Preserve queue names,
+    // but normalize route ownership to that worker. Historical attempts keep their
+    // original agent_id and therefore remain auditable.
+    $pdo->prepare("UPDATE print_destinations SET agent_id=CASE WHEN NULLIF(TRIM(windows_queue_name),'') IS NULL THEN NULL ELSE ? END,fallback_agent_id=CASE WHEN NULLIF(TRIM(fallback_windows_queue_name),'') IS NULL THEN NULL ELSE ? END")->execute([$agentId,$agentId]);
+    $hostname=strtolower(trim((string)($input['local_hostname']??'sokna.local')))?:'sokna.local';
+    $serverBaseUrl='https://'.$hostname;
+    $payload=[
+        'schema_version'=>1,
+        'server_base_url'=>$serverBaseUrl,
+        'local_bridge_allowed_origin'=>$serverBaseUrl,
+        'agent_name'=>'SOKNA Local',
+        'token'=>$token,
+    ];
+    $dir=dirname($path);
+    if(!is_dir($dir)||!is_writable($dir))throw new RuntimeException('پوشه خصوصی Setup برای راه‌اندازی سرویس چاپ در دسترس نیست.');
+    $tmp=$path.'.tmp-'.bin2hex(random_bytes(4));
+    if(file_put_contents($tmp,json_encode($payload,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR),LOCK_EX)===false)throw new RuntimeException('ساخت فایل خصوصی راه‌اندازی سرویس چاپ ناموفق بود.');
+    @chmod($tmp,0600);
+    if(!rename($tmp,$path)){@unlink($tmp);throw new RuntimeException('فعال‌سازی فایل خصوصی سرویس چاپ ناموفق بود.');}
+    @chmod($path,0600);
+    return ['agent_id'=>$agentId,'provision_file'=>$path];
 }
 
 function sokna_setup_write_config_atomic(string $root, array $config): string
@@ -273,10 +322,11 @@ function sokna_setup_fresh_install(array $input, ?string $root = null): array
         $tables=sokna_setup_apply_schema($pdo,$root);
         $pdo->beginTransaction();
         sokna_setup_seed_new($pdo,$input);
+        $printWorkerProvision=sokna_setup_write_internal_print_worker_provision($pdo,$input);
         $configPath=sokna_setup_write_config_atomic($root,$config);
         sokna_setup_write_lock($root);
         $pdo->commit();
-        return ['mode'=>'new','config'=>$config,'table_count'=>count($tables)];
+        return ['mode'=>'new','config'=>$config,'table_count'=>count($tables),'print_worker'=>$printWorkerProvision??null];
     }catch(Throwable $e){
         if($pdo->inTransaction())$pdo->rollBack();
         sokna_setup_drop_created_tables($pdo,$tables);

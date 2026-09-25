@@ -221,7 +221,7 @@ check(
     'Order idempotency or initial status history is missing.'
 );
 $menuJsSource = file_get_contents(dirname(__DIR__) . '/assets/js/menu.js');
-check(is_string($menuJsSource) && str_contains($menuJsSource, 'data.client_token || submittedTarget?.client_token || pendingToken'), 'Guest tracking must use the server-confirmed client token.');
+check(is_string($menuJsSource) && str_contains($menuJsSource, 'data.client_token || context.submittedTarget?.client_token || pendingToken'), 'Guest tracking must use the server-confirmed client token.');
 $panelLayout = file_get_contents(dirname(__DIR__) . '/includes/panel_layout.php');
 check(is_string($panelLayout) && str_contains($panelLayout, '$font = ui_font()') && !str_contains($panelLayout, 'سفارش سریع و آسان'), 'Operational panels must use the selected global Persian font and omit promotional copy.');
 check(str_contains($panelLayout, 'assets/css/panel.css') && !preg_match('/assets\/css\/v\d+/', $panelLayout), 'Panel must load one canonical stylesheet instead of historical layers.');

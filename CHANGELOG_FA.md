@@ -1,3 +1,9 @@
+## 1.36.4-dev.39 — Phase 8B Closure Candidate
+- هویت installable بعد از dev.38 یکتا شد تا Windows MSI/Burn/Updater artifact با شماره تکراری ساخته نشود.
+- WIN-06 دارای Provider Candidate نسخه‌دار و مسیر رسمی Freeze Evidence → Frozen Release Lock شد.
+- Release engineering قبل از ساخت offline bundle، artifact واقعی را از نظر HTTPS source، SHA-256، exact size و policy امضای لازم اثبات می‌کند؛ end-user runtime دانلود خودکار ندارد.
+- Windows CI job مستقل برای تولید lock/evidence قابل review اضافه شد؛ Production/UAT تا اجرای واقعی Windows همچنان اعلام نمی‌شود.
+
 ## 1.36.4-dev.37 — Phase 7 complete
 - Runtime now supervises installed Print Agent service without duplicating the mature printing state machine.
 - Notification processing ownership is under Runtime while durable Push outbox remains canonical.

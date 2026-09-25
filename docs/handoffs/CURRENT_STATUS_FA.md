@@ -1,6 +1,51 @@
+> **مرجع فعلی تطبیق — 2026-09-25:** شاخه منتشرشده `work/reconcile-dev39` در PR #19، نسخه سورس dev.39، مبتنی بر تاریخچه گیت‌هاب و پیشرفت‌های بسته. ابتدا `docs/handoffs/DEV39_RECONCILIATION_2026-09-25_FA.md` را بخوانید (مسیر نسبت به ریشه مخزن). ادامه‌ها و دستورهای متعارض زیر سوابق تاریخی‌اند؛ Phase8B کامل نشده، WiX مجوز اجرا نگرفته و شواهد CI جدید و کارهای باز در مرجع فوق و جدول پذیرش 2026-09-25 ثبت شده‌اند.
+
 # SOKNA — Current Project Status
 
 Updated: 2026-09-20
+
+## Current recovery authority — 2026-09-24
+- Recovery baseline entering this batch: `a579fcf21878413998deb7158eb9a5a29fd8d32a`.
+- Latest implementation checkpoint closed in this batch: `268957d42d281b0f677de5a32be6c41e36b108f5` (`phase8b: harden dev39 Windows RC closure`).
+- Active continuation branch: `work/phase8b-closure-dev39`.
+- Product engineering identity: `1.36.4-dev.39`; this is a unique installable checkpoint, **not** a Production release claim.
+- Phase 8B closure source is hardened. Immediate external evidence sequence: Windows Provider Freeze → review/commit frozen prerequisite lock → Windows RC full-stack → MSI/Burn package acceptance/signing.
+- End-user prerequisite silent download/install remains forbidden; shared dependency ownership remains external.
+- Historical `7542107`, GitHub `main` / `phase/8b-windows-setup` SHAs and the older sections below are provenance only, not continuation authority.
+- Sole UI Design Authority: `SCDS-CANONICAL-2026-R1`; legacy `docs/UI_DESIGN_SYSTEM_FA.md` is non-authoritative compatibility material.
+
+
+## Historical local workspace note — SUPERSEDED by dev.39 authority above
+> این بخش فقط provenance مسیر قبل از `a579fcf` است. **از این بخش برای ادامه توسعه، نسخه فعلی، وضعیت Tax/Print یا تعیین اقدام بعدی استفاده نکنید.**
+
+This section records the earlier offline reconciliation run and no longer supersedes the dev.39 authority at the top of this file.
+- Working snapshot: `phase/8b-windows-setup` / `1.36.4-dev.38`, tracked in local Git branch `work/r2-reconciliation-ui-foundation`.
+- Valid local commits already closed: UI foundation/Persian language, Phase 6D Batch Purchase, Phase 6E Expenses.
+- Phase 7 Printing is being reconciled to frozen R2: Print Worker is now an **internal SOKNA Local component** based on audited Pagent 6.2.5 source; standalone Setup/Control/download are not active product owners.
+- Local PHP/static contracts are required before checkpoint commit; Windows .NET build/service rollback and physical printer evidence remain `WINDOWS_CI_REQUIRED / UAT_REQUIRED` until actually executed.
+- Phase 6F Tax remains intentionally deferred until Phase7R is committed on the correct internal-print architecture.
+- All previous SOKNA Design System versions are rejected. New UI work is Persian-first/RTL-first and uses dev.26 only as UI DNA/provenance, correcting its defects rather than copying them.
+
+## انتقال و بازبینی 2026-09-19 — شاخه فعال را از نو نسازید
+- main مشاهده‌شده: `98607d87d50c7913a1143d621e60f807965bae53` (checkpoint محصول همچنان Phase 8A / dev.38).
+- شاخه فعال موجود: `phase/8b-windows-setup`.
+- head بررسی‌شده: `6a3e183ca0ea544046c09bf3b9c8de7ab038ca5b`.
+- CI `35445104275`: completed/success؛ هر سه job Windows runtime، Public+Local MariaDB و Linux regression موفق‌اند.
+- هنگام بازبینی PR باز وجود نداشت؛ 8B merge نشده و COMPLETE نیست.
+- کد نصب مشترک، machine recovery، service host واقعی C# و PowerShell orchestration موجود است. هنداور اولیه شاخه درباره WinSW قدیمی شده؛ کد C# منبع فعلی است.
+- الزامات مالک، انتخاب فنی پیشنهادی، شکاف‌های واقعی و معیارهای پذیرش: `docs/architecture-migration-r2/WINDOWS_INSTALLER_ACCEPTANCE_FA.md`.
+- اقدام بعدی: همان شاخه فعال را fetch و بررسی کن؛ قبل از ادامه تغییرات احتمالی جدید را بخوان. نصب‌کننده نهایی هنوز تأیید نشده است.
+- این checkpoint فقط بررسی و مستندسازی است؛ هیچ تغییر runtime یا ارتقای نسخه‌ای انجام نشده و CI فوق متعلق به head کد 8B است، نه commit مستندات جدید.
+
+### قرارداد تحویل هر مرحله
+پیش از پایان هر گام، تغییرات را در GitHub ثبت کن؛ CURRENT_STATUS و هنداور فاز باید شامل branch/head، کار انجام‌شده، تست واقعی و run ID، موارد باز و اولین اقدام بعدی باشند. نقطه شروع root و MASTER باید به شاخه فعال اشاره کنند. شاخه‌ای با CI سبز اما بدون merge/post-merge CI را COMPLETE ننام. بسته ZIP تاریخی را بر GitHub فعلی مقدم ندان.
+
+---
+
+## Historical GitHub checkpoint — SUPERSEDED / provenance only
+> اطلاعات زیر وضعیت مشاهده‌شده در 2026-09-19 است و continuation authority فعلی نیست.
+
+Updated: 2026-09-19
 Repository: `mobaraki20/SoknaCafe`
 
 ## Verified installer diagnostic snapshot — 2026-09-20
@@ -22,6 +67,13 @@ Next: finish diagnostics outside the owner window, then complete the clean-machi
 
 ### Exact next action after this checkpoint
 Continue the existing branch. Complete consolidated installer/owner diagnostics and their failure-path tests, then clean-machine prerequisites/web stack/database acquisition and New/Recover orchestration using the existing owners. Full application Repair must use a complete same-version payload, never an older seed. Complete Persian installer copy and the acceptance table before promotion; require final-head and post-merge CI. Preserve the no-mandatory-cost decision. Do not restart WiX/MSI/Burn research or ask the settled budget question again.
+
+First audit/compose:
+- existing `install.php` fresh install contract.
+- Runtime Windows service + `provision-local-https.ps1`.
+- internal Print Worker component/build/provisioning contract (`runtime/print-worker/source/`, Phase7R).
+- backup import/restore and updater recovery owners.
+- optional Public pairing, off-server backup and Push setup.
 
 ## Completed release checkpoint
 - Phase 0–7 and Phase 8A completed: `1.36.4-dev.38`.

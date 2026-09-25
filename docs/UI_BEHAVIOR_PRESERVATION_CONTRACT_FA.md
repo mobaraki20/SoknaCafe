@@ -5,7 +5,8 @@
 مرجع‌های همراه:
 - `DEVELOPER_READ_FIRST_FA.md`
 - `ROOT_CAUSE_REFACTOR_POLICY_FA.md`
-- `UI_DESIGN_SYSTEM_FA.md`
+- `ui-design-system/CANONICAL_DESIGN_SYSTEM_CONTRACT_FA.md` — Design Authority فعلی
+- `UI_DESIGN_SYSTEM_FA.md` — legacy compatibility reference only
 - `TESTING_FA.md`
 
 ## 1) اصل پایه: Refactor با Redesign یکی نیست

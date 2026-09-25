@@ -6,6 +6,8 @@ menu=read('assets/js/menu.js')
 api=(read('api/guest_orders.php') + '\n' + read('includes/guest_order_manage_service.php'))
 markup=(read('menu/index.php') + '\n' + read('includes/guest_menu_view.php'))
 css=read('assets/css/guest-menu.css')
+quote_api=read('api/order_quote.php')
+public_quote=read('public_edge/api/v1/guest/compat/order_quote.php')
 
 checks={
  'obsolete_append_endpoint_removed': "if ($action === 'append')" not in api and 'client_refresh_required' not in api,
@@ -17,13 +19,15 @@ checks={
  'terminal_edit_cannot_become_new_submit': "if (editingOrderCode && !editingOrder)" in menu and "setEditConflict('locked'" in menu,
  'conflict_has_explicit_two_actions': all(x in markup for x in ['guestOrderConflictTitle','guestOrderConflictPrimary','guestOrderConflictSecondary']),
  'edit_mode_is_visible_and_exitable': 'cartModeRow' in markup and 'guestEditExit' in markup and 'requestExitGuestEdit' in menu,
- 'cart_total_distinguishes_append': "cartTotalLabel.textContent = !editingOrder && appendTarget ? 'جمع موارد جدید' : 'جمع سفارش'" in menu,
+ 'cart_total_distinguishes_append': "!editingOrder && appendTarget ? 'جمع موارد جدید' : 'جمع سفارش'" in menu and "total.tax > 0 ? 'مبلغ قابل پرداخت'" in menu,
  'dynamic_submit_copy_stays_editable': "msg('submit_order_update'" in menu and "msg('submit_order_add'" in menu,
  'guest_order_cards_are_progressively_disclosed': 'guest-order-more' in menu and 'slice(0, 4)' in menu and 'slice(4)' in menu,
  'status_copy_is_short': "pending_approval: 'منتظر تأیید کافه'" in menu and "accounted: 'تأییدشده'" in menu,
  'zero_takeaway_stays_silent_until_cart_disclosure': 'guestTakeawayDisclosure' in markup and 'takeawayDraft' in menu and "const fulfillmentBadge=take>0?" in menu,
  'cart_layout_has_stable_grid_owner': '.cart-line-lower{' in css and 'grid-template-columns:minmax(0,1fr) auto' in css,
  'old_conflict_owner_removed': 'editConflictOrder' not in menu and 'guestOrderConflictReload' not in menu,
+ 'server_financial_quote_precedes_mutation': 'requestGuestFinancialPreview(context)' in menu and 'financialConfirmed: true' in menu and 'guestFinancialPreviewText' in menu and 'guest_order_quote(db(),$data)' in quote_api,
+ 'public_quote_fails_closed_without_fresh_local': "!$state['enabled']||!$state['local_fresh']" in public_quote and "public_guest_relay_call('guest_order.quote'" in public_quote,
 }
 failed=[k for k,v in checks.items() if not v]
 if failed:

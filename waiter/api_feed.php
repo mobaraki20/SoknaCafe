@@ -44,8 +44,24 @@ if($ordersAllowed){
 
     $pending=$pdo->query("SELECT o.id,o.table_id,o.status,o.total_amount,o.customer_note,o.created_at,o.updated_at,t.name table_name,t.zone_label FROM orders o JOIN cafe_tables t ON t.id=o.table_id WHERE t.active=1 AND o.status IN('pending_approval','new') ORDER BY o.created_at,o.id")->fetchAll();
     $ids=array_map('intval',array_column($pending,'id'));$itemsBy=[];
-    if($ids){$ph=implode(',',array_fill(0,count($ids),'?'));$st=$pdo->prepare("SELECT id,order_id,item_name,quantity,item_note,fulfillment_mode,preparation_station,line_total FROM order_items WHERE order_id IN($ph) AND quantity>0 ORDER BY order_id,id");$st->execute($ids);foreach($st->fetchAll() as $line){if(!preparation_station_requires_work((string)$line['preparation_station']))continue;$line['preparation_station_label']=preparation_operational_areas()[preparation_area_for_station((string)$line['preparation_station'])]??'بار';$itemsBy[(int)$line['order_id']][]=$line;}}
-    foreach($pending as $order){$id=(int)$order['id'];$items=$itemsBy[$id]??[];$qty=array_sum(array_map(static fn(array $x):int=>(int)$x['quantity'],$items));$minutes=max(0,(int)floor((time()-strtotime((string)$order['created_at']))/60));$key='order-'.$id.'-approval';$attentionKeys[]=$key;$tasks[]=['key'=>$key,'kind'=>'order','queue_stage'=>'approval','id'=>$id,'table_id'=>(int)$order['table_id'],'table_name'=>(string)$order['table_name'],'zone_label'=>(string)($order['zone_label']??''),'title'=>'سفارش جدید مهمان','subtitle'=>$qty.' عدد','status'=>(string)$order['status'],'pending'=>true,'total'=>(int)$order['total_amount'],'note'=>(string)($order['customer_note']??''),'items'=>$items,'created_at'=>(string)$order['created_at'],'updated_at'=>(string)$order['updated_at'],'time_ago'=>time_ago((string)$order['created_at']),'waiting_minutes'=>$minutes,'priority'=>200000+$minutes];}
+    if($ids){
+        $ph=implode(',',array_fill(0,count($ids),'?'));
+        $st=$pdo->prepare("SELECT id,order_id,item_name,unit_price,quantity,item_note,fulfillment_mode,preparation_station,line_total,tax_policy_snapshot,tax_rate_bps_snapshot FROM order_items WHERE order_id IN($ph) AND quantity>0 ORDER BY order_id,id");
+        $st->execute($ids);
+        foreach($st->fetchAll() as $line){
+            $line['preparation_station_label']=preparation_station_requires_work((string)$line['preparation_station'])
+                ? (preparation_operational_areas()[preparation_area_for_station((string)$line['preparation_station'])]??'آماده‌سازی')
+                : 'بدون آماده‌سازی';
+            $itemsBy[(int)$line['order_id']][]=$line;
+        }
+    }
+    foreach($pending as $order){
+        $id=(int)$order['id'];$items=$itemsBy[$id]??[];$qty=array_sum(array_map(static fn(array $x):int=>(int)$x['quantity'],$items));
+        $taxLines=array_map(static fn(array $line):array=>['order_item_id'=>(int)$line['id'],'quantity'=>(int)$line['quantity'],'unit_price'=>(int)$line['unit_price'],'tax_policy_snapshot'=>(string)($line['tax_policy_snapshot']??'disabled'),'tax_rate_bps_snapshot'=>(int)($line['tax_rate_bps_snapshot']??0)],$items);
+        $orderFinancials=tax_calculate_invoice_lines($taxLines,0);
+        $minutes=max(0,(int)floor((time()-strtotime((string)$order['created_at']))/60));$key='order-'.$id.'-approval';$attentionKeys[]=$key;
+        $tasks[]=['key'=>$key,'kind'=>'order','queue_stage'=>'approval','id'=>$id,'table_id'=>(int)$order['table_id'],'table_name'=>(string)$order['table_name'],'zone_label'=>(string)($order['zone_label']??''),'title'=>'سفارش جدید مهمان','subtitle'=>$qty.' عدد','status'=>(string)$order['status'],'pending'=>true,'subtotal'=>(int)$orderFinancials['subtotal'],'tax'=>(int)$orderFinancials['tax'],'total'=>(int)$orderFinancials['total'],'note'=>(string)($order['customer_note']??''),'items'=>$items,'created_at'=>(string)$order['created_at'],'updated_at'=>(string)$order['updated_at'],'time_ago'=>time_ago((string)$order['created_at']),'waiting_minutes'=>$minutes,'priority'=>200000+$minutes];
+    }
 }
 
 

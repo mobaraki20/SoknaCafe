@@ -144,15 +144,18 @@ function audit_human_summary(array $row): string
         'supply.need_unavailable'=>'ثبت کرد که یک نیاز این بار تهیه نشد',
         'supply.need_cancelled'=>'یک نیاز تأمین را لغو کرد',
         'inventory.item_created_from_supply'=>'هنگام خرید، کالای جدید انبار ساخت',
-        'subscriber.created'=>'مشترک جدید ساخت',
-        'subscriber.updated'=>'مشخصات مشترک را تغییر داد',
-        'subscriber.payment'=>'پرداخت مشترک را ثبت کرد',
-        'subscriber.payment_reversed'=>'پرداخت مشترک را برگشت زد',
+        'subscriber.created'=>'مشتری جدید ساخت',
+        'subscriber.updated'=>'مشخصات مشتری را تغییر داد',
+        'subscriber.payment'=>'پرداخت مشتری را ثبت کرد',
+        'subscriber.payment_reversed'=>'پرداخت مشتری را برگشت زد',
         'user.access_updated'=>'دسترسی یک کاربر را تغییر داد',
         'user.permissions_changed'=>'دسترسی یک کاربر را تغییر داد',
         'user.active_changed'=>'وضعیت یک کاربر را تغییر داد',
         'operations.business_time_changed'=>'ساعات کاری یا شیفت‌ها را تغییر داد',
         'financial_period.closed'=>'یک دوره مالی را بست',
+        'expense.created'=>'یک هزینه عمومی ثبت کرد',
+        'expense.reversed'=>'یک هزینه را برگشت زد',
+        'expense.corrected'=>'یک هزینه را با حفظ تاریخچه اصلاح کرد',
         'backup.offserver_exported'=>'نسخه پشتیبان خارج از سرور گرفت',
         'center_pair_success'=>'اتصال مرکز سکنا را برقرار کرد',
         'center_pair_failed'=>'برای اتصال مرکز سکنا تلاش کرد',
@@ -163,7 +166,8 @@ function audit_human_summary(array $row): string
     if(isset($map[$action])) return $map[$action];
     if(str_starts_with($action,'inventory.')||str_starts_with($action,'supply.')||str_starts_with($action,'purchase.'))return 'در انبار یا خرید تغییری ثبت کرد';
     if(str_starts_with($action,'print'))return 'در تنظیمات چاپ اقدامی انجام داد';
-    if(str_starts_with($action,'subscriber.'))return 'در پرونده مشترک اقدامی انجام داد';
+    if(str_starts_with($action,'subscriber.'))return 'در پرونده مشتری اقدامی انجام داد';
+    if(str_starts_with($action,'expense.'))return 'در هزینه‌های کافه اقدامی انجام داد';
     if(str_starts_with($action,'table.'))return 'در مدیریت میزها تغییری ثبت کرد';
     if(str_starts_with($action,'settlement.'))return 'روی یک تسویه اقدامی انجام داد';
     if(str_starts_with($action,'order.'))return 'روی یک سفارش اقدامی انجام داد';

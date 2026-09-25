@@ -38,6 +38,7 @@ $successReturn = $base . '/operator/index.php?work=tables#tables';
   <?= ui_font_head($font) ?>
   <link rel="stylesheet" href="<?= e(asset('assets/css/tokens.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset('assets/css/app.css')) ?>">
+  <link rel="stylesheet" href="<?= e(asset('assets/css/scds-foundation.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset('assets/css/panel-components.css')) ?>">
   <link rel="stylesheet" href="<?= e(asset('assets/css/quick-order.css')) ?>">
   <style>:root{--font-ui:<?= ui_font_family($font) ?>;--primary:<?= e($primary) ?>;--primary-dark:<?= e($primary) ?>;--accent:<?= e($accent) ?>;--app-bg:<?= e($background) ?>}</style>
@@ -99,7 +100,7 @@ $successReturn = $base . '/operator/index.php?work=tables#tables';
             <div class="quick-order-note"><button class="quick-order-note-toggle" id="quickOrderNoteToggle" type="button" aria-expanded="false"><?= ui_icon('message') ?><span>یادداشت کلی</span></button><label class="hidden" id="quickOrderNoteWrap"><span class="sr-only">یادداشت کلی سفارش</span><textarea class="form-control" id="quickOrderNote" rows="2" maxlength="500" placeholder="مثلاً نوشیدنی‌ها بعد از غذا"></textarea></label></div>
           </div>
           <footer class="quick-order-cart-footer">
-            <div class="quick-order-totals" aria-label="خلاصه مالی سفارش"><div class="is-final"><span>جمع سفارش جدید <small class="quick-order-fulfillment-summary hidden" id="quickOrderFulfillmentSummary"></small></span><strong id="quickOrderTotal">۰</strong></div><div id="quickOrderPreviousRow" class="hidden"><span>مانده فعلی حساب</span><strong id="quickOrderPreviousTotal">۰</strong></div><div id="quickOrderProjectedRow" class="hidden"><span>جمع حساب پس از ثبت</span><strong id="quickOrderProjectedTotal">۰</strong></div></div>
+            <div class="quick-order-totals" aria-label="خلاصه مالی سفارش"><div class="is-final"><span>جمع سفارش جدید <small class="muted hidden" id="quickOrderNewTaxHint"></small> <small class="quick-order-fulfillment-summary hidden" id="quickOrderFulfillmentSummary"></small></span><strong id="quickOrderTotal">۰</strong></div><div id="quickOrderPreviousRow" class="hidden"><span>مانده فعلی حساب</span><strong id="quickOrderPreviousTotal">۰</strong></div><div id="quickOrderProjectedRow" class="hidden"><span>جمع حساب پس از ثبت <small class="muted hidden" id="quickOrderProjectedTaxHint"></small></span><strong id="quickOrderProjectedTotal">۰</strong></div></div>
             <button class="btn btn-primary quick-order-submit" id="quickOrderSubmit" type="button" disabled>یک آیتم انتخاب کنید</button>
           </footer>
         </aside>

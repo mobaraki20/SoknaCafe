@@ -5,7 +5,7 @@ require_once __DIR__ . '/relay_client.php';
 
 const SOKNA_GUEST_SNAPSHOT_FORMAT = 'sokna-guest-snapshot-v1';
 
-function guest_publish_public_item(array $item, array $tags = []): array
+function guest_publish_public_item(array $item, array $tags = [], array $taxProfile = []): array
 {
     return [
         'id'=>(int)$item['id'],
@@ -15,6 +15,8 @@ function guest_publish_public_item(array $item, array $tags = []): array
         'name'=>(string)$item['name'],
         'description'=>(string)($item['description'] ?? ''),
         'price'=>(int)$item['price'],
+        'tax_policy'=>(string)($taxProfile['policy'] ?? 'disabled'),
+        'tax_rate_bps'=>(int)($taxProfile['rate_bps'] ?? 0),
         'image_path'=>(string)($item['image_path'] ?? ''),
         'available'=>(int)$item['available'] === 1,
         'featured'=>(int)($item['featured'] ?? 0) === 1,
@@ -91,9 +93,10 @@ function guest_publish_build_snapshot(PDO $pdo): array
         $catalog = menu_catalog_snapshot($pdo, 'guest_public', (string)$menu['menu_key'], false);
         $ids = array_map('intval', array_column($catalog['items'], 'id'));
         $tagsByItem = $ids ? item_tags_for($ids) : [];
+        $taxByItem = $ids ? tax_item_profile_map($pdo, $ids) : [];
         $items = [];
         foreach ($catalog['items'] as $item) {
-            $items[] = guest_publish_public_item($item, $tagsByItem[(int)$item['id']] ?? []);
+            $items[] = guest_publish_public_item($item, $tagsByItem[(int)$item['id']] ?? [], $taxByItem[(int)$item['id']] ?? []);
             if (!empty($item['image_path'])) $mediaPaths[] = (string)$item['image_path'];
         }
         $categories = array_map(static function (array $category) use (&$mediaPaths): array {
@@ -235,12 +238,15 @@ function guest_availability_payload(PDO $pdo): array
 {
     $rows = $pdo->query("SELECT id,item_code,available,preparation_station FROM items WHERE active=1 ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
     $acceptance = order_acceptance_states();
+    $taxByItem = tax_item_profile_map($pdo, array_map('intval', array_column($rows, 'id')));
     $items = [];
     foreach ($rows as $row) {
         $scope = preparation_area_for_station((string)$row['preparation_station']);
         $blocked = !$acceptance['cafe'] || !($acceptance[$scope] ?? true);
+        $taxProfile = $taxByItem[(int)$row['id']] ?? ['policy'=>'disabled','rate_bps'=>0];
         $items[(string)(int)$row['id']] = [
             'item_code'=>(string)($row['item_code'] ?? ''),'available'=>(int)$row['available'] === 1,
+            'tax_policy'=>(string)($taxProfile['policy'] ?? 'disabled'),'tax_rate_bps'=>(int)($taxProfile['rate_bps'] ?? 0),
             'order_available'=>(int)$row['available'] === 1 && !$blocked,
             'blocked_scope'=>!$acceptance['cafe'] ? 'cafe' : ($blocked ? $scope : null),
         ];

@@ -1,0 +1,73 @@
+/*
+ * SOKNA Cafe Design System — Canonical Foundation
+ * ID: SCDS-CANONICAL-2026-R1
+ *
+ * This is a NEW project-owned foundation based on audited SOKNA Cafe behavior/DNA.
+ * It is not a continuation of any previously rejected SOKNA Design System package.
+ * During migration, semantic aliases bridge existing variables without copying legacy
+ * component implementations. Component ownership moves separately and incrementally.
+ */
+@font-face{
+  font-family:"Vazirmatn";
+  src:url("../fonts/Vazirmatn-Variable.woff2") format("woff2");
+  font-weight:100 900;
+  font-style:normal;
+  font-display:swap;
+}
+
+:root{
+  --scds-font-ui:var(--font-ui,"Vazirmatn",Tahoma,"Segoe UI",Arial,sans-serif);
+
+  --scds-color-canvas:var(--app-bg,var(--sokna-canvas,#f3efe7));
+  --scds-color-surface:var(--surface,var(--sokna-surface,#fffdf9));
+  --scds-color-surface-muted:var(--surface-soft,var(--sokna-surface-muted,#f7f3ec));
+  --scds-color-text:var(--ink,#28221e);
+  --scds-color-text-muted:var(--muted,#766b64);
+  --scds-color-border:var(--line,var(--sokna-line,#d5d0c5));
+  --scds-color-border-strong:var(--sokna-line-strong,#aba397);
+  --scds-color-primary:var(--primary,#6f4e37);
+  --scds-color-accent:var(--accent,#b85c38);
+  --scds-color-success:var(--success,var(--sokna-success,#2f765f));
+  --scds-color-warning:var(--warning,var(--sokna-warning,#a56b13));
+  --scds-color-danger:var(--danger,var(--sokna-danger,#aa3f34));
+  --scds-color-info:var(--sokna-info,#2f6f79);
+  --scds-color-focus:var(--scds-color-primary);
+
+  --scds-space-1:4px;
+  --scds-space-2:8px;
+  --scds-space-3:12px;
+  --scds-space-4:16px;
+  --scds-space-5:20px;
+  --scds-space-6:24px;
+  --scds-space-8:32px;
+
+  --scds-radius-sm:10px;
+  --scds-radius-md:14px;
+  --scds-radius-lg:20px;
+  --scds-radius-xl:28px;
+  --scds-radius-pill:999px;
+
+  --scds-control-height:44px;
+  --scds-touch-target:44px;
+  --scds-content-max:1500px;
+  --scds-readable-max:1180px;
+  --scds-transition-fast:160ms ease;
+  --scds-elevation-1:0 7px 25px rgba(32,37,34,.06);
+  --scds-elevation-2:0 14px 38px rgba(32,37,34,.12);
+}
+
+html[lang="fa"]{direction:rtl;text-rendering:optimizeLegibility}
+body,button,input,textarea,select{font-family:var(--scds-font-ui)}
+
+:where(a,button,input,textarea,select,summary,[tabindex]):focus-visible{
+  outline:3px solid color-mix(in srgb,var(--scds-color-focus) 34%,transparent);
+  outline-offset:2px;
+}
+
+.scds-bidi-isolate{unicode-bidi:isolate}
+.scds-ltr-isolate{direction:ltr;unicode-bidi:isolate;text-align:start}
+.scds-tabular-number{font-variant-numeric:tabular-nums}
+
+@media (prefers-reduced-motion:reduce){
+  :root{--scds-transition-fast:0ms}
+}

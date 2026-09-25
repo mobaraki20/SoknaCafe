@@ -21,6 +21,7 @@ on:
       - 'modules/**'
       - 'assets/**'
       - 'runtime/**'
+      - 'installer/**'
       - 'tests/**'
       - 'schema/**'
       - 'scripts/**'
@@ -31,6 +32,32 @@ on:
       - '.gitattributes'
   pull_request:
   workflow_dispatch:
+    inputs:
+      build_windows_installer:
+        description: 'Build Phase 8B Windows MSI/Burn artifacts'
+        required: true
+        type: boolean
+        default: false
+      wix7_eula_accepted:
+        description: 'Explicitly accept WiX v7 EULA/OSMF terms for this build'
+        required: true
+        type: boolean
+        default: false
+      include_offline_prerequisites:
+        description: 'Build a verified offline prerequisite cache from the frozen release lock'
+        required: true
+        type: boolean
+        default: false
+      freeze_windows_prerequisites:
+        description: 'Probe approved Windows prerequisite providers and generate review-only frozen lock evidence'
+        required: true
+        type: boolean
+        default: false
+      run_windows_rc_full_stack:
+        description: 'Run disposable Windows RC full-stack New/Repair/Recover acceptance from the committed frozen prerequisite lock'
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -93,6 +120,11 @@ jobs:
           extensions: mbstring, pdo_mysql, pdo_sqlite, openssl, sodium, fileinfo
           coverage: none
 
+      - name: Setup .NET for internal Print Worker
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.302'
+
       - name: Tool versions
         shell: pwsh
         run: |
@@ -144,6 +176,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Phase 6C Table Draft contract failed' }
           python tests/phase7-runtime-services-contract.py
           if ($LASTEXITCODE -ne 0) { throw 'Phase 7 runtime services contract failed' }
+          python tests/phase7r-internal-print-worker-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 7R internal Print Worker contract failed' }
           python tests/v1360-ui-language-contract.py
           if ($LASTEXITCODE -ne 0) { throw 'UI language contract failed' }
           python tests/v1360-module-ownership-contract.py
@@ -160,6 +194,26 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Phase 8A recovery metadata runtime failed' }
           python tests/phase8b-windows-setup-contract.py
           if ($LASTEXITCODE -ne 0) { throw 'Phase 8B Windows setup contract failed' }
+          python tests/phase8b-package-ownership-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B package ownership contract failed' }
+          python tests/phase8b-wix-authoring-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B WiX authoring contract failed' }
+          python tests/phase8b-prerequisites-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B prerequisite contract failed' }
+          python tests/phase8b-prerequisite-acquisition-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B prerequisite acquisition contract failed' }
+          python tests/phase8b-support-package-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B support package contract failed' }
+          python tests/phase8b-seed-deployment-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B seed deployment contract failed' }
+          python tests/phase8b-setup-host-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B Setup Host contract failed' }
+          python tests/phase8b-setup-ui-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B Setup UI contract failed' }
+          python tests/phase8b-apache-integration-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B Apache integration contract failed' }
+          python tests/phase8b-windows-rc-full-stack-contract.py
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B Windows RC full-stack contract failed' }
           php tests/phase8b-setup-owner-runtime.php
           if ($LASTEXITCODE -ne 0) { throw 'Phase 8B setup owner runtime failed' }
           python tests/v1360-final-invariants.py
@@ -174,6 +228,12 @@ jobs:
         run: |
           ./runtime/windows/build-service-host.ps1 -OutputPath (Join-Path $PWD 'runtime/windows/bin/SoknaRuntimeService.exe')
 
+      - name: Build and test internal Print Worker on CI
+        shell: pwsh
+        run: |
+          ./runtime/windows/build-print-worker.ps1 -OutputRoot (Join-Path $PWD 'runtime/windows/bin/print-worker')
+          if ($LASTEXITCODE -ne 0) { throw 'Internal Print Worker build failed' }
+
       - name: Windows setup repair and diagnostics runtime
         shell: powershell
         run: |
@@ -181,30 +241,18 @@ jobs:
           if (-not $openssl) { $openssl = 'C:\Program Files\Git\usr\bin\openssl.exe' }
           ./tests/phase8b-windows-setup-runtime.ps1 -PhpExe (Get-Command php).Source -ServiceHostExe (Join-Path $PWD 'runtime/windows/bin/SoknaRuntimeService.exe') -OpenSslExe $openssl
 
-      - name: Upload prebuilt Runtime Service Host
+      - name: Upload prebuilt SOKNA Local runtime components
         uses: actions/upload-artifact@v4
         with:
-          name: sokna-runtime-service-host
-          path: runtime/windows/bin/SoknaRuntimeService.exe
+          name: sokna-local-runtime-components
+          path: |
+            runtime/windows/bin/SoknaRuntimeService.exe
+            runtime/windows/bin/print-worker/**
 
       - name: Build pinned Inno platform preview
         shell: powershell
         run: |
           ./runtime/windows/installer/build-installer.ps1 -OutputDirectory (Join-Path $env:RUNNER_TEMP 'sokna-platform-artifact')
-
-      - name: Inno install repair and uninstall lifecycle
-        shell: powershell
-        run: |
-          $openssl = (Get-Command openssl -ErrorAction SilentlyContinue).Source
-          if (-not $openssl) { $openssl = 'C:\Program Files\Git\usr\bin\openssl.exe' }
-          ./tests/phase8b-installer-lifecycle.ps1 -Installer (Join-Path $env:RUNNER_TEMP 'sokna-platform-artifact/SOKNA-Platform-Preview-0.1.0-Setup.exe') -PhpExe (Get-Command php).Source -OpenSslExe $openssl
-
-      - name: Upload unsigned platform preview (not full installer)
-        uses: actions/upload-artifact@v4
-        with:
-          name: sokna-platform-preview-unsigned
-          path: ${{ runner.temp }}/sokna-platform-artifact/
-          if-no-files-found: error
 
       - name: Phase 8B Windows setup validate
         shell: pwsh
@@ -223,8 +271,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Runtime self-check failed' }
           php runtime/sokna-runtime.php --health-json
           if ($LASTEXITCODE -ne 0) { throw 'Runtime health-json failed' }
-          php tools/print-runtime-worker.php --once
-          if ($LASTEXITCODE -ne 0) { throw 'Print Runtime supervisor self-check failed' }
+          # The preceding disposable service test removes the worker. Prove that
+          # the supervisor reports the missing component instead of false health.
+          $printProbe = (& php tools/print-runtime-worker.php --once | Out-String) | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 2 -or $printProbe.status -ne 'component_missing' -or $printProbe.service -ne 'SoknaPrintWorker') {
+            throw 'Print supervisor did not report the absent internal service correctly'
+          }
+          $global:LASTEXITCODE = 0 # Expected negative assertion passed.
+
 
       - name: Provision and validate sokna.local TLS
         shell: pwsh
@@ -248,6 +302,217 @@ jobs:
           if ($hosts -notmatch '(?m)^127\.0\.0\.1\s+sokna\.local(?:\s|$)') { throw 'sokna.local hosts mapping missing' }
           Write-Host 'Windows TLS/trust/hosts provisioning PASS'
 
+      - name: Apache integration ownership runtime
+        shell: powershell
+        run: |
+          ./tests/phase8b-apache-integration-runtime.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Phase 8B Apache integration runtime failed' }
+
+
+      - name: Inno install repair and uninstall lifecycle
+        shell: powershell
+        run: |
+          $openssl = (Get-Command openssl -ErrorAction SilentlyContinue).Source
+          if (-not $openssl) { $openssl = 'C:\Program Files\Git\usr\bin\openssl.exe' }
+          ./tests/phase8b-installer-lifecycle.ps1 -Installer (Join-Path $env:RUNNER_TEMP 'sokna-platform-artifact/SOKNA-Platform-Preview-0.1.0-Setup.exe') -PhpExe (Get-Command php).Source -OpenSslExe $openssl
+
+      - name: Upload unsigned platform preview (not full installer)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sokna-platform-preview-unsigned
+          path: ${{ runner.temp }}/sokna-platform-artifact/
+          if-no-files-found: error
+
+
+  windows-prerequisite-freeze:
+    name: Windows Phase 8B prerequisite provider freeze evidence
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.freeze_windows_prerequisites }}
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate prerequisite release-lock review candidate
+        shell: pwsh
+        run: |
+          $candidate=Join-Path $PWD 'installer/windows/prerequisites/provider-candidate.json'
+          $artifacts=Join-Path $env:RUNNER_TEMP 'sokna-prerequisite-freeze-artifacts'
+          $out=Join-Path $env:RUNNER_TEMP 'sokna-prerequisite-freeze'
+          New-Item -ItemType Directory -Path $out -Force | Out-Null
+          $lock=Join-Path $out 'release-lock.json'
+          ./installer/windows/scripts/freeze-prerequisite-lock.ps1 -CandidateFile $candidate -ArtifactRoot $artifacts -OutputLock $lock -RepoRoot $PWD -AllowDownload
+          $frozen=Get-Content -LiteralPath $lock -Raw | ConvertFrom-Json
+          if(-not [bool]$frozen.release_frozen){throw 'Generated prerequisite lock is not frozen.'}
+          if(([string]$frozen.app_version).Trim() -ne (Get-Content VERSION.txt -Raw).Trim()){throw 'Generated prerequisite lock app_version mismatch.'}
+          "SOKNA_PREREQUISITE_FREEZE_OUT=$out" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Upload prerequisite freeze evidence for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: sokna-prerequisite-freeze-${{ github.sha }}
+          path: ${{ env.SOKNA_PREREQUISITE_FREEZE_OUT }}
+          if-no-files-found: error
+
+  windows-rc-full-stack:
+    name: Windows Phase 8B RC full-stack acceptance
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.run_windows_rc_full_stack) }}
+    runs-on: windows-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.302'
+
+      - name: Require committed frozen prerequisite lock
+        shell: pwsh
+        run: |
+          $lock=Join-Path $PWD 'installer/windows/prerequisites/release-lock.json'
+          if(-not(Test-Path -LiteralPath $lock -PathType Leaf)){throw 'Windows RC full-stack acceptance requires the reviewed/committed frozen prerequisite release-lock.json.'}
+          $json=Get-Content -LiteralPath $lock -Raw | ConvertFrom-Json
+          if(-not [bool]$json.release_frozen){throw 'Windows RC full-stack acceptance refuses a non-frozen prerequisite lock.'}
+          if(([string]$json.app_version).Trim() -ne (Get-Content VERSION.txt -Raw).Trim()){throw 'Windows RC prerequisite lock app_version does not match VERSION.txt.'}
+
+      - name: Build RC runtime and setup components
+        shell: pwsh
+        run: |
+          ./runtime/windows/build-service-host.ps1 -OutputPath (Join-Path $PWD 'runtime/windows/bin/SoknaRuntimeService.exe')
+          ./runtime/windows/build-print-worker.ps1 -OutputRoot (Join-Path $PWD 'runtime/windows/bin/print-worker')
+          ./installer/windows/scripts/build-setup-host.ps1 -RepoRoot $PWD -OutputPath (Join-Path $PWD 'runtime/windows/bin/SoknaSetupHost.exe')
+          ./installer/windows/scripts/build-setup-ui.ps1 -RepoRoot $PWD -OutputPath (Join-Path $PWD 'runtime/windows/bin/SoknaSetupUi.exe')
+
+      - name: Materialize verified frozen prerequisite bundle
+        shell: pwsh
+        run: |
+          $lock=Join-Path $PWD 'installer/windows/prerequisites/release-lock.json'
+          $artifacts=Join-Path $env:RUNNER_TEMP 'sokna-rc-prerequisite-downloads'
+          $bundle=Join-Path $env:RUNNER_TEMP 'sokna-rc-prerequisite-bundle'
+          ./installer/windows/scripts/prepare-prerequisite-bundle.ps1 -LockFile $lock -ArtifactRoot $artifacts -OutputRoot $bundle -AllowDownload
+          $version=(Get-Content VERSION.txt -Raw).Trim()
+          ./installer/windows/scripts/verify-prerequisite-bundle.ps1 -BundleRoot $bundle -ExpectedAppVersion $version
+          "SOKNA_RC_PREREQUISITE_BUNDLE=$bundle" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Prepare verified installer shell/seed for full-stack acceptance
+        shell: pwsh
+        run: |
+          $shell=Join-Path $env:RUNNER_TEMP 'sokna-rc-shell'
+          ./installer/windows/scripts/prepare-shell-payload.ps1 -RepoRoot $PWD -OutputRoot $shell -ServiceHostExe (Join-Path $PWD 'runtime/windows/bin/SoknaRuntimeService.exe') -SetupHostExe (Join-Path $PWD 'runtime/windows/bin/SoknaSetupHost.exe') -SetupUiExe (Join-Path $PWD 'runtime/windows/bin/SoknaSetupUi.exe') -PrintWorkerBundle (Join-Path $PWD 'runtime/windows/bin/print-worker') -PrerequisiteBundleRoot $env:SOKNA_RC_PREREQUISITE_BUNDLE -GitSha '${{ github.event.pull_request.head.sha || github.sha }}'
+          "SOKNA_RC_SHELL=$shell" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: New / Apache reload / Repair / Recovery Set / Recover / HTTPS acceptance
+        shell: powershell
+        run: |
+          ./tests/phase8b-windows-rc-full-stack.ps1 -PrerequisiteBundleRoot $env:SOKNA_RC_PREREQUISITE_BUNDLE -ShellPayloadRoot $env:SOKNA_RC_SHELL -RepoRoot $PWD
+          if($LASTEXITCODE -ne 0){throw 'Phase 8B Windows RC full-stack acceptance failed.'}
+
+      - name: Preserve sanitized RC failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sokna-rc-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/sokna-rc-evidence/
+          if-no-files-found: warn
+
+  windows-installer-package:
+    name: Windows Phase 8B MSI/Burn package
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_windows_installer && inputs.wix7_eula_accepted }}
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.302'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_mysql, openssl, sodium, fileinfo
+          coverage: none
+
+      - name: Build runtime components
+        shell: pwsh
+        run: |
+          ./runtime/windows/build-service-host.ps1 -OutputPath (Join-Path $PWD 'runtime/windows/bin/SoknaRuntimeService.exe')
+          ./runtime/windows/build-print-worker.ps1 -OutputRoot (Join-Path $PWD 'runtime/windows/bin/print-worker')
+          ./installer/windows/scripts/build-setup-host.ps1 -RepoRoot $PWD -OutputPath (Join-Path $PWD 'runtime/windows/bin/SoknaSetupHost.exe')
+          ./installer/windows/scripts/build-setup-ui.ps1 -RepoRoot $PWD -OutputPath (Join-Path $PWD 'runtime/windows/bin/SoknaSetupUi.exe')
+
+      - name: Prepare verified offline prerequisite cache
+        if: ${{ inputs.include_offline_prerequisites }}
+        shell: pwsh
+        run: |
+          $lock=Join-Path $PWD 'installer/windows/prerequisites/release-lock.json'
+          if(-not(Test-Path -LiteralPath $lock -PathType Leaf)){throw 'Offline prerequisite build requires installer/windows/prerequisites/release-lock.json with release_frozen=true.'}
+          $artifacts=Join-Path $env:RUNNER_TEMP 'sokna-prerequisite-downloads'
+          $bundle=Join-Path $env:RUNNER_TEMP 'sokna-prerequisite-bundle'
+          ./installer/windows/scripts/prepare-prerequisite-bundle.ps1 -LockFile $lock -ArtifactRoot $artifacts -OutputRoot $bundle -AllowDownload
+          $appVersion=(Get-Content (Join-Path $PWD 'VERSION.txt') -Raw).Trim()
+          ./installer/windows/scripts/verify-prerequisite-bundle.ps1 -BundleRoot $bundle -ExpectedAppVersion $appVersion
+          "SOKNA_PREREQUISITE_BUNDLE=$bundle" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Prepare installer-owned shell payload
+        shell: pwsh
+        run: |
+          $out=Join-Path $env:RUNNER_TEMP 'sokna-installer-shell'
+          $args=@{RepoRoot=$PWD;OutputRoot=$out;ServiceHostExe=(Join-Path $PWD 'runtime/windows/bin/SoknaRuntimeService.exe');SetupHostExe=(Join-Path $PWD 'runtime/windows/bin/SoknaSetupHost.exe');SetupUiExe=(Join-Path $PWD 'runtime/windows/bin/SoknaSetupUi.exe');PrintWorkerBundle=(Join-Path $PWD 'runtime/windows/bin/print-worker');GitSha='${{ github.sha }}'}
+          if($env:SOKNA_PREREQUISITE_BUNDLE){$args.PrerequisiteBundleRoot=$env:SOKNA_PREREQUISITE_BUNDLE}
+          ./installer/windows/scripts/prepare-shell-payload.ps1 @args
+          "SOKNA_SHELL_PAYLOAD=$out" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build MSI and Burn Setup.exe
+        shell: pwsh
+        run: |
+          ./installer/windows/scripts/build-installer.ps1 -RepoRoot $PWD -ShellPayloadRoot $env:SOKNA_SHELL_PAYLOAD -Configuration Release -AcceptWix7Eula
+
+      - name: Build synthetic dev.38 MSI predecessor for major-upgrade acceptance
+        shell: pwsh
+        run: |
+          $baseline=Get-Content installer/windows/upgrade-baseline.json -Raw | ConvertFrom-Json
+          if([string]$baseline.format -ne 'sokna-windows-upgrade-baseline-v1'){throw 'Windows upgrade baseline metadata is invalid.'}
+          $out=Join-Path $env:RUNNER_TEMP 'sokna-upgrade-baseline'
+          New-Item -ItemType Directory -Path $out -Force | Out-Null
+          dotnet build installer/windows/wix/SoknaShell.wixproj -c Release -p:ProductVersion=$baseline.msi_version -p:AppVersion=$baseline.app_version -p:ShellPayloadRoot=$env:SOKNA_SHELL_PAYLOAD -p:OutputPath=$out -p:AcceptEula=wix7
+          if($LASTEXITCODE -ne 0){throw 'Synthetic predecessor MSI build failed.'}
+          $previous=(Get-ChildItem $out -Filter 'SOKNA-Cafe-Local.msi' -Recurse | Select-Object -First 1).FullName
+          if(-not $previous){throw 'Synthetic predecessor MSI artifact was not found.'}
+          "SOKNA_PREVIOUS_MSI=$previous" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Windows package Install / Major Upgrade / Repair / Uninstall acceptance
+        shell: pwsh
+        run: |
+          $msi=(Get-ChildItem installer/windows/wix/bin/Release -Filter 'SOKNA-Cafe-Local.msi' -Recurse | Select-Object -First 1).FullName
+          $bundle=(Get-ChildItem installer/windows/wix/bin/Release -Filter 'SOKNA-Cafe-Setup.exe' -Recurse | Select-Object -First 1).FullName
+          if(-not $msi -or -not $bundle){throw 'Windows package artifacts were not found for acceptance.'}
+          ./tests/phase8b-windows-installer-package-runtime.ps1 -MsiPath $msi -BundlePath $bundle -PreviousMsiPath $env:SOKNA_PREVIOUS_MSI
+
+      - name: Collect package artifacts
+        shell: pwsh
+        run: |
+          $out=Join-Path $env:RUNNER_TEMP 'sokna-windows-package'
+          New-Item -ItemType Directory -Path $out -Force | Out-Null
+          Get-ChildItem installer/windows/wix/bin/Release -Recurse -File | Where-Object { $_.Extension -in @('.msi','.exe','.json') } | Copy-Item -Destination $out
+          $manifest=@()
+          Get-ChildItem $out -File | ForEach-Object { $manifest += [ordered]@{name=$_.Name;size=$_.Length;sha256=(Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant();source_git_sha='${{ github.sha }}'} }
+          $manifest | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $out 'PACKAGE_MANIFEST.json') -Encoding UTF8
+          "SOKNA_PACKAGE_OUT=$out" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Upload MSI/Burn source candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: sokna-windows-installer-${{ github.sha }}
+          path: ${{ env.SOKNA_PACKAGE_OUT }}
+          if-no-files-found: error
 
   phase2-public-integration:
     name: Phase 2 Public Relay HTTP + MariaDB

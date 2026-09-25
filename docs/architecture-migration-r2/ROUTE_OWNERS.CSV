@@ -10,6 +10,7 @@ admin/category_form.php,menu,core,True,
 admin/center_settings.php,personnel,integration,False,
 admin/event_form.php,marketing,business,False,
 admin/events.php,marketing,business,False,
+admin/expenses.php,expenses,business,False,shift_supervision
 admin/financial_periods.php,finance,core,True,cashier_accounts
 admin/index.php,platform,core,True,shift_supervision
 admin/inventory.php,inventory,operational,False,inventory_view;inventory_cost_view;inventory_operations;inventory_finalize;inventory_manage
@@ -39,6 +40,7 @@ admin/personnel.php,personnel,integration,False,
 admin/print_templates.php,printing,platform_service,True,
 admin/printing.php,printing,platform_service,True,
 admin/purchases.php,supply,operational,False,preparation;inventory_operations;shift_supervision
+admin/purchases_batch.php,supply,operational,False,preparation;inventory_operations;shift_supervision
 admin/push_devices.php,notifications,platform_service,True,orders_floor;preparation
 admin/qr.php,orders,core,True,orders_floor;preparation;shift_supervision
 admin/settings.php,platform,core,True,shift_supervision
@@ -47,8 +49,10 @@ admin/tables.php,orders,core,True,orders_floor;preparation;shift_supervision
 admin/tag_form.php,menu,core,True,
 admin/tags.php,menu,core,True,
 admin/update/index.php,platform,core,True,shift_supervision
+admin/tax.php,tax,business,False,shift_supervision
 admin/users.php,platform,core,True,shift_supervision
 api/create_order.php,orders,core,True,orders_floor;preparation;shift_supervision
+api/order_quote.php,orders,core,False,orders_floor;finance
 api/guest_orders.php,orders,core,True,orders_floor;preparation;shift_supervision
 api/inventory_kick.php,inventory,operational,False,inventory_view;inventory_cost_view;inventory_operations;inventory_finalize;inventory_manage
 api/metric.php,reporting,business,False,

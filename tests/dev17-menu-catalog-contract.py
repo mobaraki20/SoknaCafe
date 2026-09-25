@@ -19,6 +19,7 @@ assert "WHERE name=? LIMIT 1" not in seed_php, 'default seed must not own catego
 assert 'menu_catalog_new_category_key' in cat_form, 'category form must generate stable keys for newly-created categories'
 assert 'category_key' in transfer and 'WHERE category_key=?' in transfer, 'menu transfer must import categories by stable category_key'
 assert 'WHERE name=?' not in transfer, 'menu transfer must never use category display name as identity'
+assert "require_once __DIR__ . '/sellable.php';" in seed_php, 'default menu seed must load its sellable-kind dependency for direct Setup execution'
 assert "includes/menu_catalog.php" in bootstrap
 assert [m['menu_key'] for m in data['menus']]==['main','breakfast','lunch']
 assert all('category_key' in c and 'audience' in c for c in data['categories'])

@@ -95,7 +95,7 @@ try {
     }
     if((string)$locked['destination']==='subscriber'){
         $entryId=(int)($locked['subscriber_ledger_entry_id']??0);
-        if($entryId<1) throw new RuntimeException('سند مشترک این تسویه پیدا نشد.');
+        if($entryId<1) throw new RuntimeException('سند مشتری این تسویه پیدا نشد.');
         subscriber_reverse_entry_locked($pdo,$entryId,$reason,$userId);
     }
     $result=settlement_reopen_locked($pdo,$locked,$targetTableId,$reason,$userId);

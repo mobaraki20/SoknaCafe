@@ -48,13 +48,21 @@ function guest_manage_rows(PDO $pdo,int $sessionId,string $deviceToken):array
     if(!$orders)return [];
     $ids=array_map('intval',array_column($orders,'id'));
     $ph=implode(',',array_fill(0,count($ids),'?'));
-    $lineStmt=$pdo->prepare("SELECT order_id,item_id,item_name,unit_price,quantity,item_note,fulfillment_mode,preparation_station,line_total
+    $lineStmt=$pdo->prepare("SELECT order_id,item_id,item_name,unit_price,quantity,item_note,fulfillment_mode,preparation_station,line_total,tax_policy_snapshot,tax_rate_bps_snapshot,tax_rate_version_id,tax_item_policy_version_id
         FROM order_items WHERE order_id IN($ph) ORDER BY order_id,id");
     $lineStmt->execute($ids);$linesByOrder=[];
     foreach($lineStmt->fetchAll() as $line)$linesByOrder[(int)$line['order_id']][]=$line;
 
     return array_map(static function(array $order)use($linesByOrder):array{
         $id=(int)$order['id'];$lines=$linesByOrder[$id]??[];
+        $taxLines=array_map(static fn(array $line):array=>[
+            'order_item_id'=>(int)($line['item_id']??0),
+            'quantity'=>(int)($line['quantity']??0),
+            'unit_price'=>(int)($line['unit_price']??0),
+            'tax_policy_snapshot'=>(string)($line['tax_policy_snapshot']??'disabled'),
+            'tax_rate_bps_snapshot'=>(int)($line['tax_rate_bps_snapshot']??0),
+        ],$lines);
+        $taxSummary=tax_calculate_invoice_lines($taxLines,0);
         return [
             'order_code'=>(string)$order['public_code'],
             'client_token'=>(string)$order['client_token'],
@@ -63,6 +71,8 @@ function guest_manage_rows(PDO $pdo,int $sessionId,string $deviceToken):array
             'status_label'=>order_status_label((string)$order['status']),
             'customer_note'=>(string)($order['customer_note']??''),
             'total_amount'=>(int)$order['total_amount'],
+            'tax_amount'=>(int)$taxSummary['tax'],
+            'final_amount'=>(int)$taxSummary['total'],
             'created_at'=>(string)$order['created_at'],
             'updated_at'=>(string)$order['updated_at'],
             'edit_signature'=>guest_order_edit_signature($order,$lines),
@@ -76,6 +86,8 @@ function guest_manage_rows(PDO $pdo,int $sessionId,string $deviceToken):array
                 'note'=>(string)($line['item_note']??''),
                 'fulfillment_mode'=>normalize_fulfillment_mode((string)($line['fulfillment_mode']??'dine_in')),
                 'line_total'=>(int)$line['line_total'],
+                'tax_policy'=>(string)($line['tax_policy_snapshot']??'disabled'),
+                'tax_rate_bps'=>(int)($line['tax_rate_bps_snapshot']??0),
             ],$lines),
         ];
     },$orders);
@@ -106,6 +118,7 @@ function validate_guest_order_update_lines(PDO $pdo,array $payload,array $existi
                 'item_id'=>$itemId,'item_name'=>(string)$old['item_name'],'unit_price'=>$unit,'quantity'=>$newQty,
                 'item_note'=>(string)$line['note'],'fulfillment_mode'=>$mode,
                 'station'=>normalize_preparation_station((string)($old['preparation_station']??'cold_bar')),'sellable_kind'=>normalize_sellable_kind($old['sellable_kind_snapshot']??null),'line_total'=>$lineTotal,
+                'tax'=>['policy'=>(string)($old['tax_policy_snapshot']??'disabled'),'rate_bps'=>(int)($old['tax_rate_bps_snapshot']??0),'rate_version_id'=>$old['tax_rate_version_id']!==null?(int)$old['tax_rate_version_id']:null,'policy_version_id'=>$old['tax_item_policy_version_id']!==null?(int)$old['tax_item_policy_version_id']:null],
             ];
             continue;
         }
@@ -121,7 +134,8 @@ function validate_guest_order_update_lines(PDO $pdo,array $payload,array $existi
         $name=$old?(string)$old['item_name']:(string)$item['name'];
         $station=$old?normalize_preparation_station((string)($old['preparation_station']??'cold_bar')):normalize_preparation_station((string)($item['preparation_station']??'cold_bar'));
         $unit=$old?(int)$old['unit_price']:$currentPrice;$lineTotal=$unit*$newQty;$total+=$lineTotal;
-        $lines[]=['item_id'=>$itemId,'item_name'=>$name,'unit_price'=>$unit,'quantity'=>$newQty,'item_note'=>(string)$line['note'],'fulfillment_mode'=>$mode,'station'=>$station,'sellable_kind'=>$old&&$old['sellable_kind_snapshot']!==null?normalize_sellable_kind($old['sellable_kind_snapshot']):normalize_sellable_kind($item['sellable_kind']??null),'line_total'=>$lineTotal];
+        $tax=$old?['policy'=>(string)($old['tax_policy_snapshot']??'disabled'),'rate_bps'=>(int)($old['tax_rate_bps_snapshot']??0),'rate_version_id'=>$old['tax_rate_version_id']!==null?(int)$old['tax_rate_version_id']:null,'policy_version_id'=>$old['tax_item_policy_version_id']!==null?(int)$old['tax_item_policy_version_id']:null]:tax_order_line_snapshot($pdo,$itemId);
+        $lines[]=['item_id'=>$itemId,'item_name'=>$name,'unit_price'=>$unit,'quantity'=>$newQty,'item_note'=>(string)$line['note'],'fulfillment_mode'=>$mode,'station'=>$station,'sellable_kind'=>$old&&$old['sellable_kind_snapshot']!==null?normalize_sellable_kind($old['sellable_kind_snapshot']):normalize_sellable_kind($item['sellable_kind']??null),'line_total'=>$lineTotal,'tax'=>$tax];
     }
 
     if($unavailable){
@@ -158,9 +172,9 @@ function guest_order_payload_matches_current(array $payload,array $order,array $
 function replace_mutable_order(PDO $pdo,int $orderId,array $payload,array $validated):void
 {
     $pdo->prepare('DELETE FROM order_items WHERE order_id=?')->execute([$orderId]);
-    $insert=$pdo->prepare('INSERT INTO order_items(order_id,item_id,item_name,sellable_kind_snapshot,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total) VALUES(?,?,?,?,?,?,?,?,?,?,?)');
+    $insert=$pdo->prepare('INSERT INTO order_items(order_id,item_id,item_name,sellable_kind_snapshot,unit_price,quantity,ordered_quantity,item_note,fulfillment_mode,preparation_station,line_total,tax_policy_snapshot,tax_rate_bps_snapshot,tax_rate_version_id,tax_item_policy_version_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
     foreach($validated['lines'] as $line){
-        $insert->execute([$orderId,$line['item_id'],$line['item_name'],$line['sellable_kind'],$line['unit_price'],$line['quantity'],$line['quantity'],$line['item_note'],$line['fulfillment_mode'],$line['station'],$line['line_total']]);
+        $insert->execute([$orderId,$line['item_id'],$line['item_name'],$line['sellable_kind'],$line['unit_price'],$line['quantity'],$line['quantity'],$line['item_note'],$line['fulfillment_mode'],$line['station'],$line['line_total'],$line['tax']['policy'],$line['tax']['rate_bps'],$line['tax']['rate_version_id'],$line['tax']['policy_version_id']]);
     }
     $pdo->prepare('UPDATE orders SET customer_note=?,total_amount=?,updated_at=NOW() WHERE id=?')->execute([$payload['customer_note'],$validated['total'],$orderId]);
 }
@@ -211,7 +225,7 @@ function guest_order_manage_mutate_tx(PDO $pdo,array $data):array
     if(!in_array((string)$session['status'],['active','pending'],true))throw new GuestOrderEditException('session_inactive','نشست این میز پایان یافته است.',409);
     if(!guest_order_status_is_mutable((string)$order['status']))throw new GuestOrderEditException('order_not_editable','این سفارش تأیید شده و دیگر ویرایش مستقیم ندارد.',409);
 
-    $existingStmt=$pdo->prepare('SELECT item_id,item_name,sellable_kind_snapshot,unit_price,quantity,item_note,fulfillment_mode,preparation_station,line_total FROM order_items WHERE order_id=? ORDER BY id FOR UPDATE');
+    $existingStmt=$pdo->prepare('SELECT item_id,item_name,sellable_kind_snapshot,unit_price,quantity,item_note,fulfillment_mode,preparation_station,line_total,tax_policy_snapshot,tax_rate_bps_snapshot,tax_rate_version_id,tax_item_policy_version_id FROM order_items WHERE order_id=? ORDER BY id FOR UPDATE');
     $existingStmt->execute([(int)$order['id']]);$existingRows=$existingStmt->fetchAll();
     try{
         $payload=normalize_order_request_payload(array_merge($data,[

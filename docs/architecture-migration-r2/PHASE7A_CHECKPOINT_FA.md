@@ -1,3 +1,6 @@
+> **Historical checkpoint — Superseded for deployment/ownership by `PHASE7R_PRINTING_RECONCILIATION_FA.md`.**
+> State-machine/Print API evidence below remains provenance; statements that the Print Agent is an externally installed product are no longer active architecture.
+
 # Phase 7A Checkpoint — Runtime-owned Print/Notification Processing
 
 Version target: `1.36.4-dev.35`

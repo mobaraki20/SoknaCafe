@@ -1,3 +1,5 @@
+> **Historical Phase 8A handoff.** The line below about preserving a separate Print Agent installer was superseded on 2026-09-24 by `docs/architecture-migration-r2/PHASE7R_PRINTING_RECONCILIATION_FA.md`. Do not use it as current printing deployment authority.
+
 # Phase 8A Handoff — Installation Identity + Recovery Set Metadata
 
 Status: COMPLETE
