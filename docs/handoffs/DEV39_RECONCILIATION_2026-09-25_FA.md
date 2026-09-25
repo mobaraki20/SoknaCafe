@@ -1,3 +1,16 @@
+# آخرین ادامه و شواهد اجرایی
+
+شاخه منتشرشده: `work/reconcile-dev39`، PR https://github.com/mobaraki20/SoknaCafe/pull/19 (Draft؛ مقصد phase/8b-windows-setup).
+سورس اولیه منتشرشده: `99e0f653efcd1e6a6eb8294b20b5c3e0527a0169`؛ run https://github.com/mobaraki20/SoknaCafe/actions/runs/36082275270.
+MariaDB job موفق؛ Linux تا PHP lint 288، unit 105، accommodation v1 41 و tax v3 19 موفق، سپس قاعده متن ماژول رد شد. Windows ساخت Print Worker با CS0136 در Program.cs خطا داشت. در اصلاح بعد نام متغیر provisioning، متن ماژول و BOM دوبل PowerShell اصلاح شد؛ این اصلاحات هنوز نیاز به CI جدید دارند.
+
+اتصال مالیات اکنون در کافه کدنویسی شده و ۱۹ آزمون wire/validation موفق است؛ پذیرش مشترک اقامتگاه و DB مالی هنوز باز است. اطلاعات «محلی/منتشرنشده» و «PHP NOT_RUN» در گزارش تاریخی پایین متعلق به نوبت قبل از انتشار است.
+
+مسیر بعد: اجرای CI روی head اصلاحی، رفع خطاهای بعدی، یکپارچه‌سازی Inno+Host/UI+worker، freeze پیش‌نیاز واقعی، New/Repair/Recover/Uninstall و updater، سپس Phase8C و UAT. هیچ مرحله با شکست یا skipped کامل محسوب نشود.
+
+---
+## گزارش تاریخی مرحله اولیه
+
 # تطبیق dev.39 با تاریخچه گیت‌هاب — ۲۵ سپتامبر ۲۰۲۶
 
 وضعیت: **تطبیق اولیه محلی، قابل بازبینی؛ نصب‌کننده نهایی نیست.**

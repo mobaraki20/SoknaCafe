@@ -47,7 +47,7 @@ checks={
  'legacy migration copies hidden state and rollback removes migrated copy': 'Get-ChildItem -LiteralPath $legacyDataRoot -Force | Copy-Item' in setup and '$migratedLegacyData -and (Test-Path -LiteralPath $componentData)' in setup,
  'binary rollback recreates component root before restoring backup': 'New-Item $componentRoot -ItemType Directory -Force | Out-Null' in setup and 'Get-ChildItem -LiteralPath $backup -Force | Copy-Item -Destination $componentRoot -Recurse -Force' in setup,
  'repair pairing tool uses private output file not token arguments': '--output-file=' in repair_pairing and '--token=' not in repair_pairing and 'sokna_setup_write_internal_print_worker_provision' in repair_pairing,
- 'active module registry names internal worker': 'internal Print Worker' in modules and 'installed Windows Print Agent service' not in modules,
+ 'active module registry names internal worker': 'سرویس چاپ داخلی سکنا' in modules and 'installed Windows Print Agent service' not in modules,
  'active printing UI has no external download flow': 'print_agent_download_url()' not in admin and 'print_agent_release_page_url()' not in admin,
  'active printing UI selects printers, never worker identities': 'name="agent_id"' not in admin and 'name="fallback_agent_id"' not in admin and 'data-print-agent-select' not in admin and 'data-print-agent-select' not in settings_js,
  'destination save is pinned to the canonical internal worker': 'print_internal_worker_agent($pdo,true)' in admin and 'print_internal_worker_agent_id' in printing,

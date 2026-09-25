@@ -16,9 +16,9 @@ if(provisionIndex>=0)
     var token=root.GetProperty("token").GetString()?.Trim()??"";
     var agentName=root.TryGetProperty("agent_name",out var nameElement)?nameElement.GetString()?.Trim():null;
     var allowedOrigin=root.TryGetProperty("local_bridge_allowed_origin",out var originElement)?originElement.GetString()?.Trim():null;
-    var paths=AgentPaths.Default();
-    paths.EnsureDirectories();
-    var options=File.Exists(paths.ConfigPath)?AgentOptions.Load(paths.ConfigPath):new AgentOptions();
+    var provisionPaths=AgentPaths.Default();
+    provisionPaths.EnsureDirectories();
+    var options=File.Exists(provisionPaths.ConfigPath)?AgentOptions.Load(provisionPaths.ConfigPath):new AgentOptions();
     options=options with
     {
         ServerBaseUrl=serverBaseUrl,
@@ -26,8 +26,8 @@ if(provisionIndex>=0)
         LocalBridgeAllowedOrigin=allowedOrigin??serverBaseUrl
     };
     options.Validate();
-    options.Save(paths.ConfigPath);
-    SecretStore.Save(paths.SecretPath,token);
+    options.Save(provisionPaths.ConfigPath);
+    SecretStore.Save(provisionPaths.SecretPath,token);
     Console.WriteLine(JsonSerializer.Serialize(new {ok=true,component="sokna-print-worker",configured=true}));
     return;
 }

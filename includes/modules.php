@@ -372,7 +372,7 @@ function sokna_module_registry(): array
             'owns_tables' => ['print_agents','print_attempts','print_claim_requests','print_claim_reconciliations','print_destinations','print_jobs','print_templates'],
             'entrypoints' => ['admin/printing.php','admin/print_templates.php','api/print_bridge_capability.php','api/print_status_snapshot.php','print-agent/v4/api.php'],
             'capabilities' => [],
-            'background_jobs' => ['SOKNA Local -> tools/print-runtime-worker.php -> internal Print Worker service -> Windows Spooler','tools/print-v4-staging-preflight.php'],
+            'background_jobs' => ['SOKNA Local -> tools/print-runtime-worker.php -> سرویس چاپ داخلی سکنا -> Windows Spooler','tools/print-v4-staging-preflight.php'],
             'public_contracts' => ['print_enqueue_prep_order()','print enqueue/final/reprint contracts','Print API v4 claim/accept/start/report/renew/status + local wake capability'],
         ],
         'notifications' => [

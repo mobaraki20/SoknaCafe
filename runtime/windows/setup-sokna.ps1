@@ -1,4 +1,4 @@
-﻿﻿param(
+﻿param(
     [ValidateSet('New','Recover','Repair','Validate','RemovePlatform')][string]$Mode = 'Validate',
     [string]$AppRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path,
     [Parameter(Mandatory=$true)][string]$PhpExe,
