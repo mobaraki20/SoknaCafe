@@ -178,21 +178,29 @@ $dbNew='sokna_rc_new_'+[guid]::NewGuid().ToString('N').Substring(0,8)
 $dbRecover='sokna_rc_recover_'+[guid]::NewGuid().ToString('N').Substring(0,8)
 $apache=$null
 $mariaInstalled=$false
+$rcStage='preflight'
+$evidenceRoot=Join-Path $env:RUNNER_TEMP 'sokna-rc-evidence'
+New-Item -ItemType Directory -Path $evidenceRoot -Force | Out-Null
+function Set-RcStage([string]$Name) { $script:rcStage=$Name; Write-Host ("RC stage: " + $Name) }
 
 try{
     Assert (-not(Get-Service SoknaRuntime -ErrorAction SilentlyContinue)) 'Disposable runner already has SoknaRuntime; refusing destructive RC acceptance.'
     Assert (-not(Get-Service SoknaPrintWorker -ErrorAction SilentlyContinue)) 'Disposable runner already has SoknaPrintWorker; refusing destructive RC acceptance.'
     Assert (@(Get-NetTCPConnection -State Listen -LocalPort $httpsPort -ErrorAction SilentlyContinue).Count -eq 0) 'Disposable runner already uses TCP/443; RC acceptance requires the canonical HTTPS port.'
 
+    Set-RcStage 'vc-runtime'
     $vc=Start-Process -FilePath $vcExe -ArgumentList @('/install','/quiet','/norestart') -Wait -PassThru
     if(@(0,1638,3010) -notcontains [int]$vc.ExitCode){throw "Frozen VC runtime installer failed: $($vc.ExitCode)"}
     if([int]$vc.ExitCode -eq 3010){throw 'Frozen VC runtime requested reboot; RC acceptance must be rerun on a fresh/rebooted Windows runner.'}
 
+    Set-RcStage 'php'
     $phpExe=Ensure-PHP $phpZip $phpRoot
+    Set-RcStage 'apache'
     $apache=Ensure-Apache $apacheZip $apacheStage $phpRoot $httpPort $httpsPort
 
     $msiLog=Join-Path $root 'mariadb-install.log'
     $mariaArgs=@('/i',$mariaMsi,'/qn','/norestart','/l*v',$msiLog,("INSTALLDIR=$mariaInstall"),("DATADIR=$mariaData"),("PORT=$dbPort"),("PASSWORD=$dbPassword"),("SERVICENAME=$mariaService"),'STDCONFIG=1','ADDLOCAL=DBInstance,Client,MYSQLSERVER,SharedLibraries')
+    Set-RcStage 'mariadb-install'
     $maria=Invoke-SoknaProcess -File 'msiexec.exe' -Arguments $mariaArgs -SuccessCodes @(0,3010) -TimeoutSeconds 600
     $mariaInstalled=$true
     if([int]$maria.ExitCode -eq 3010){throw 'Frozen MariaDB MSI requested reboot; RC acceptance must be rerun on a fresh/rebooted Windows runner.'}
@@ -210,6 +218,7 @@ try{
     $deploy=Join-Path $ShellPayloadRoot 'deploy-seed.ps1'
     Assert (Test-Path -LiteralPath $deploy -PathType Leaf) 'Verified shell payload is missing deploy-seed.ps1.'
     $common=@('-ShellRoot',$ShellPayloadRoot,'-AppRoot',$appNew,'-DataRoot',$dataNew,'-PhpExe',$phpExe,'-OpenSslExe',$apache.openssl,'-WebServerExe',$apache.exe,'-Hostname','sokna.local','-RequireWebServerPreflight')
+    Set-RcStage 'new'
     $newRun=Invoke-ScriptExit $deploy (@('-Mode','New','-SetupConfigFile',$newConfig)+$common) @(20)
     Assert ($newRun.code -eq 20) 'New deployment did not stop at the expected external Apache reload boundary.'
     Assert (Test-Path -LiteralPath (Join-Path $appNew 'config.php')) 'New deployment did not commit canonical business configuration.'
@@ -217,10 +226,12 @@ try{
 
     $apacheProcess=Start-Apache $apache $httpsPort
     $repair=Join-Path $appNew 'runtime\windows\setup-sokna.ps1'
+    Set-RcStage 'repair-new'
     $repairRun=Invoke-ScriptExit $repair @('-Mode','Repair','-AppRoot',$appNew,'-DataRoot',$dataNew,'-PhpExe',$phpExe,'-OpenSslExe',$apache.openssl,'-WebServerExe',$apache.exe,'-ServiceHostExe',(Join-Path $ShellPayloadRoot 'SoknaRuntimeService.exe'),'-PrintWorkerBundle',(Join-Path $ShellPayloadRoot 'print-worker'),'-Hostname','sokna.local','-RequireWebServerPreflight') @(0)
     Assert ($repairRun.code -eq 0) 'Repair did not close New-install HTTPS health after external Apache start.'
     $newIdentity=Read-InstallId $dataNew
 
+    Set-RcStage 'backup'
     $backup=Invoke-SoknaProcess $phpExe @((Join-Path $appNew 'tools\backup-worker.php'),'--if-stale-hours=1') -TimeoutSeconds 600
     $backupPath=(Get-ChildItem (Join-Path $appNew 'storage\backups') -Filter 'sokna-backup-*.tar.gz' -File | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1).FullName
     Assert (-not [string]::IsNullOrWhiteSpace($backupPath)) 'New installation did not produce a machine Recovery Set.'
@@ -236,9 +247,11 @@ try{
         db=[ordered]@{host='127.0.0.1';port=[string]$dbPort;name=$dbRecover;user='root';pass=$dbPassword};
         app_url='https://sokna.local';data_dir=$dataRecover;relay=[ordered]@{enabled=$false}
     })
+    Set-RcStage 'recover'
     $recoverRun=Invoke-ScriptExit $deploy (@('-Mode','Recover','-SetupConfigFile',$recoverConfig,'-RecoveryFile',$recoverySet)+@('-ShellRoot',$ShellPayloadRoot,'-AppRoot',$appRecover,'-DataRoot',$dataRecover,'-PhpExe',$phpExe,'-OpenSslExe',$apache.openssl,'-WebServerExe',$apache.exe,'-Hostname','sokna.local','-RequireWebServerPreflight')) @(20)
     Assert ($recoverRun.code -eq 20) 'Recover deployment did not stop at the expected external Apache reload boundary.'
     Restart-Apache $apache $httpsPort
+    Set-RcStage 'repair-recovered'
     $recoverRepair=Invoke-ScriptExit (Join-Path $appRecover 'runtime\windows\setup-sokna.ps1') @('-Mode','Repair','-AppRoot',$appRecover,'-DataRoot',$dataRecover,'-PhpExe',$phpExe,'-OpenSslExe',$apache.openssl,'-WebServerExe',$apache.exe,'-ServiceHostExe',(Join-Path $ShellPayloadRoot 'SoknaRuntimeService.exe'),'-PrintWorkerBundle',(Join-Path $ShellPayloadRoot 'print-worker'),'-Hostname','sokna.local','-RequireWebServerPreflight') @(0)
     Assert ($recoverRepair.code -eq 0) 'Repair did not close recovered-machine HTTPS health after external Apache restart.'
     $recoveredIdentity=Read-InstallId $dataRecover
@@ -250,6 +263,16 @@ try{
     Assert ($tables -gt 50) 'Machine Recovery did not restore the full SOKNA schema.'
 
     Write-Host "Phase 8B Windows RC full-stack PASS: frozen providers -> New -> Apache reload -> Repair/HTTPS -> Recovery Set -> Recover -> Repair/HTTPS ($version)."
+}
+catch {
+    [ordered]@{stage=$rcStage;status='failed';error=(Protect-SoknaLog $_.Exception.Message)} | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $evidenceRoot 'failure.json') -Encoding UTF8
+    if ($msiLog -and (Test-Path -LiteralPath $msiLog)) {
+        # Keep only a bounded sanitized tail; raw MSI logs can contain the disposable DB password.
+        $tail=(Get-Content -LiteralPath $msiLog -Tail 160 | Out-String)
+        [IO.File]::WriteAllText((Join-Path $evidenceRoot 'mariadb-install-tail.log'),(Protect-SoknaLog $tail))
+        Write-Host (Protect-SoknaLog $tail)
+    }
+    throw
 }
 finally{
     Stop-And-Delete-Service 'SoknaRuntime'

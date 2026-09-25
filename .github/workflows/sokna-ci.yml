@@ -411,6 +411,14 @@ jobs:
           ./tests/phase8b-windows-rc-full-stack.ps1 -PrerequisiteBundleRoot $env:SOKNA_RC_PREREQUISITE_BUNDLE -ShellPayloadRoot $env:SOKNA_RC_SHELL -RepoRoot $PWD
           if($LASTEXITCODE -ne 0){throw 'Phase 8B Windows RC full-stack acceptance failed.'}
 
+      - name: Preserve sanitized RC failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sokna-rc-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/sokna-rc-evidence/
+          if-no-files-found: warn
+
   windows-installer-package:
     name: Windows Phase 8B MSI/Burn package
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_windows_installer && inputs.wix7_eula_accepted }}

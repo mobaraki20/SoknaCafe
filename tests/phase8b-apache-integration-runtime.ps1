@@ -37,10 +37,12 @@ public static class FakeApache {
       if(i<0 || i+1>=args.Length || !File.Exists(args[i+1])) return 2;
       var cfg=Path.GetFullPath(args[i+1]);
       var real=Path.GetFullPath(Path.Combine(root,"conf","httpd.conf"));
-      if(Environment.GetEnvironmentVariable("FAKE_APACHE_FAIL_REAL") == "1" && String.Equals(cfg,real,StringComparison.OrdinalIgnoreCase)) return 3;
       var text=File.ReadAllText(cfg);
       var m=Regex.Match(text,"(?m)^Include \\\"([^\\\"]+)\\\"$");
       if(m.Success && !File.Exists(m.Groups[1].Value.Replace('/','\\'))) return 4;
+      // Fail only after the changed managed include is installed, not during preflight.
+      if(Environment.GetEnvironmentVariable("FAKE_APACHE_FAIL_REAL") == "1" && String.Equals(cfg,real,StringComparison.OrdinalIgnoreCase)
+         && m.Success && File.ReadAllText(m.Groups[1].Value.Replace('/','\\')).Contains("changed.local")) return 3;
       Console.WriteLine("Syntax OK");
       return 0;
     }
@@ -77,8 +79,8 @@ public static class FakeApache {
     Assert ($result.lifecycle_owner -eq 'external') 'Apache lifecycle ownership changed unexpectedly.'
     $include=Join-Path $confDir 'sokna-local.conf'
     Assert (Test-Path $include) 'Managed Apache include was not created.'
-    $mainText=Get-Content $main -Raw
-    $includeText=Get-Content $include -Raw
+    $mainText=Get-Content $main -Raw -Encoding UTF8
+    $includeText=Get-Content $include -Raw -Encoding UTF8
     Assert (([regex]::Matches($mainText,'# BEGIN SOKNA LOCAL MANAGED INCLUDE v1')).Count -eq 1) 'Managed block is missing or duplicated.'
     Assert ($includeText -match [regex]::Escape($app.Replace('\','/'))) 'Managed vhost does not point to selected AppRoot/WebRoot.'
     Assert ($includeText -match [regex]::Escape($data.Replace('\','/'))) 'Managed vhost does not deny selected DataRoot.'
