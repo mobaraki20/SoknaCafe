@@ -19,7 +19,7 @@ checks={
  'bridge does not duplicate Print API/state machine': all(token not in bridge for token in ['print_jobs','print_attempts','print_claim_requests','print_v4_','StartDoc','Winspool','INSERT INTO','UPDATE ','DELETE FROM ']),
  'R2 internal ownership is active': 'محصول جدا نصب نمی‌شود' in reconcile and 'SOKNA Local' in reconcile,
  'setup installs bundled worker rather than external setup': 'Install-PrintWorkerComponent' in setup and 'PrintAgentSetup' not in setup and 'PrintAgentSha256' not in setup,
- 'printing registry describes internal runtime ownership': 'internal Print Worker service -> Windows Spooler' in modules and 'installed Windows Print Agent service' not in modules,
+ 'printing registry describes internal runtime ownership': 'سرویس چاپ داخلی سکنا -> Windows Spooler' in modules and 'installed Windows Print Agent service' not in modules,
  'notification processing is Runtime-owned': 'SOKNA Runtime -> tools/push-worker.php' in modules and "'push' => [" in runtime and 'tools/push-worker.php' in runtime,
  'notification outbox remains canonical': 'push_process_queue(10)' in push_worker and 'INSERT INTO push_event_queue' in push,
  'opportunistic notification drain remains accelerator only': 'latency accelerator/fallback' in modules,
