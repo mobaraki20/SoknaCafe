@@ -76,7 +76,15 @@ foreach($artifact in @($candidate.artifacts)){
         Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
         try{
             Write-Host "Verifying provider download: $id ($url)"
-            try { Invoke-WebRequest -Uri $url -OutFile $tmp -UseBasicParsing }
+            try {
+                # Windows inbox curl avoids PowerShell response-parser failures on some providers.
+                # Refuse HTTPS downgrades on every redirect and retain the pinned hash gate below.
+                $curl = Get-Command curl.exe -CommandType Application -ErrorAction SilentlyContinue
+                if ($curl) {
+                    & $curl.Source --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --connect-timeout 30 --max-time 600 --retry 2 --output $tmp $url
+                    if ($LASTEXITCODE -ne 0) { throw "HTTPS transport exited with code $LASTEXITCODE." }
+                } else { Invoke-WebRequest -Uri $url -OutFile $tmp -UseBasicParsing }
+            }
             catch { throw "Prerequisite download failed for ${id}: $($_.Exception.Message)" }
             Move-Item -LiteralPath $tmp -Destination $path -Force
             $downloaded=$true
