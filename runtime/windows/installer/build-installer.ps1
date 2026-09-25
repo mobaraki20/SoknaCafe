@@ -21,6 +21,10 @@ try {
     [IO.Directory]::CreateDirectory($OutputDirectory) | Out-Null
     $hostFile = Join-Path $work 'SoknaRuntimeService.exe'
     & (Join-Path $windows 'build-service-host.ps1') -OutputPath $hostFile
+    $worker = Join-Path $windows 'bin\print-worker'
+    if (-not (Test-Path (Join-Path $worker 'component-manifest.json'))) { throw 'Build the internal Print Worker before packaging.' }
+    $workerArchive = Join-Path $work 'print-worker.zip'
+    Compress-Archive -Path (Join-Path $worker '*') -DestinationPath $workerArchive
     # ICO container embeds the existing brand PNGs unchanged; no new artwork.
     $icon = Join-Path $work 'sokna.ico'
     $pictures = @(32,192) | ForEach-Object { [pscustomobject]@{ Size=$_; Bytes=[IO.File]::ReadAllBytes((Join-Path $repo "assets/icons/favicon-$_.png")) } }
@@ -37,7 +41,7 @@ try {
         }
         foreach ($picture in $pictures) { $writer.Write([byte[]]$picture.Bytes) }
     } finally { $writer.Dispose(); $stream.Dispose() }
-    Invoke-SoknaProcess $compiler @("/DSourceRoot=$windows","/DHostFile=$hostFile","/DIconFile=$icon","/O$OutputDirectory",(Join-Path $PSScriptRoot 'platform.iss')) -TimeoutSeconds 300 | Out-Null
+    Invoke-SoknaProcess $compiler @("/DSourceRoot=$windows","/DHostFile=$hostFile","/DIconFile=$icon","/DWorkerArchive=$workerArchive","/O$OutputDirectory",(Join-Path $PSScriptRoot 'platform.iss')) -TimeoutSeconds 300 | Out-Null
     Copy-Item (Join-Path $compilerDir 'License.txt') (Join-Path $OutputDirectory 'INNO-LICENSE.txt')
     $source = (& git -C $repo rev-parse HEAD).Trim()
     if ($LASTEXITCODE -ne 0) { throw 'Cannot determine installer source commit.' }

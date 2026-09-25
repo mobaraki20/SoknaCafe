@@ -26,7 +26,9 @@ function Assert-InstallerBundle([string]$LogFile) {
     $zip = ConvertFrom-Json $paths[$paths.Count - 1].Groups[1].Value
     $expanded = Join-Path $root ([guid]::NewGuid().ToString('N'))
     Expand-Archive -LiteralPath $zip -DestinationPath $expanded
-    Assert (@(Get-ChildItem $expanded -File).Count -eq 3) 'Native combined bundle must contain exactly three allowlisted files'
+    $expected = @('summary.json','events.jsonl','components.json','installer-snapshot.log' | Sort-Object)
+    $actual = @(Get-ChildItem $expanded -File -Recurse | ForEach-Object { $_.FullName.Substring($expanded.Length + 1) } | Sort-Object)
+    Assert (($actual -join '|') -eq ($expected -join '|')) 'Native combined bundle does not match the explicit four-file allowlist'
     $report = Get-Content (Join-Path $expanded 'summary.json') -Raw | ConvertFrom-Json
     Assert ($report.installer_log_status -eq 'included') 'Native log snapshot unavailable'
     Assert ((Get-Item (Join-Path $expanded 'installer-snapshot.log')).Length -gt 0) 'Native log snapshot empty'

@@ -22,6 +22,10 @@ try {
         Assert-SoknaSafePath $path
     }
     if ($Hostname -notmatch '^(?=.{1,253}$)[a-z0-9]+(?:[.-][a-z0-9]+)*$') { throw 'Invalid local hostname.' }
+    if ($Operation -eq 'Validate' -and (Test-Path (Join-Path $PSScriptRoot 'print-worker.zip'))) {
+        # Archive is embedded in the installer and extracted into its protected temp directory.
+        Expand-Archive -LiteralPath (Join-Path $PSScriptRoot 'print-worker.zip') -DestinationPath (Join-Path $PSScriptRoot 'bin\print-worker') -Force
+    }
     $childArgs = @('-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',(Join-Path $PSScriptRoot 'setup-sokna.ps1'),
         '-Mode',$Operation,'-AppRoot',$AppRoot,'-DataRoot',$DataRoot,'-PhpExe',$PhpExe,'-OpenSslExe',$OpenSslExe,
         '-Hostname',$Hostname,'-ServiceHostExe',(Join-Path $PSScriptRoot 'bin\SoknaRuntimeService.exe'))

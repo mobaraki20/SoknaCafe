@@ -75,7 +75,9 @@ foreach($artifact in @($candidate.artifacts)){
         $tmp=$path+'.download'
         Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
         try{
-            Invoke-WebRequest -Uri $url -OutFile $tmp -UseBasicParsing
+            Write-Host "Verifying provider download: $id ($url)"
+            try { Invoke-WebRequest -Uri $url -OutFile $tmp -UseBasicParsing }
+            catch { throw "Prerequisite download failed for ${id}: $($_.Exception.Message)" }
             Move-Item -LiteralPath $tmp -Destination $path -Force
             $downloaded=$true
         }finally{Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue}
