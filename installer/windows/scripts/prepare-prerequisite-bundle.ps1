@@ -60,7 +60,11 @@ foreach($artifact in @($lock.artifacts)){
         $tmp=$source+'.download'
         Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
         try{
-            Invoke-WebRequest -Uri $url -OutFile $tmp -UseBasicParsing
+            $curl = Get-Command curl.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($curl) {
+                & $curl.Source --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --connect-timeout 30 --max-time 600 --retry 2 --output $tmp $url
+                if ($LASTEXITCODE -ne 0) { throw "Prerequisite HTTPS download failed: $name" }
+            } else { Invoke-WebRequest -Uri $url -OutFile $tmp -UseBasicParsing }
             Move-Item -LiteralPath $tmp -Destination $source -Force
         }finally{Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue}
     }

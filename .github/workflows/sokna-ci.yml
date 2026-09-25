@@ -350,12 +350,14 @@ jobs:
 
   windows-rc-full-stack:
     name: Windows Phase 8B RC full-stack acceptance
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_windows_rc_full_stack }}
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.run_windows_rc_full_stack) }}
     runs-on: windows-latest
     timeout-minutes: 55
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -394,7 +396,7 @@ jobs:
         shell: pwsh
         run: |
           $shell=Join-Path $env:RUNNER_TEMP 'sokna-rc-shell'
-          ./installer/windows/scripts/prepare-shell-payload.ps1 -RepoRoot $PWD -OutputRoot $shell -ServiceHostExe (Join-Path $PWD 'runtime/windows/bin/SoknaRuntimeService.exe') -SetupHostExe (Join-Path $PWD 'runtime/windows/bin/SoknaSetupHost.exe') -SetupUiExe (Join-Path $PWD 'runtime/windows/bin/SoknaSetupUi.exe') -PrintWorkerBundle (Join-Path $PWD 'runtime/windows/bin/print-worker') -PrerequisiteBundleRoot $env:SOKNA_RC_PREREQUISITE_BUNDLE -GitSha '${{ github.sha }}'
+          ./installer/windows/scripts/prepare-shell-payload.ps1 -RepoRoot $PWD -OutputRoot $shell -ServiceHostExe (Join-Path $PWD 'runtime/windows/bin/SoknaRuntimeService.exe') -SetupHostExe (Join-Path $PWD 'runtime/windows/bin/SoknaSetupHost.exe') -SetupUiExe (Join-Path $PWD 'runtime/windows/bin/SoknaSetupUi.exe') -PrintWorkerBundle (Join-Path $PWD 'runtime/windows/bin/print-worker') -PrerequisiteBundleRoot $env:SOKNA_RC_PREREQUISITE_BUNDLE -GitSha '${{ github.event.pull_request.head.sha || github.sha }}'
           "SOKNA_RC_SHELL=$shell" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: New / Apache reload / Repair / Recovery Set / Recover / HTTPS acceptance
