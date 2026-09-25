@@ -27,8 +27,13 @@ function Assert-InstallerBundle([string]$LogFile) {
     $expanded = Join-Path $root ([guid]::NewGuid().ToString('N'))
     Expand-Archive -LiteralPath $zip -DestinationPath $expanded
     $expected = @('summary.json','events.jsonl','components.json','installer-snapshot.log' | Sort-Object)
-    $actual = @(Get-ChildItem $expanded -File -Recurse | ForEach-Object { $_.FullName.Substring($expanded.Length + 1) } | Sort-Object)
-    Assert (($actual -join '|') -eq ($expected -join '|')) 'Native combined bundle does not match the explicit four-file allowlist'
+    # Inspect archive entry names directly: Windows may expand a TEMP 8.3 path
+    # to its long form in FileInfo.FullName, so substring offsets are unreliable.
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $archive = [IO.Compression.ZipFile]::OpenRead($zip)
+    try { $actual = @($archive.Entries | ForEach-Object { $_.FullName } | Sort-Object) }
+    finally { $archive.Dispose() }
+    Assert (($actual -join '|') -eq ($expected -join '|')) ('Native bundle allowlist mismatch; entries: ' + ($actual -join ', '))
     $report = Get-Content (Join-Path $expanded 'summary.json') -Raw | ConvertFrom-Json
     Assert ($report.installer_log_status -eq 'included') 'Native log snapshot unavailable'
     Assert ((Get-Item (Join-Path $expanded 'installer-snapshot.log')).Length -gt 0) 'Native log snapshot empty'
