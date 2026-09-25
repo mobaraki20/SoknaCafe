@@ -66,7 +66,9 @@ function Invoke-MsiExit([string[]]$Arguments,[int[]]$Allowed,[int]$TimeoutSecond
     # pipes here: Windows Installer can outlive its client process during custom actions.
     $info=New-Object Diagnostics.ProcessStartInfo
     $info.FileName=Join-Path $env:SystemRoot 'System32\msiexec.exe'
-    $info.Arguments=($Arguments|ForEach-Object { ConvertTo-SoknaArgument $_ }) -join ' '
+    # Do not quote MSI switches such as /i and /qn.  msiexec can otherwise treat the
+    # command as an interactive/help invocation and never create the requested log.
+    $info.Arguments=$Arguments -join ' '
     $info.UseShellExecute=$false
     $info.CreateNoWindow=$true
     $process=New-Object Diagnostics.Process
@@ -82,6 +84,10 @@ function Invoke-MsiExit([string[]]$Arguments,[int[]]$Allowed,[int]$TimeoutSecond
         if($Allowed -notcontains $code){throw "Windows Installer exit code $code; inspect the sanitized MSI log."}
         return $code
     }finally{$process.Dispose()}
+}
+function Quote-MsiValue([string]$Value){
+    if([string]::IsNullOrWhiteSpace($Value) -or $Value.IndexOfAny(@([char]'"',[char]13,[char]10)) -ge 0){throw 'Unsafe Windows Installer argument value.'}
+    return '"'+$Value+'"'
 }
 function Ensure-PHP([string]$Zip,[string]$Root){
     Expand-Archive -LiteralPath $Zip -DestinationPath $Root -Force
@@ -224,7 +230,7 @@ try{
     $apache=Ensure-Apache $apacheZip $apacheStage $phpRoot $httpPort $httpsPort
 
     $msiLog=Join-Path $root 'mariadb-install.log'
-    $mariaArgs=@('/i',$mariaMsi,'/qn','REBOOT=ReallySuppress','/L*V!',$msiLog,("INSTALLDIR=$mariaInstall"),("DATADIR=$mariaData"),("PORT=$dbPort"),("PASSWORD=$dbPassword"),("SERVICENAME=$mariaService"),'STDCONFIG=1','ADDLOCAL=DBInstance,Client,MYSQLSERVER,SharedLibraries')
+    $mariaArgs=@('/i',(Quote-MsiValue $mariaMsi),'/qn','REBOOT=ReallySuppress','/L*V!',(Quote-MsiValue $msiLog),('INSTALLDIR='+(Quote-MsiValue $mariaInstall)),('DATADIR='+(Quote-MsiValue $mariaData)),("PORT=$dbPort"),("PASSWORD=$dbPassword"),("SERVICENAME=$mariaService"),'STDCONFIG=1','ADDLOCAL=DBInstance,Client,MYSQLSERVER,SharedLibraries')
     Set-RcStage 'mariadb-install'
     $mariaInstallAttempted=$true
     $mariaExit=Invoke-MsiExit -Arguments $mariaArgs -Allowed @(0,3010) -TimeoutSeconds 900
@@ -313,7 +319,7 @@ finally{
     if($mariaInstallAttempted){
         try{Stop-Service -Name $mariaService -Force -ErrorAction SilentlyContinue}catch{}
         try{
-            $u=Invoke-MsiExit -Arguments @('/x',$mariaMsi,'CLEANUPDATA=1','/qn','REBOOT=ReallySuppress') -Allowed @(0,1605,1614,3010) -TimeoutSeconds 300
+            $u=Invoke-MsiExit -Arguments @('/x',(Quote-MsiValue $mariaMsi),'CLEANUPDATA=1','/qn','REBOOT=ReallySuppress') -Allowed @(0,1605,1614,3010) -TimeoutSeconds 300
             if($u -eq 3010){Write-Warning 'MariaDB cleanup requested reboot on the disposable runner.'}
         }catch{Write-Warning ('MariaDB cleanup failed: '+$_.Exception.Message)}
     }

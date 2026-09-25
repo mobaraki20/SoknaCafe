@@ -39,6 +39,8 @@ function Assert-InstallerBundle([string]$LogFile) {
     Assert ((Get-Item (Join-Path $expanded 'installer-snapshot.log')).Length -gt 0) 'Native log snapshot empty'
 }
 try {
+    # This is the platform preview lifecycle fixture. HTTPS is proven independently by
+    # phase8b-apache-integration-runtime.ps1 and phase8b-windows-rc-full-stack.ps1.
     Assert (-not (Get-Service SoknaRuntime -ErrorAction SilentlyContinue)) 'Disposable runner must not have a Runtime service'
     Assert (-not (Test-Path $registry)) 'Disposable runner must not have platform registration'
     Assert (-not (Test-Path $desktop)) 'Do not overwrite an existing desktop shortcut'

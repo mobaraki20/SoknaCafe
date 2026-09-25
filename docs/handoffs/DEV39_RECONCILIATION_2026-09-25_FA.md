@@ -1,7 +1,7 @@
 # وضعیت مرجع فعلی
 
 جدول پذیرش به‌روز: `docs/architecture-migration-r2/PHASE8B_WINDOWS_ACCEPTANCE_STATUS_2026-09-25_FA.md`.
-Run `36165915622` موفقیت Linux regression و Public Relay/MariaDB را تأیید کرد، اما Windows Phase 1 در مقایسه AppRoot و full-stack در مرحله نصب MariaDB شکست خوردند. artifact `10877474564` مرحله `mariadb-install` و timeout ۶۰۰ ثانیه‌ای را ثبت کرد. اصلاح مقایسه معنایی مسیر Apache و runner/log/cleanup نصب MSI همراه checkpoint جاری است و باید در CI تأیید شود. نصب نهایی منتشر نشده است.
+Run `36195932654` موفقیت Linux regression، Public Relay/MariaDB و Apache integration runtime را تأیید کرد. full-stack در `mariadb-install` ماند؛ نصب و cleanup دقیقاً در سقف ۹۰۰/۳۰۰ ثانیه تمام شدند و artifact `10891060012` هیچ log MSI نداشت. علت، quote شدن switchهای `/i` و `/qn` در runner تشخیص داده شد؛ اصلاح command line استاندارد MSI و محدودکردن preview قدیمی Inno به fixture بدون HTTPS همراه checkpoint جاری است و باید در CI تأیید شود. نصب نهایی منتشر نشده است.
 
 ---
 
