@@ -50,6 +50,13 @@ try {
     [IO.File]::WriteAllText((Join-Path $app 'config.php'), '<?php /* preserve fixture secret */')
     [IO.File]::WriteAllText((Join-Path $app 'install.lock'), 'preserve-lock')
     [IO.File]::WriteAllText((Join-Path $app 'VERSION.txt'), 'application-A')
+    # This packaging fixture has no business database.  Seed an existing internal
+    # Print Worker pairing so Repair proves preservation instead of taking the
+    # DB-owned missing-pairing regeneration path.
+    $workerData = Join-Path $data 'print-worker'
+    New-SoknaPrivateDirectory $workerData | Out-Null
+    [IO.File]::WriteAllText((Join-Path $workerData 'config.json'), '{"server_base_url":"http://127.0.0.1:9","agent_name":"Inno lifecycle fixture"}')
+    [IO.File]::WriteAllBytes((Join-Path $workerData 'secret.dat'), [byte[]](1,2,3,4,5,6,7,8))
     $configHash = (Get-FileHash (Join-Path $app 'config.php')).Hash
     $extra = @("/AppRoot=$app","/DataRoot=$data","/PhpExe=$PhpExe","/OpenSslExe=$OpenSslExe",'/Hostname=sokna.local')
     # Missing prerequisite fails before registration or platform extraction.

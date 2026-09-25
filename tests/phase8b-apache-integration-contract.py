@@ -18,6 +18,7 @@ need('{{SOKNA_WEB_ROOT}}' in template and '{{SOKNA_DATA_ROOT}}' in template and 
 need('Listen ' not in template,'SOKNA vhost does not take ownership of Apache listener lifecycle')
 need('DocumentRoot "{{SOKNA_WEB_ROOT}}"' in template and '<Directory "{{SOKNA_DATA_ROOT}}">' in template and 'Require all denied' in template,'Apache template serves only WebRoot and explicitly denies DataRoot')
 need('HTTPD_ROOT' in script and 'SERVER_CONFIG_FILE' in script and "('-V')" in script,'Apache owner discovers shared config from Apache itself instead of guessing paths')
+need("GetFileName($exeDir).Equals('bin'" in script and 'executable-adjacent roots' in script and '$reportedExists -and $adjacentExists' in script,'relocated Apache is anchored to selected bin/httpd.exe and ambiguous ownership fails closed')
 need('ssl_module' in script and 'headers_module' in script and 'authz_core_module' in script,'Apache owner requires modules used by the managed vhost')
 need('Assert-DisjointRoots $AppRoot $DataRoot' in script,'AppRoot/WebRoot and DataRoot overlap is rejected')
 need('# BEGIN SOKNA LOCAL MANAGED INCLUDE v1' in script and '# SOKNA-MANAGED-APACHE-VHOST v1' in script,'shared Apache edits use explicit SOKNA ownership markers')

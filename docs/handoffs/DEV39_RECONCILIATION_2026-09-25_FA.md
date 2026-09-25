@@ -3,6 +3,8 @@
 جدول پذیرش به‌روز: `docs/architecture-migration-r2/PHASE8B_WINDOWS_ACCEPTANCE_STATUS_2026-09-25_FA.md`.
 Run `36195932654` موفقیت Linux regression، Public Relay/MariaDB و Apache integration runtime را تأیید کرد. full-stack در `mariadb-install` ماند؛ نصب و cleanup دقیقاً در سقف ۹۰۰/۳۰۰ ثانیه تمام شدند و artifact `10891060012` هیچ log MSI نداشت. علت، quote شدن switchهای `/i` و `/qn` در runner تشخیص داده شد؛ اصلاح command line استاندارد MSI و محدودکردن preview قدیمی Inno به fixture بدون HTTPS همراه checkpoint جاری است و باید در CI تأیید شود. نصب نهایی منتشر نشده است.
 
+Run `36198103588` اصلاح syntax MSI را تأیید کرد: MariaDB در ۴۱ ثانیه نصب شد و stage به `new` رسید. خطای بعدی relocation Apache Lounge بود؛ `-V` ریشه compiled را گزارش می‌کرد نه ریشه کنار executable منتخب. اصلاح fail-closed برای executable-adjacent root و pairing غیرواقعیِ fixture preview همراه checkpoint جاری است. نصب نهایی منتشر نشده است.
+
 ---
 
 # به‌روزرسانی تثبیت پیش‌نیاز و اجرای full-stack

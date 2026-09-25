@@ -32,12 +32,30 @@ function Get-ApacheOwnerInfo([string]$Exe){
     $rootMatch=[regex]::Match($text,'(?m)-D\s+HTTPD_ROOT="([^"]+)"')
     $cfgMatch=[regex]::Match($text,'(?m)-D\s+SERVER_CONFIG_FILE="([^"]+)"')
     if(-not $rootMatch.Success -or -not $cfgMatch.Success){throw 'Apache did not report HTTPD_ROOT/SERVER_CONFIG_FILE; SOKNA will not guess the shared configuration path.'}
-    $root=[IO.Path]::GetFullPath($rootMatch.Groups[1].Value)
+    $reportedRoot=[IO.Path]::GetFullPath($rootMatch.Groups[1].Value)
     $cfgRaw=$cfgMatch.Groups[1].Value
     # Windows PowerShell 5.1 runs on .NET Framework, which has no IsPathFullyQualified.
     $absoluteConfig = $cfgRaw -match '^(?:[A-Za-z]:[\\/]|[\\/]{2}[^\\/]+[\\/][^\\/]+)'
     if (-not $absoluteConfig -and [IO.Path]::IsPathRooted($cfgRaw)) { throw 'Apache config path is rooted but not absolute.' }
-    $cfg=if($absoluteConfig){[IO.Path]::GetFullPath($cfgRaw)}else{[IO.Path]::GetFullPath((Join-Path $root $cfgRaw))}
+    $reportedCfg=if($absoluteConfig){[IO.Path]::GetFullPath($cfgRaw)}else{[IO.Path]::GetFullPath((Join-Path $reportedRoot $cfgRaw))}
+    $root=$reportedRoot
+    $cfg=$reportedCfg
+    if(-not $absoluteConfig){
+        # Apache Lounge archives retain a compiled C:\Apache24 HTTPD_ROOT even when
+        # their complete Apache24 directory is relocated.  Anchor the alternate root
+        # only to the explicitly selected ...\bin\httpd.exe, never to a global search.
+        $exeDir=[IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($Exe))
+        if([IO.Path]::GetFileName($exeDir).Equals('bin',[StringComparison]::OrdinalIgnoreCase)){
+            $adjacentRoot=[IO.Directory]::GetParent($exeDir).FullName
+            $adjacentCfg=[IO.Path]::GetFullPath((Join-Path $adjacentRoot $cfgRaw))
+            $reportedExists=Test-Path -LiteralPath $reportedCfg -PathType Leaf
+            $adjacentExists=Test-Path -LiteralPath $adjacentCfg -PathType Leaf
+            if($reportedExists -and $adjacentExists -and -not $reportedCfg.Equals($adjacentCfg,[StringComparison]::OrdinalIgnoreCase)){
+                throw 'Apache configuration ownership is ambiguous between compiled and executable-adjacent roots.'
+            }
+            if($adjacentExists -and -not $reportedExists){$root=$adjacentRoot;$cfg=$adjacentCfg}
+        }
+    }
     Assert-SoknaSafePath $root
     Assert-SoknaSafePath $cfg
     if(-not(Test-Path -LiteralPath $cfg -PathType Leaf)){throw 'Apache main configuration file was not found.'}
