@@ -38,7 +38,7 @@ public static class FakeApache {
       var cfg=Path.GetFullPath(args[i+1]);
       var real=Path.GetFullPath(Path.Combine(root,"conf","httpd.conf"));
       var text=File.ReadAllText(cfg);
-      var m=Regex.Match(text,"(?m)^Include \\\"([^\\\"]+)\\\"$");
+      var m=Regex.Match(text,"(?m)^Include \\\"([^\\\"]+)\\\"\\r?$");
       if(m.Success && !File.Exists(m.Groups[1].Value.Replace('/','\\'))) return 4;
       // Fail only after the changed managed include is installed, not during preflight.
       if(Environment.GetEnvironmentVariable("FAKE_APACHE_FAIL_REAL") == "1" && String.Equals(cfg,real,StringComparison.OrdinalIgnoreCase)

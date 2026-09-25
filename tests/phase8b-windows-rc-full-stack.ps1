@@ -178,6 +178,7 @@ $dbNew='sokna_rc_new_'+[guid]::NewGuid().ToString('N').Substring(0,8)
 $dbRecover='sokna_rc_recover_'+[guid]::NewGuid().ToString('N').Substring(0,8)
 $apache=$null
 $mariaInstalled=$false
+$ownsRcServices=$false
 $rcStage='preflight'
 $evidenceRoot=Join-Path $env:RUNNER_TEMP 'sokna-rc-evidence'
 New-Item -ItemType Directory -Path $evidenceRoot -Force | Out-Null
@@ -188,6 +189,7 @@ try{
     Assert (-not(Get-Service SoknaPrintWorker -ErrorAction SilentlyContinue)) 'Disposable runner already has SoknaPrintWorker; refusing destructive RC acceptance.'
     Assert (@(Get-NetTCPConnection -State Listen -LocalPort $httpsPort -ErrorAction SilentlyContinue).Count -eq 0) 'Disposable runner already uses TCP/443; RC acceptance requires the canonical HTTPS port.'
 
+    $ownsRcServices=$true
     Set-RcStage 'vc-runtime'
     $vc=Start-Process -FilePath $vcExe -ArgumentList @('/install','/quiet','/norestart') -Wait -PassThru
     if(@(0,1638,3010) -notcontains [int]$vc.ExitCode){throw "Frozen VC runtime installer failed: $($vc.ExitCode)"}
@@ -275,9 +277,11 @@ catch {
     throw
 }
 finally{
-    Stop-And-Delete-Service 'SoknaRuntime'
-    Stop-And-Delete-Service 'SoknaPrintWorker'
-    Remove-Item 'HKLM:\SOFTWARE\Sokna\Local\PrintWorker' -Recurse -Force -ErrorAction SilentlyContinue
+    if ($ownsRcServices) {
+        Stop-And-Delete-Service 'SoknaRuntime'
+        Stop-And-Delete-Service 'SoknaPrintWorker'
+        Remove-Item 'HKLM:\SOFTWARE\Sokna\Local\PrintWorker' -Recurse -Force -ErrorAction SilentlyContinue
+    }
     Stop-Apache $apache
     if($mariaInstalled){
         try{Stop-Service -Name $mariaService -Force -ErrorAction SilentlyContinue}catch{}
